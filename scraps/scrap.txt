@@ -1,0 +1,103 @@
+            <WPFToolkit:DataGrid.Columns>
+              <WPFToolkit:DataGridTextColumn Header="Sponsor" Binding="{Binding Sponsor}"/>
+              <WPFToolkit:DataGridTextColumn Header="Customer Code" />
+              <WPFToolkit:DataGridTextColumn Header="Form Count" />
+              <WPFToolkit:DataGridTextColumn Header="SSN" />
+              <WPFToolkit:DataGridTextColumn Header="Dependents" />
+              <WPFToolkit:DataGridTextColumn Header="Notes" Width="*" />
+            </WPFToolkit:DataGrid.Columns>
+
+
+  <Style TargetType="{x:Type Expander}">
+    <Setter Property="Background">
+      <Setter.Value>
+        <LinearGradientBrush StartPoint="0.5,1" EndPoint="0.5,0">
+          <GradientStop Color="#98B4D2" Offset="0.263"/>
+          <GradientStop Color="#ECF5FC" Offset="0.942"/>
+        </LinearGradientBrush>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+
+        
+        
+        <Style TargetType="{x:Type Expander}">
+          <Setter Property="HeaderTemplate">
+            <Setter.Value>
+              <DataTemplate>
+                <Border Height="24" BorderThickness="1" BorderBrush="Gray">
+                  <Border.Background>
+                    <LinearGradientBrush EndPoint="0.5,0" StartPoint="0.5,1">
+                      <GradientStop Color="#98B4D2" Offset="0.263"/>
+                      <GradientStop Color="#ECF5FC" Offset="0.942"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <TextBlock Text="{Binding}" 
+                          Margin="4 0"
+                          VerticalAlignment="Center"
+                          Foreground="Black"
+                          FontSize="11" 
+                          FontWeight="Normal"
+                          Width="auto"
+                          TextWrapping="Wrap"/>
+                </Border>
+              </DataTemplate>
+            </Setter.Value>
+          </Setter>
+        </Style>
+
+
+
+                    <GradientStop Color="#EF3132" Offset="0.1" />
+                      <GradientStop Color="#D62B2B" Offset="0.9" />
+  
+  {Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}, Path=ActualWidth}
+  
+  
+  <Grid>
+    <Grid.Resources>
+      <Style TargetType="Label">
+        <Setter Property="Margin" Value="-4" />
+      </Style>
+      <Style TargetType="TextBox">
+        <Setter Property="Margin" Value="-4" />
+      </Style>
+    </Grid.Resources>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition />
+      <ColumnDefinition />
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition />
+      <RowDefinition />
+      <RowDefinition />
+      <RowDefinition />
+      <RowDefinition />
+      <RowDefinition />
+    </Grid.RowDefinitions>
+  
+  
+        using (DataClassesDataContext db = new DataClassesDataContext())
+      {
+        db.Init_CodeTables();
+        int count = db.Vendors.ToList<Vendor>().Count;
+        //db.Vendors.
+        //var taxforms = from p in db.Vendors select p;
+        //int count = taxforms.Count<Vendor>();
+      }
+
+
+            <local:ucDetailsView x:Name="TaxFormDetails" Orientation="Vertical" LabelOrientation="Horizontal" />
+
+
+    <add name="User" connectionString="Data Source=.\sqlexpress2005;Initial Catalog=iTRAACv2;User ID=andersonb;Password=104rolling"
+      providerName="System.Data.SqlClient" />
+    <add name="PrimaryConnectionString" connectionString="Data Source=.\sqlexpress2005;Initial Catalog=iTRAACv2;User ID=andersonb;Password=104rolling"
+      providerName="System.Data.SqlClient" />
+    <add name="iTRAACv2.Properties.Settings.iTRAACv2ConnectionString"
+      connectionString="Data Source=.\sqlexpress2005;Initial Catalog=iTRAACv2;User ID=iTRAAC_User;Password=iTRAAC_22_okToBer"
+      providerName="System.Data.SqlClient" />
+    <add name="iTRAACv2.Properties.Settings.iTRAACConnectionString"
+      connectionString="Data Source=.\sqlexpress2005;Initial Catalog=iTRAAC;User ID=andersonb;Password=104rolling"
+      providerName="System.Data.SqlClient" />

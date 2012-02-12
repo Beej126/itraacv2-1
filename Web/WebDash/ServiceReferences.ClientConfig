@@ -1,0 +1,36 @@
+﻿<configuration>
+    <system.serviceModel>
+        <bindings>
+            <basicHttpBinding>
+                <binding name="BasicHttpBinding_IDashWCF" maxBufferSize="2147483647"
+                    maxReceivedMessageSize="2147483647">
+                    <security mode="None" />
+                </binding>
+            </basicHttpBinding>
+        </bindings>
+        <client>
+                    <!-- 
+                      http://144.170.180.167/iTRAAC/WebDash/DashWCF.svc
+                      http://localhost:3594/DashWCF.svc
+                    -->
+          <!-- nugget: forced to use direct ip rather than friendly domain name... here's the story:
+                . we apparently have a "reverse proxy" in front of our web server (http://en.wikipedia.org/wiki/Reverse_proxy)
+                  (fyi, apparently it's Novel's iChain product)
+                . the crux antagonism the reverse proxy causes here is that it forces all web traffic to be SSL only via 302 redirect HTTP header
+                . unfortunately, the goofballs that manage the SSL cert often let it go expired for extended durations (several months/years; it most recently expired 1 July 2011)
+                . normally you can code around this via custom .net client logic that ignores these kinds of SSL validation issues via the .Net ServicePointManager class
+                . however, microsoft doesn't seem to believe silverlight could benefit from this functionality and hasn't implemented the ServicePointManager class in Silverlight's subset of the .Net Framework (CoreCLR)...
+                  (in spite of many requests to the contrary: http://connect.microsoft.com/VisualStudio/feedback/details/368047/add-system-net-servicepointmanager-servercertificatevalidationcallback-property) 
+                . another typical workaround is to specifically add an untrusted cert (e.g. self-signed) to your "Trusted Root Certificate Authorities" bucket, but that does not work for *expired* certs
+                . fortunately, we have an opening to work through, and that is to access the web server by direct ip thus skipping the reverse proxy mandatory SSL
+                . i also noticed that 144.170.180.167 is left alone but the other ip, 144.170.180.59, is caught and remapped -->
+          
+            <endpoint
+              address="http://144.170.180.167/iTRAAC/WebDash/DashWCF.svc"
+              binding="basicHttpBinding"
+              bindingConfiguration="BasicHttpBinding_IDashWCF"
+              contract="DashWCFClient.IDashWCF"
+              name="BasicHttpBinding_IDashWCF" />
+        </client>
+    </system.serviceModel>
+</configuration>

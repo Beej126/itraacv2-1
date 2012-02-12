@@ -1,0 +1,111 @@
+﻿<local:ucBase x:Class="iTRAACv2.CustomerSearch"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:local="clr-namespace:iTRAACv2"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:conv="clr-namespace:WPFValueConverters">
+
+  <DockPanel>
+
+    <Grid DockPanel.Dock="Top">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+      </Grid.RowDefinitions>
+
+      <Grid Name="grid1" Margin="5 5 5 0" >
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+        </Grid.RowDefinitions>
+        <Label Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center" Content="CCode" />
+        <Label Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Name (Last, First)"/>
+        <Label Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Center" Content="SSN" />
+        <Label Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center" Content="DoD Id" />
+        <Label Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Form #:"/>
+        <Label Grid.Row="5" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Advanced Options" />
+        <Label Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Transaction Type" 
+               Visibility="{Binding ElementName=btnAdvancedOptions, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}" />
+
+        <!--Label Content="(3 chars min)" Grid.Column="2" Grid.Row="0" /-->
+        <TextBox HorizontalAlignment="Left" Margin="3" Name="txtCCode" Grid.Column="1" Grid.Row="0" MaxLength="5" TextChanged="CustomerSearchCriteriaChanged" Width="50" />
+
+        <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
+          <TextBox HorizontalAlignment="Left" Margin="3" Name="txtLastName" TextChanged="CustomerSearchCriteriaChanged" Width="100" />
+          <TextBox HorizontalAlignment="Left" Margin="3" Name="txtFirstName" TextChanged="CustomerSearchCriteriaChanged" Width="100" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal">
+          <TextBox Margin="3" Name="txtSSN1" MaxLength="3" TextChanged="txtSSN_TextChanged"  Width="30" />
+          <TextBox Margin="3" Name="txtSSN2" MaxLength="2" TextChanged="txtSSN_TextChanged" Width="25"  />
+          <TextBox Margin="3" Name="txtSSN3" MaxLength="4" TextChanged="CustomerSearchCriteriaChanged" Width="40" />
+        </StackPanel>
+
+        <TextBox Grid.Column="1" Grid.Row="3" Name="txtDoDId" Width="75" Margin="3" 
+                 MaxLength="10" TextChanged="txtDoDId_TextChanged" HorizontalAlignment="Left" />
+
+        <local:ucTaxFormNumber x:Name="txtOrderNumber" Grid.Row="4" EntryChanged="CustomerSearchCriteriaChanged" AlwaysShow="False" Grid.Column="1" />
+
+        <!-- nugget: ToggleButton bound to BoolToParmStringConverter with Marlett font for up/down button images = easy "free" expander button -->
+        <ToggleButton Name="btnAdvancedOptions" Grid.Row="5" Grid.Column="1" Margin="0 4 0 0"
+                      VerticalAlignment="Center" HorizontalAlignment="Left" Grid.ColumnSpan="2" FontFamily="Marlett" FontSize="16"
+                      Style="{StaticResource ResourceKey=FlatToggleButton}"
+                      Content="{Binding Mode=OneWay, RelativeSource={RelativeSource Mode=Self}, Path=IsChecked, Converter={conv:BoolToParmStringConverter}, ConverterParameter='u|8'}" />
+
+        <ComboBox Grid.Row="6" Grid.Column="1" Name="cbxTransactionType" HorizontalAlignment="Left" VerticalAlignment="Center"
+                Visibility="{Binding ElementName=btnAdvancedOptions, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}"
+                ItemsSource="{Binding Mode=OneWay, Source={x:Static local:TaxFormModel.TransactionTypes}}"
+                DisplayMemberPath="TransactionType"
+                SelectionChanged="CustomerSearchCriteriaChanged" 
+                SelectedValuePath="TransactionTypeID"
+                />
+
+        <Grid Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="auto" />
+          </Grid.ColumnDefinitions>
+        </Grid>
+        
+      </Grid>
+
+      <Button Click="RegisterNewSponsor_Click" Grid.Column="1" Margin="20" Padding="10" FontSize="14" Content="Register New Sponsor" HorizontalAlignment="Right" VerticalAlignment="Top" />
+      <TextBox Name="lblCustomerSearchError" Grid.Row="1" Foreground="Red" TextWrapping="WrapWithOverflow" Margin="0,2,25,-2" Style="{StaticResource ReadOnlyTextBox}" Background="Transparent" BorderThickness="0" />
+      <TextBlock Grid.Column="1" Grid.Row="1" Margin="5 0" HorizontalAlignment="Right" 
+                 Text="{Binding Mode=OneWay, ElementName=gridCustomerSearch, Path=Items.Count, StringFormat='{}{0} item(s) found'}" />
+
+    </Grid>
+
+    <DataGrid AutoGenerateColumns="True" Name="gridCustomerSearch" Margin="5 0 5 5" IsReadOnly="True">
+      <DataGrid.Columns>
+
+        <DataGridTemplateColumn Header="Name" SortMemberPath="Name">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock>
+                <Hyperlink Command="{x:Static local:RoutedCommands.OpenSponsor}" CommandParameter="{Binding Mode=OneTime, Path=SponsorGUID}" > <!-- Hyperlink bound to a RoutedCommand vs event handler and global delegates, very slick -->
+                  <Run Text="{Binding Mode=OneTime, Path=Name}"/>
+                </Hyperlink>
+              </TextBlock>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+      </DataGrid.Columns>
+    </DataGrid>
+
+  </DockPanel>
+
+</local:ucBase>

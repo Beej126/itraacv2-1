@@ -1,0 +1,937 @@
+﻿<local:tabBase x:Class="iTRAACv2.tabSponsor"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:global="clr-namespace:;assembly="
+  xmlns:local="clr-namespace:iTRAACv2"
+  xmlns:conv="clr-namespace:WPFValueConverters"
+  xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+  xmlns:ic="clr-namespace:Microsoft.Expression.Interactivity.Core;assembly=Microsoft.Expression.Interactions"                       
+>
+
+  <!-- xmlns:diagnostics="clr-namespace:System.Diagnostics;assembly=WindowsBase" -->
+  <!-- diagnostics:PresentationTraceSources.TraceLevel="High" -->
+
+  <local:tabBase.Resources>
+
+    <LinearGradientBrush x:Key="TabBackground" StartPoint="0,0" EndPoint="0,1">
+      <GradientStop Color="#DCEDFF" Offset="0.0"/>
+      <GradientStop Color="#5BA0E5" Offset="1.0"/>
+    </LinearGradientBrush>
+
+  </local:tabBase.Resources>
+
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="auto"/>
+      <RowDefinition Height="auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0" Margin="0,0,0,10">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="auto"  />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="auto" />
+      </Grid.ColumnDefinitions>
+
+      <ToolBar Grid.Row="0">
+        <Button Name="btnSave" Click="btnSave_Click" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
+          <StackPanel>
+            <Image Source="/Assets/Glyphs/save.png" Style="{StaticResource CanDisableNestedImage}" />
+            <Label Content="Save" />
+          </StackPanel>
+        </Button>
+        <Button Name="btnSaveClose" Click="btnSaveClose_Click" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
+          <StackPanel>
+            <Image Source="/Assets/Glyphs/save_close.png" Style="{StaticResource CanDisableNestedImage}" />
+            <Label Content="Save &amp; Close" />
+          </StackPanel>
+        </Button>
+      </ToolBar>
+
+      <ToolBar Grid.Column="2">
+        <local:ucToggleButton x:Name="btnCart" ToolTip="Shopping Cart" Text="Cart" Width="50" 
+                                ToggleButtonStyle="{StaticResource FlatToggleButton}"
+                                IsCheckedChanged="btnCart_IsCheckedChanged"/>
+      </ToolBar>
+    </Grid>
+
+    <Grid Grid.Row="1" >
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition />
+        <ColumnDefinition Width="auto" />
+        <!-- splitter -->
+        <ColumnDefinition Width="0*" Name="ShoppingCartColumn" />
+      </Grid.ColumnDefinitions>
+
+      <Grid >
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition />
+          <ColumnDefinition Width="auto" />
+          <!-- splitter -->
+          <ColumnDefinition Width="0*"  Name="MatchesColumn" />
+        </Grid.ColumnDefinitions>
+
+        <DockPanel Name="SponsorInfoPanel">
+          <GroupBox DockPanel.Dock="Top" HorizontalAlignment="Left" Style="{x:Null}" >
+            <GroupBox.Header>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Members" VerticalAlignment="Center" FontSize="16" />
+                <Line VerticalAlignment="Center" Stroke="#D5DFE5" StrokeThickness="1" X1="0" X2="80" Y1="2" Y2="2" Margin="2,0,3,0" />
+                <Button Content="Add Member (Marriage)" Padding="3 2" Click="AddMember_Click" Style="{StaticResource PrettyFlatButton}"  />
+                <CheckBox Name="chkShowDeactiveMembers" VerticalAlignment="Center" Margin="15,0,0,0" 
+                          IsChecked="{Binding Mode=TwoWay, Path=ShowDeactiveMembers}">
+                  <CheckBox.Content>
+                    <TextBlock Text="Show deactive members">
+                      <TextBlock.Style>
+                        <Style BasedOn="{StaticResource {x:Type TextBlock}}" TargetType="TextBlock">
+                          <Style.Triggers>
+                            <DataTrigger Value="True">
+                              <DataTrigger.Binding>
+                                <MultiBinding Converter="{conv:AND}">
+                                  <!-- hightlight the show deactive members checkbox if there are some deactive members -->
+                                  <Binding Mode="OneWay" Path="HouseMembers" Converter="{conv:True}" />
+                                  <Binding Mode="OneWay" Path="HasDeactiveMembers"  />
+                                </MultiBinding>
+                              </DataTrigger.Binding>
+                              <Setter Property="Background" Value="Yellow" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                  </CheckBox.Content>
+                </CheckBox>
+              </StackPanel>
+            </GroupBox.Header>
+
+            <!-- necessity & background of the "Psuedo DataGrid" concept below is documented here: http://stackoverflow.com/questions/1176623/wpf-how-to-stop-an-itemscontrol-psuedo-grids-columns-from-dancing-jumping-arou/6464848#6464848 -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+
+              <StackPanel >
+                <StackPanel.Resources>
+                  <Style x:Key="HeaderLabel" TargetType="Label">
+                    <Setter Property="Background" Value="{StaticResource GreyGradient}" />
+                    <!--Setter Property="FontWeight" Value="Bold" /-->
+                    <Setter Property="BorderBrush" Value="DarkGray" />
+                    <Setter Property="BorderThickness" Value="1" />
+                  </Style>
+
+                  <GridViewColumnCollection x:Key="columns">
+
+                    <GridViewColumn>
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <DockPanel MinWidth="130">
+                            <Button Content="Set Sponsor" ToolTip="Set As Sponsor"
+                              Click="SetSponsor_Click"
+                              Tag="{Binding Mode=OneWay, Path=RowGUID}" 
+                              Style="{StaticResource DimFlatButton}"
+                              DockPanel.Dock="Left" Margin="0,0,3,0">
+                              <Button.Visibility>
+                                <MultiBinding Mode="OneWay" Converter="{local:ShowSetSponsor}">
+                                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                                  <Binding Mode="OneWay" />
+                                  <Binding Mode="OneWay" Path="IsSponsor" />
+                                </MultiBinding>
+                              </Button.Visibility>
+                            </Button>
+
+                            <Button Content="Set Spouse" ToolTip="Set as Spouse" HorizontalAlignment="Right" 
+                              Click="SetSpouse_Click" Tag="{Binding Mode=OneWay, Path=RowGUID}" 
+                              Visibility="{Binding Mode=OneWay, Path=IsSponsorOrSpouse, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                              DockPanel.Dock="Right" Style="{StaticResource DimFlatButton}" />
+
+                            <Button Content="Clear Spouse" ToolTip="Clear Spouse" HorizontalAlignment="Right" 
+                                    Click="SetSpouse_Click" 
+                                    DockPanel.Dock="Left" Style="{StaticResource DimFlatButton}">
+                              <Button.Visibility>
+                                <MultiBinding Mode="OneWay" Converter="{conv:ANDVis}">
+                                  <Binding Mode="OneWay" Path="IsSpouse" />
+                                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                                </MultiBinding>
+                              </Button.Visibility>
+                            </Button>
+
+                            <Button Content="Divorce" Padding="3 2" Margin="10,0,0,0" 
+                                    Click="Divorce_Click"
+                                    DockPanel.Dock="Left" Style="{StaticResource DimFlatButton}" >
+                              <Button.Visibility>
+                                <MultiBinding Mode="OneWay" Converter="{conv:ANDVis}">
+                                  <Binding Mode="OneWay" Path="IsSpouse" />
+                                  <Binding Mode="OneWay" Path="Active" />
+                                </MultiBinding>
+                              </Button.Visibility>
+                            </Button>
+
+                            <Label DockPanel.Dock="Right" 
+                               Visibility="{Binding Mode=OneWay, Path=IsSponsor, Converter={conv:BooleanToVisibilityConverter}}">
+                              <Label.Content>
+                                <StackPanel Orientation="Horizontal">
+                                  <Control IsTabStop="False" Margin="0,0,3,0" Template="{StaticResource InfoIcon}" ToolTip="Changing Sponsor requires Admin access" />
+                                  <TextBlock Text="Sponsor" FontSize="11pt" FontWeight="Bold" />
+                                </StackPanel>
+                              </Label.Content>
+                            </Label>
+
+                            <Label DockPanel.Dock="Right" Content="Spouse" HorizontalAlignment="Right"
+                                  Visibility="{Binding Mode=OneWay, Path=IsSpouse, Converter={conv:BooleanToVisibilityConverter}}" />
+
+                          </DockPanel>
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="(De)Active" >
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <CheckBox IsTabStop="False" Style="{StaticResource RedXCheckBox}" VerticalAlignment="Center"
+                                    IsChecked="{Binding Mode=OneWay, Path=Active}"
+                                    Click="ClientActive_Click"
+                                    Tag="{Binding Mode=OneWay}"/>
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="SSN">
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <TextBox Name="txtSSN1"
+                                     Width="35" MaxLength="3" PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     Text="{Binding Mode=TwoWay, Path=SSN1, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="-" VerticalAlignment="Center" />
+                            <TextBox Width="30" MaxLength="2" PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     Text="{Binding Mode=TwoWay, Path=SSN2, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="-" VerticalAlignment="Center" />
+                            <TextBox Width="40" MaxLength="4" PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     Text="{Binding Mode=TwoWay, Path=SSN3, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="DoDId" >
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=TwoWay, Path=DoDId, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="First Name">
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=TwoWay, Path=FName, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="MI">
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=TwoWay, Path=MI, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="LName">
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=TwoWay, Path=LName, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn>
+                      <GridViewColumn.Header>
+                        <StackPanel Orientation="Horizontal">
+                          <TextBlock Text="Suffix" />
+                          <Control IsTabStop="False" Margin="3,0,0,0" Template="{StaticResource InfoIcon}" ToolTip="e.g. Jr., II, III, etc." />
+                        </StackPanel>
+                      </GridViewColumn.Header>
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=TwoWay, Path=Suffix, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="Email">
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=TwoWay, Path=Email, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                                 MinWidth="75" />
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn>
+                      <GridViewColumn.Header>
+                        <StackPanel Orientation="Horizontal">
+                          <TextBlock Text="CCode" />
+                          <Button IsTabStop="False" Content="*" ToolTip="Set All CCode's The Same" Click="CCodeSame_Click"
+                                  Padding="-1" Margin="3,0,0,0" Height="14" VerticalAlignment="Center"
+                                  Style="{StaticResource PrettyFlatButton}" />
+                        </StackPanel>
+                      </GridViewColumn.Header>
+                      <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBox Text="{Binding Mode=OneWay, Path=CCode, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                               IsReadOnly="True" />
+                        </DataTemplate>
+                      </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                  </GridViewColumnCollection>
+                </StackPanel.Resources>
+
+                <GridViewHeaderRowPresenter Columns="{StaticResource columns}" />
+                <ItemsControl IsTabStop="False" Name="gridMembers" ItemsSource="{Binding Mode=OneWay, Path=HouseMembers}" >
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel>
+                        <GridViewRowPresenter Content="{Binding}" Columns="{StaticResource columns}" />
+                        <Separator BorderThickness="0.5" BorderBrush="LightGray" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+              </StackPanel>
+            </ScrollViewer>
+
+          </GroupBox>
+
+          <GroupBox Header="Household Info" HorizontalAlignment="Left" DataContext="{Binding Mode=OneTime, Path=Fields}" Padding="0,0,2,0">
+            <WrapPanel>
+              <WrapPanel.Resources>
+                <Style TargetType="WrapPanel">
+                  <Setter Property="HorizontalAlignment" Value="Left" />
+                </Style>
+
+                <Style x:Key="StackField" TargetType="StackPanel">
+                  <Setter Property="Margin" Value="5,0,0,5" />
+                </Style>
+
+                <Style TargetType="TextBlock">
+                  <Setter Property="VerticalAlignment" Value="Center" />
+                  <Setter Property="Margin" Value="0,0,3,0" />
+                </Style>
+
+                <Style TargetType="GroupBox" BasedOn="{StaticResource {x:Type GroupBox}}">
+                  <Setter Property="Padding" Value="2" />
+                  <Setter Property="HorizontalAlignment" Value="Left" />
+                </Style>
+
+              </WrapPanel.Resources>
+
+              <WrapPanel Orientation="Horizontal" Margin="0,3,3,3" MaxWidth="425">
+
+                <StackPanel Style="{StaticResource StackField}" >
+                  <TextBlock Text="Duty Phone:" />
+                  <StackPanel Orientation="Horizontal" Name="pnlDutyPhone">
+                    <TextBlock Text="DSN:" />
+                    <TextBox Width="32" PreviewTextInput="NumericOnly_PreviewTextInput" Name="txtDSN1" 
+                             Text="{Binding Mode=TwoWay, Path=DutyPhoneDSN1, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[DutyPhoneDSN1].MaxLength}" />
+                    <TextBlock Text="-" />
+                    <TextBox Width="40" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=DutyPhoneDSN2, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[DutyPhoneDSN2].MaxLength}" />
+                  </StackPanel>
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource StackField}" Margin="10,0,0,0" >
+                  <TextBlock Text="Duty Location:" />
+                  <TextBox Width="150" Text="{Binding Mode=TwoWay, Path=DutyLocation, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                           MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[DutyLocation].MaxLength}" />
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource StackField}">
+                  <TextBlock Text="Rank:" />
+                  <!-- nugget: List/ComboBox DisplayMemberPath & SelectedValuePath are simple field names on the ItemsSource...  SelectedValue is where to load/save the selected value and is typically a Binding to another datastucture -->
+                  <ComboBox ItemsSource="{Binding Source={x:Static local:SponsorModel.Ranks}}"
+                          DisplayMemberPath="Rank" 
+                          SelectedValuePath="Rank" SelectedValue="{Binding Mode=TwoWay, Path=Rank, ValidatesOnDataErrors=True}" />
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource StackField}">
+                  <TextBlock Text="DEROS / TDY end:" />
+                  <DatePicker Width="115" SelectedDate="{Binding Mode=TwoWay, Path=DEROS, ValidatesOnDataErrors=True}" />
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource StackField}" >
+                  <TextBlock Text="Primary Personal Phone:" />
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="(+" />
+                    <TextBox Width="32" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=HomePhoneCountry, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomePhoneCountry].MaxLength}" />
+                    <TextBlock Text=")" />
+                    <TextBox Width="95" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=HomePhone, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomePhone].MaxLength}" />
+                  </StackPanel>
+                </StackPanel>
+
+              </WrapPanel>
+
+              <GroupBox Header="Official Mail Address" Style="{StaticResource SmallGroup}" Margin="0,0,0,3" >
+
+                <WrapPanel Orientation="Vertical" Name="pnlOfficialMail">
+
+                  <global:ucTextBoxWatermarked Watermark="Line1: Not required, AG info, etc." Width="185"
+                                             Text="{Binding Mode=TwoWay, Path=AddressLine1, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[AddressLine1].MaxLength}" />
+                  <TextBox Style="{StaticResource ReadOnlyTextBox}" Text="{Binding Mode=OneWay, Path=AddressLine2}" 
+                           Visibility="{Binding Converter={conv:NotEmptyToVisible}, Path=AddressLine2}" />
+                  <WrapPanel Orientation="Horizontal" Margin="0,3,0,0" >
+                    <TextBlock Text="CMR"  Margin="5,0,3,0"/>
+                    <TextBox Width="40" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=OfficialMailCMR, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailCMR].MaxLength}" />
+                    <TextBlock Text="BOX" Margin="3,0,3,0" />
+                    <TextBox Width="45" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=OfficialMailBox, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailBox].MaxLength}"/>
+                  </WrapPanel>
+
+                  <WrapPanel Orientation="Horizontal" Margin="0,3,0,0" >
+                    <!-- nugget: binding to DataColumn.MaxLength -->
+                    <TextBox Width="110" Text="{Binding Mode=TwoWay, Path=OfficialMailCity, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailCity].MaxLength}" />
+                    <TextBox Width="30" Text="{Binding Mode=TwoWay, Path=OfficialMailState, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailState].MaxLength}" />
+                    <TextBox Width="45" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=OfficialMailZip, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailZip].MaxLength}" />
+                  </WrapPanel>
+
+                </WrapPanel>
+              </GroupBox>
+
+            </WrapPanel>
+          </GroupBox>
+
+        </DockPanel>
+
+        <GridSplitter Grid.Column="1" Background="Transparent" Width="5" 
+                    HorizontalAlignment="Center" VerticalAlignment="Stretch" 
+                    Visibility="{Binding Mode=OneWay, Path=PotentialClientMatches, Converter={conv:NotEmptyToVisible}}" />
+
+        <GroupBox Grid.Column="2" Name="groupMatches" Style="{x:Null}"
+                  MaxHeight="{Binding Mode=OneWay, ElementName=SponsorInfoPanel, Path=ActualHeight}" >
+          <GroupBox.Header>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Existing Customers" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="16" />
+              <Control IsTabStop="False" Margin="3,0,0,0" Template="{StaticResource InfoIcon}">
+                <Control.ToolTip>
+                  <TextBlock>
+                    Use this list to identify if "new" Housemembers already exist in the system.
+                    <LineBreak />
+                    Select "+" button below to *move* someone from another household into this household.
+                  </TextBlock>
+                </Control.ToolTip>
+              </Control>
+            </StackPanel>
+          </GroupBox.Header>
+
+          <DataGrid Name="gridMatches" AutoGenerateColumns="True" IsReadOnly="True">
+
+            <!-- nugget: DataGrid Grouping, taken from here: http://www.c-sharpcorner.com/UploadFile/dpatra/548/-->
+            <!-- nugget: more WPF Binding Grouping: http://bea.stollnitz.com/blog/?p=17 -->
+            <DataGrid.GroupStyle>
+              <GroupStyle>
+
+                <GroupStyle.Panel>
+                  <ItemsPanelTemplate>
+                    <DataGridRowsPresenter />
+                  </ItemsPanelTemplate>
+                </GroupStyle.Panel>
+
+                <!-- make sure to also look at gridMatches.Items.GroupDescriptions.Add() logic in code behind to get the full picture of how this DataGrid grouping works -->
+                <GroupStyle.ContainerStyle>
+                  <Style TargetType="GroupItem">
+                    <Setter Property="Template">
+                      <Setter.Value>
+                        <ControlTemplate TargetType="GroupItem">
+                          <StackPanel>
+                            <!-- nugget: available group properties to bind to are on the "CollectionViewGroup" class: http://msdn.microsoft.com/en-us/library/system.windows.data.collectionviewgroup.aspx -->
+                            <TextBlock Text="{Binding Mode=OneWay, Path=Name}"  FontSize="14" Margin="5,5,0,2" />
+                            <ItemsPresenter />
+                          </StackPanel>
+                        </ControlTemplate>
+                      </Setter.Value>
+                    </Setter>
+                  </Style>
+                </GroupStyle.ContainerStyle>
+
+              </GroupStyle>
+            </DataGrid.GroupStyle>
+
+            <DataGrid.Columns>
+              <DataGridTemplateColumn>
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Content="+" ToolTip="Move Member"
+                            Click="MoveClient_Click" Tag="{Binding Mode=OneWay}"
+                            Padding="0,-4,0,0" Height="14" VerticalAlignment="Center"  />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+
+              <DataGridTemplateColumn Header="LName" SortMemberPath="LName">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock>
+                      <Hyperlink Command="{x:Static local:RoutedCommands.OpenSponsor}" CommandParameter="{Binding Mode=OneTime, Path=SponsorGUID}" > <!-- Hyperlink bound to a RoutedCommand vs event handler and global delegates, very slick -->
+                        <Run Text="{Binding Mode=OneTime, Path=LName}"/>
+                      </Hyperlink>
+                    </TextBlock>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+
+          </DataGrid>
+        </GroupBox>
+
+      </Grid>
+
+      <GridSplitter Grid.Column="1" Background="Transparent" Width="5"
+                    HorizontalAlignment="Center" VerticalAlignment="Stretch" 
+                    Visibility="{Binding Mode=OneWay, ElementName=btnCart, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}"  />
+      <!-- -->
+
+      <GroupBox Grid.Column="2" Style="{x:Null}"
+                Visibility="{Binding Mode=OneWay, ElementName=btnCart, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}">
+        <GroupBox.Header >
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Checkout Review" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="16" />
+            <Button Content="Execute All Pending" Padding="3 2" Margin="20,0,0,0" Style="{StaticResource PrettyFlatButton}"
+                    Visibility="{Binding Mode=OneWay, Path=Transactions.HasPending, Converter={conv:BooleanToVisibilityConverter}}">
+              <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Click">
+                  <ic:CallMethodAction MethodName="ExecuteAllPending" TargetObject="{Binding Mode=OneWay, Path=Transactions}" />
+                </i:EventTrigger>
+              </i:Interaction.Triggers>
+            </Button>
+          </StackPanel>
+        </GroupBox.Header>
+
+        <global:ConstrainingStackPanel>
+          <DataGrid GridLinesVisibility="None" HeadersVisibility="Column" FontFamily="Courier New" AutoGenerateColumns="False"
+                    global:ConstrainingStackPanel.Constrain="True" Name="TransactionsDataGrid"
+                    Background="#ededed" BorderBrush="Transparent" ItemsSource="{Binding Mode=OneWay, Path=Transactions}" >
+            <DataGrid.Columns>
+              <!-- the MaxWidth is a compromise from VS2010 design mode's totally annoying insistance on not constraining the * width column -->
+              <DataGridTemplateColumn Header="Pending" Width="auto">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <!-- Image Source="/Assets/Glyphs/pin_red_x24.png" Height="12" Visibility="{Binding Mode=OneWay, Path=IsPending, Converter={conv:BooleanToVisibilityConverter}}" /-->
+                    <Button Content="{Binding Mode=OneWay, Path=PendingAction}" 
+                            Visibility="{Binding Mode=OneWay, Path=IsPending, Converter={conv:BooleanToVisibilityConverter}}"
+                            Style="{StaticResource PrettyFlatButton}"
+                            FontFamily="{Binding Mode=OneTime, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=FontFamily}">
+                      <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Click">
+                          <ic:CallMethodAction MethodName="Execute" TargetObject="{Binding Mode=OneWay}" />
+                        </i:EventTrigger>
+                      </i:Interaction.Triggers>
+                    </Button>
+                    
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="Description" Binding="{Binding Mode=OneWay, Path=Description}" Width="*" MaxWidth="900" />
+              <!--DataGridTextColumn Header="Qty" Binding="{Binding Mode=OneWay, Path=Qty}" Width="auto">
+                <DataGridTextColumn.ElementStyle>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="TextAlignment" Value="Right" />
+                  </Style>
+                </DataGridTextColumn.ElementStyle>
+              </DataGridTextColumn-->
+              <DataGridTextColumn Header="Price" Binding="{Binding Mode=OneWay, Path=Price, StringFormat={}{0:c}}" Width="auto"
+                                  ElementStyle="{StaticResource RightAlignTextBlockStyle}"  />
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBlock FontFamily="Courier New" Text="==========================" HorizontalAlignment="Right" FontSize="16" />
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0 0 7 0" HorizontalAlignment="Right">
+            <TextBlock FontFamily="Courier New" Text="Pending " FontSize="16" FontStyle="Italic"
+                       Visibility="{Binding Mode=OneWay, Path=Transactions.HasPending, Converter={conv:BooleanToVisibilityConverter}}"/>
+            <TextBlock FontFamily="Courier New" Text="Total: " FontSize="16"/>
+            <TextBlock FontFamily="Courier New" Text="{Binding Mode=OneWay, Path=Transactions.TotalPrice, StringFormat={}{0:c}}" FontWeight="Bold" FontSize="16"/>
+          </StackPanel>
+        </global:ConstrainingStackPanel>
+      </GroupBox>
+
+
+    </Grid>
+
+    <Grid Grid.Row="2" >
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="2*" />
+        <ColumnDefinition Width="auto" />
+        <ColumnDefinition Width="1*" Name="DiaryColumn" />
+      </Grid.ColumnDefinitions>
+
+      <TabControl Grid.Column="0" Name="tabsSubsystems" >
+        <TabItem>
+          <TabItem.Header>
+            <TextBlock Text="Tax Forms" FontSize="16"/>
+          </TabItem.Header>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition />
+              <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <!-- nugget: Grid generally has the best default "content stretching" behavior and WrapPanels generally preferred over StackPanel because StackPanel doesn't "constrain" content resulting in overflow clipping -->
+            <Grid.RowDefinitions>
+              <RowDefinition Height="auto" />
+              <!-- nugget: Grid Row/ColumnDefinitions -> Width/Height="auto" means snap to minimal size of content, otherwise blank means stretch contents to boundary (handy!) -->
+              <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <WrapPanel Orientation="Horizontal" >
+              <WrapPanel.Resources>
+                <Style TargetType="RadioButton">
+                  <Setter Property="VerticalAlignment" Value="Center" />
+                  <Setter Property="Margin" Value="5 0" />
+                </Style>
+              </WrapPanel.Resources>
+
+              <Button Click="btnNewNF1Package_Click" Name="btnNewNF1Package">
+                <Button.IsEnabled>
+                  <MultiBinding Converter="{conv:AND}">
+                    <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
+                    <Binding Mode="OneWay" Path="Class1TaxForms_CountRemainingToBuy"
+                             Converter="{conv:BoolExpressionToBool}" ConverterParameter="? > 0" />
+                  </MultiBinding>
+                </Button.IsEnabled>
+                <Button.ToolTip>
+                  <MultiBinding Converter="{local:Class1SellButtonToolTipConverter}">
+                    <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
+                    <Binding Mode="OneWay" Path="Class1TaxForms_CountRemainingToBuy" />
+                  </MultiBinding>
+                </Button.ToolTip>
+
+                <StackPanel Orientation="Horizontal">
+                  <Image Source="/Assets/Glyphs/documents_new.png" />
+                  <Label Content="New NF1" />
+                </StackPanel>
+              </Button>
+
+              <Button Name="btnNewNF2" Content="NF2" Click="btnNewNF2_Click" Margin="0 0 15 0" 
+                      Height="{Binding ElementName=btnNewNF1Package, Path=ActualHeight}" >
+                <Button.IsEnabled>
+                  <MultiBinding Converter="{conv:AND}">
+                    <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
+                    <Binding Mode="OneWay" Path="HasUnreturnedClass2"
+                             Converter="{conv:InverseBooleanConverter}" />
+                  </MultiBinding>
+                </Button.IsEnabled>
+                <Button.ToolTip>
+                  <MultiBinding Converter="{local:Class2SellButtonToolTipConverter}">
+                    <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
+                    <Binding Mode="OneWay" Path="HasUnreturnedClass2" />
+                  </MultiBinding>
+                </Button.ToolTip>
+              </Button>
+
+              <Popup Name="popPrintNF1s" AllowsTransparency="True"
+                     PlacementTarget="{Binding ElementName=btnNewNF1Package}" Placement="Bottom" VerticalOffset="5" >
+                <Border BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}" Padding="15" CornerRadius="10">
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center" >
+                    <Image Source="/Assets/Glyphs/48px-Commons-emblem-question.svg.png" Margin="0 0 15 0" Name="imgNewFormsCount" />
+                    <StackPanel Orientation="Vertical">
+
+                      <StackPanel Orientation="Horizontal" Visibility="Collapsed" >
+                        <TextBlock Text="Form Type:  " />
+                        <RadioButton GroupName="FormType" Name="rdoNF1" Content="NF1" IsChecked="True" />
+                        <RadioButton GroupName="FormType" Name="rdoEF1" Content="EF1" Margin="10 0 0 0" />
+                      </StackPanel>
+
+                      <StackPanel Orientation="Horizontal" Margin="0 5 0 0"
+                                  Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" >
+                        <TextBlock Text="Number of New Forms: " VerticalAlignment="Center" />
+                        <ComboBox Name="cbxNewFormsCount" />
+                      </StackPanel>
+
+                      <StackPanel Margin="0 5 0 0" Orientation="Vertical" Name="PanelDependentsPicklist"
+                                  Visibility="{Binding Mode=OneWay, Path=DependentsSelectionList, Converter={local:ShowDependentsSelectionList}}">
+                        <TextBlock Margin="0 5 0 0" HorizontalAlignment="Left">
+                          Authorized Dependent (Printed on Forms):<LineBreak />(CTRL + Left Mouse Button to UN-select)
+                        </TextBlock>
+                        <ListBox Name="lbxPrintDependents" Style="{StaticResource RadioButtonList}"
+                                 HorizontalAlignment="Left" Padding="2 2 3 2" Margin="0 2" BorderThickness="0"
+                                 ItemsSource="{Binding Mode=OneWay, Path=DependentsSelectionList}"
+                                 DisplayMemberPath="FirstName" SelectedValuePath="RowGUID"
+                                 Loaded="lbxPrintDependents_Loaded"
+                                 SelectionMode="Single" />
+                      </StackPanel>
+
+                      <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <Button Name="btnReadyToPrint_Yes" Content="_Print Immediately" FontSize="14" IsDefault="True" Click="btnReadyToPrint_Click" Padding="5 3"
+                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" />
+                        <Button Content="  _OK  " FontSize="14" IsDefault="True" Margin="5" Click="btnNewNF2_OK_Click" Padding="5 3" 
+                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}}" />
+                        <Button Content="_Cancel" FontSize="14" IsCancel="True" Margin="5" Click="btnReadyToPrint_No_Click" Padding="5 3" />
+                        <Button Name="btnReadyToPrint_Cart" Content="_Add to Cart" FontSize="14" Click="btnReadyToPrint_Click" Padding="5 3" 
+                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" />
+                      </StackPanel>
+
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </Popup>
+
+              <Popup Name="popNewNF2" AllowsTransparency="True"
+                     PlacementTarget="{Binding ElementName=btnNewNF1Package}" Placement="Bottom" VerticalOffset="5" >
+                <Border BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}" Padding="15" CornerRadius="10">
+                </Border>
+              </Popup>
+
+              <StackPanel VerticalAlignment="Center">
+                <RadioButton Grid.Column="0" Grid.Row="0" GroupName="rdogrpTaxFormsListFilter" Content="Show All" />
+                <RadioButton Grid.Column="1" Grid.Row="0" Name="rdoShowUnPrintedTaxFormsOnly" GroupName="rdogrpTaxFormsListFilter" Content="Not Printed" IsChecked="{Binding Mode=TwoWay, Path=TaxForms_UnPrintedOnlyFilter}"   />
+              </StackPanel>
+              <Border Style="{StaticResource FatLabel}" Name="UnreturnedLabel"
+                      MouseLeftButtonUp="EndBackgroundAnimation" >
+                <RadioButton Name="rdoHideReturnedTaxForms" GroupName="rdogrpTaxFormsListFilter"
+                             IsChecked="{Binding Mode=TwoWay, Path=TaxForms_UnReturnedOnlyFilter}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Unreturned:" Margin="0 0 3 0" />
+                    <TextBlock Text="{Binding Mode=OneWay, Path=Class1TaxForms_CountUnreturned}" FontWeight="Bold" />
+                  </StackPanel>
+                </RadioButton>
+              </Border>
+              <Border Style="{StaticResource FatLabel}" Name="ReturnedNotFiledLabel"
+                      MouseLeftButtonUp="EndBackgroundAnimation">
+                <RadioButton Name="rdoShowReturnedNotFiledTaxFormsOnly" GroupName="rdogrpTaxFormsListFilter"
+                             IsChecked="{Binding Mode=TwoWay, Path=TaxForms_ReturnedNotFiledOnlyFilter}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Returned Not Filed:" Margin="0 0 3 0" />
+                    <TextBlock Text="{Binding Mode=OneWay, Path=TaxForms_CountReturnedNotFiled}" FontWeight="Bold"/>
+                  </StackPanel>
+                </RadioButton>
+              </Border>
+
+            </WrapPanel>
+
+            <TextBlock Grid.Column="1" Margin="5 2" Text="{Binding Mode=OneWay, ElementName=gridForms, Path=Items.Count, StringFormat='{}{0} form(s)'}" VerticalAlignment="Bottom"  />
+
+            <DataGrid Grid.Row="1" Name="gridForms" IsReadOnly="True" Grid.ColumnSpan="2"
+                        ItemsSource="{Binding Mode=OneWay, Path=TaxForms}" AutoGenerateColumns="true" >
+
+              <DataGrid.Resources>
+                <!-- nugget: colorizing individual cell elements based on underlying data field values -->
+                <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource PrettyDataGridCellStyle}">
+                  <Style.Triggers>
+                    <DataTrigger Value="True">
+                      <DataTrigger.Binding>
+                        <!-- hightlight row if Form is Incomplete and currently sitting in the Office to prompt clerk to hand back to Customer for resolution -->
+                        <MultiBinding Mode="OneWay" Converter="{conv:AND}" >
+                          <Binding Mode="OneWay" Path="Location" Converter="{conv:BoolExpressionToBool}" ConverterParameter="'?' != 'LOST' &amp;&amp; '?' != 'CUST'" />
+                          <Binding Mode="OneWay" Path="IsIncompleteId" />
+                        </MultiBinding>
+                      </DataTrigger.Binding>
+                      <Setter Property="Background" Value="LightPink" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </DataGrid.Resources>
+
+            </DataGrid>
+          </Grid>
+        </TabItem>
+
+        <TabItem Name="tabUTAP">
+          <TabItem.Header>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="UTAP" FontSize="16" />
+              <CheckBox VerticalAlignment="Center" Margin="5,0,0,0" Content="Enrolled" IsThreeState="False"
+                        Checked="IsUTAPActive_Checked"
+                        IsChecked="{Binding Mode=TwoWay, Path=Fields[IsUTAPActive], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+          </TabItem.Header>
+
+          <StackPanel>
+          <GroupBox Header="Host Nation Household Address" Style="{StaticResource SmallGroup}"  Margin="0,0,0,3" HorizontalAlignment="Left"
+                    DataContext="{Binding Mode=OneTime, Path=Fields}" >
+            <WrapPanel Orientation="Vertical" Margin="1,3,1,0" HorizontalAlignment="Left">
+              <WrapPanel.Resources>
+                <Style TargetType="TextBlock">
+                  <Setter Property="VerticalAlignment" Value="Center" />
+                  <Setter Property="Margin" Value="0,0,3,0" />
+                </Style>
+              </WrapPanel.Resources>
+              <TextBlock Text="(for determining utility vendor proximity, etc.)" />
+              <WrapPanel Orientation="Horizontal" Margin="0,3,0,0" >
+                <TextBlock Text="Street:" />
+                <TextBox Width="110" Text="{Binding Mode=TwoWay, Path=HomeStreet, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomeStreet].MaxLength}" />
+                <TextBlock Text="Number:" Width="50" TextAlignment="Right" />
+                <TextBox Width="47" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=HomeStreetNumber, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomeStreetNumber].MaxLength}" />
+              </WrapPanel>
+
+              <WrapPanel Orientation="Horizontal" Margin="0,3,0,0" >
+                <TextBlock Text="City:" Width="34" />
+                <TextBox Width="110" Text="{Binding Mode=TwoWay, Path=HomeCity, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomeCity].MaxLength}" />
+                <TextBlock Text="Postal:" Width="50" TextAlignment="Right" />
+                <TextBox Width="47" PreviewTextInput="NumericOnly_PreviewTextInput"
+                             Text="{Binding Mode=TwoWay, Path=HomePostal, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomePostal].MaxLength}" />
+              </WrapPanel>
+
+            </WrapPanel>
+          </GroupBox>
+
+          <local:ucDetailsView Padding="0 20 0 0" ItemsSource="{Binding Mode=OneWay, Path=UTAPFields}" Orientation="Vertical" LabelOrientation="Horizontal"/>
+          </StackPanel>
+        </TabItem>
+
+      </TabControl>
+
+      <GridSplitter Grid.Column="1" Width="5" Height="auto" ResizeBehavior="PreviousAndNext" Background="Transparent" />
+
+      <DockPanel Grid.Column="2" Name="pnlDiary" >
+        <GroupBox Header="Alerts" DockPanel.Dock="Top" >
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition />
+              <RowDefinition />
+            </Grid.RowDefinitions>
+            <WrapPanel>
+              <DockPanel Name="dockSuspension" HorizontalAlignment="Left" Margin="0,0,5,5">
+                <DockPanel.IsEnabled>
+                  <MultiBinding Converter="{conv:OR}">
+                    <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                    <Binding Mode="OneWay" Path="Fields[SuspensionExpiry]" Converter="{conv:EmptyToTrue}" />
+                    <Binding Mode="OneWay" Path="Fields[SuspensionTaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
+                    <!-- introducing a dynamic variable into ValueConverter -->
+                  </MultiBinding>
+                </DockPanel.IsEnabled>
+                <ToggleButton DockPanel.Dock="Left" Name="btnSuspend" Margin="0" Padding="4 3 4 4" VerticalAlignment="Top" Content="Suspend"
+                              Checked="btnSuspend_Checked"
+                              IsChecked="{Binding Mode=OneWay, Path=Fields[SuspensionExpiry], Converter={conv:NotEmptyToTrue}}"
+                              Style="{StaticResource DistractingToggleButton}">
+                  <ToggleButton.ToolTip>
+                    <ToolTip Content="As a precaution, Suspension can only be removed by Suspending office."
+                             Visibility="{Binding Mode=OneWay, ElementName=dockSuspension, Path=IsEnabled, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                  </ToggleButton.ToolTip>
+                </ToggleButton>
+                <local:ReasonPopup x:Name="SuspensionReasonPopup" Result="SuspensionReasonPopup_Result" PlacementTarget="{Binding ElementName=dockSuspension}" />
+                <WrapPanel Orientation="Vertical" Margin="5 0 0 0"
+                           Visibility="{Binding Mode=OneWay, ElementName=btnSuspend, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}">
+                  <WrapPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="Until: " />
+                    <DatePicker VerticalAlignment="Bottom" SelectedDate="{Binding Mode=TwoWay, Path=Fields[SuspensionExpiry]}" />
+                    <Button Content="1mo" Tag="OneMonth" Click="btnSuspendDuration_Click" />
+                    <Button Content="1yr" Tag="OneYear" Click="btnSuspendDuration_Click" />
+                    <Button Content="*" Tag="Forever" Click="btnSuspendDuration_Click" ToolTip="Forever" />
+                  </WrapPanel>
+                  <TextBlock VerticalAlignment="Center">
+                    <TextBlock.Text>
+                      <Binding StringFormat=" by: {0}" Path="Fields[SuspensionTaxOffice]" />
+                    </TextBlock.Text>
+                  </TextBlock>
+                </WrapPanel>
+              </DockPanel>
+
+              <ToggleButton Content="PCS" Padding="4,3,4,4" VerticalAlignment="Top"
+                            IsChecked="{Binding Mode=TwoWay, Path=IsPCS}"
+                            Style="{StaticResource DistractingToggleButton}" />
+
+            </WrapPanel>
+            <TextBlock Name="lblViolationInfo" Grid.Row="1" 
+                       Visibility="{Binding Mode=OneWay, ElementName=lblViolationInfo, Path=Text, Converter={conv:NotEmptyToVisible}}">
+              <TextBlock.Text>
+                <MultiBinding Mode="OneWay" StringFormat="Total Violations: {0}, Last 3 Yrs: {1}, Unresolved: {2}">
+                  <Binding Mode="OneWay" Path="Fields[ViolationCountTotal]" /> 
+                  <Binding Mode="OneWay" Path="Fields[ViolationCountInLast3Years]" />
+                  <Binding Mode="OneWay" Path="Fields[ViolationCountUnresolved]" />
+                </MultiBinding>
+              </TextBlock.Text>
+            </TextBlock>
+          </Grid>
+        </GroupBox>
+
+        <GroupBox Style="{x:Null}">
+          <GroupBox.Header>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Diary" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="16" />
+              <Button Content="Add Entry" Padding="3 2" Margin="3" Name="btnDiaryAdd">
+                <i:Interaction.Triggers>
+                  <i:EventTrigger EventName="Click">
+                    <ic:CallMethodAction MethodName="Show" TargetObject="{Binding ElementName=DiaryAddPopup}" />
+                  </i:EventTrigger>
+                </i:Interaction.Triggers>
+
+              </Button>
+              <local:ReasonPopup x:Name="DiaryAddPopup" Result="DiaryAddPopup_Result"
+                                 Title="New Remark" ShowAlert="True" />
+              <CheckBox Content="Show Deleted" VerticalAlignment="Center" Margin="10,0,0,0"
+                        IsChecked="{Binding Mode=TwoWay, Path=ShowDeletedRemarks}"/>
+            </StackPanel>
+          </GroupBox.Header>
+          <DockPanel>
+
+            <local:ReasonPopup x:Name="RemoveRemarkReasonPopup" Result="RemoveRemarkReasonPopup_Result" 
+                                           Title="Why delete remark?" />
+
+            <local:ReasonPopup x:Name="DisableRemarkAlertReasonPopup" Result="DisableRemarkAlertReasonPopup_Result" 
+                                           Title="Why disable alert?" />
+
+            <DataGrid Name="gridRemarks" Grid.Row="1" AutoGenerateColumns="True" ItemsSource="{Binding Mode=OneWay, Path=SponsorRemarks}" 
+                      BeginningEdit="gridRemarks_BeginningEdit"
+                      SelectionChanged="gridRemarks_SelectionChanged"
+                      CanUserAddRows="False" CanUserDeleteRows="False">
+              <DataGrid.Columns>
+                <DataGridTemplateColumn ToolTipService.ToolTip="Delete" >
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <Grid>
+                        <Button FontFamily="Marlett" Content="r" Click="btnRemoveRemark_Click" 
+                                IsEnabled="{Binding Mode=OneWay, Path=CategoryId, Converter={conv:EmptyToTrue}}"
+                                Style="{StaticResource DimButton}"
+                                Padding="0" Opacity="0"
+                                ToolTip="{Binding Mode=OneWay, Path=CategoryId, Converter={conv:EmptyToParmStringConverter},
+                                  ConverterParameter='Delete|System generated alert, must be cleared by corresponding special alert button.'}" />
+                      </Grid>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn SortMemberPath="Alert" ToolTipService.ToolTip="Alert">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <CheckBox Style="{StaticResource ExclamationCheckBox}" Padding="0"
+                                Height="16" HorizontalAlignment="Center"
+                                IsChecked="{Binding Mode=TwoWay, Path=Alert, UpdateSourceTrigger=PropertyChanged}" 
+                                IsEnabled="{Binding Mode=OneWay, Path=CategoryId, Converter={conv:EmptyToTrue}}">
+                        <CheckBox.ToolTip>
+                          <ToolTip Content="System generated alerts should be cleared by their corresponding special Alert buttons."
+                            Visibility="{Binding Mode=OneWay, Path=CategoryId, Converter={conv:NotEmptyToVisible}}" />
+                        </CheckBox.ToolTip>
+                      </CheckBox>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+              </DataGrid.Columns>
+            </DataGrid>
+
+
+          </DockPanel>
+        </GroupBox>
+      </DockPanel>
+    </Grid>
+
+  </Grid>
+
+</local:tabBase>

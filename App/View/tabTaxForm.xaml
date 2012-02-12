@@ -1,0 +1,464 @@
+﻿<local:tabBase x:Class="iTRAACv2.tabTaxForm"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:global="clr-namespace:;assembly="
+  xmlns:local="clr-namespace:iTRAACv2" 
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:conv="clr-namespace:WPFValueConverters"
+>
+
+  <!-- nugget: when debugging complex databindings, the diagnostics namespace definition below allows for the following attribute to be specified on any XAML element, verbose binding errors are then displayed in the Visual Studio "Output" window, it's very effective -->
+  <!-- xmlns:diagnostics="clr-namespace:System.Diagnostics;assembly=WindowsBase" -->
+  <!-- diagnostics:PresentationTraceSources.TraceLevel="High" -->
+
+  <!-- nugget: Typical controls like TextBox are set UpdateSourceTrigger = LostFocus by default.
+                     That means entering a value and hitting save w/o tabbing out of the field first will get lost.
+                     Therefore make sure to set all entry field {Bindings UpdateSourceTrigger=PropertyChanged} -->
+
+  <local:tabBase.Resources>
+
+    <LinearGradientBrush x:Key="TabBackground" StartPoint="0,0" EndPoint="0,1">
+      <GradientStop Color="#ACF990" Offset="0.0"/>
+      <GradientStop Color="#68CE40" Offset="1.0"/>
+    </LinearGradientBrush>
+
+  </local:tabBase.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <Grid.Resources>
+      <Style TargetType="{x:Type StackPanel}">
+        <Setter Property="Orientation" Value="Horizontal"/>
+      </Style>
+      <Style TargetType="{x:Type Label}">
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+      </Style>
+    </Grid.Resources>
+
+    <ToolBar Grid.Row="0" Margin="0 0 0 10">
+      <Button Name="btnSave" Click="btnSave_Click" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
+        <StackPanel>
+          <Image Source="/Assets/Glyphs/save.png" Style="{StaticResource CanDisableNestedImage}" />
+          <Label Content="Save" />
+        </StackPanel>
+      </Button>
+      <Button Name="btnSaveClose" Click="btnSaveClose_Click" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
+        <StackPanel>
+          <Image Source="/Assets/Glyphs/save_close.png" Style="{StaticResource CanDisableNestedImage}" />
+          <Label Content="Save &amp; Close" />
+        </StackPanel>
+      </Button>
+      <Button Click="btnOpenPrint_Click">
+        <Button.IsEnabled>
+          <MultiBinding Converter="{local:IsPrintEnabled}">
+            <Binding Mode="OneWay" Path="IsReadOnly" />
+            <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
+            <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+          </MultiBinding>
+        </Button.IsEnabled>
+        <Button.ToolTip>
+          <MultiBinding Converter="{local:PrintToolTip}">
+            <Binding Mode="OneWay" Path="IsReadOnly" />
+            <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
+            <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+          </MultiBinding>
+        </Button.ToolTip>
+        <StackPanel Orientation="Vertical">
+          <StackPanel>
+            <Image Source="/Assets/Glyphs/print.png" Style="{StaticResource CanDisableNestedImage}" />
+            <Label Content="Print" />
+          </StackPanel>
+          <Popup AllowsTransparency="True" Name="popPrint" StaysOpen="False">
+            <Border BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}" Padding="15" CornerRadius="10">
+              <StackPanel Orientation="Vertical">
+                <TextBlock Text="Reason:" />
+                <RadioButton Content="Administrative" GroupName="ReprintReason" />
+                <RadioButton Name="rdoReprintForCust" Content="Customer" GroupName="ReprintReason" Margin="0,3,0,7" />
+                <CheckBox Name="chkPrintPO" Content="Purchase Order" 
+                          IsChecked="{Binding Mode=OneWay, Path=Fields[InitPrt215], Converter={conv:EmptyToTrue}}"
+                          Checked="Print_PO_Checked" />
+                <CheckBox Name="chkPrintAbw" Content="Abwicklungsschein" IsChecked="{Binding Mode=OneWay, Path=Fields[InitPrtAbw], Converter={conv:EmptyToTrue}}"
+                          Checked="Print_Abw_Checked" />
+                <StackPanel Margin="0,5,0,5">
+                  <Button Content="Print" Margin="0,0,2,0" Click="btnConfirmPrint_Click" />
+                  <Button Content="Cancel" Margin="2,0,0,0" Click="btnCancelPrint_Click" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Popup>
+        </StackPanel>
+      </Button>
+      <Button ToolTip="Reload Tax Form from Database" Name="btnReload" Click="btnReload_Click" >
+        <StackPanel>
+          <Image Source="/Assets/Glyphs/refresh.png" Style="{StaticResource CanDisableNestedImage}" />
+          <Label Content="Reload" />
+        </StackPanel>
+      </Button>
+      <local:ucToggleButton_Lock
+        ToggleButtonStyle="{StaticResource FlatToggleButton}"
+        ImageStyle="{StaticResource CanDisableNestedImage}"
+        Text="{Binding Mode=OneWay, Path=Fields[Status]}"
+        IsChecked="{Binding Mode=TwoWay, Path=IsReadOnly, Converter={conv:InverseBooleanConverter}}"
+        IsEnabled="{Binding Mode=OneWay, Path=Access.HasUnlockForm, Source={x:Static local:UserModel.Current}}" >
+        <local:ucToggleButton_Lock.ToolTip>
+          <MultiBinding Converter="{local:LockToolTipConverter}" Mode="OneWay" >
+            <Binding Path="IsReadOnly" Mode="OneWay" />
+            <Binding Source="{x:Static local:UserModel.Current}" Path="Access.HasUnlockForm" Mode="OneWay" />
+            <Binding Path="Fields[StatusFlags]" Mode="OneWay" />
+          </MultiBinding>
+        </local:ucToggleButton_Lock.ToolTip>
+      </local:ucToggleButton_Lock>
+
+    </ToolBar>
+
+
+    <Grid Grid.Row="1" >
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="2*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition />
+      </Grid.ColumnDefinitions>
+
+      <GridSplitter Grid.Column="1" Width="5" Height="auto" ResizeBehavior="PreviousAndNext" Background="Transparent" />
+
+      <GroupBox Style="{x:Null}" Grid.Column="2">
+        <GroupBox.Header>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Remarks" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="16" />
+            <Button Content="Add Entry" Padding="3,2" Margin="3" />
+            <CheckBox Content="Show Deleted" VerticalAlignment="Center" Margin="10,0,0,0"
+                      IsChecked="{Binding Mode=TwoWay, Path=ShowDeletedRemarks}"/>
+          </StackPanel>
+        </GroupBox.Header>
+
+
+        <DataGrid Name="gridRemarks" IsReadOnly="True" CanUserAddRows="False"
+                  ItemsSource="{Binding Path=TaxFormRemarks}"
+                  BeginningEdit="gridRemarks_BeginningEdit" >
+          <!-- nugget: initally used "Fields.DataView/TaxForm_Remark" DataRelation master-detail binding syntax, somehow it retains the current DataRowView context even though we path up to the entire DataView???-->
+          <!-- nugget: but unfortunately, that approach isn't connected when the child rowset is initially empty and subsequently populated, rats, it looked kind of slick -->
+          <DataGrid.Columns>
+            <DataGridTemplateColumn ToolTipService.ToolTip="Delete" >
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <Grid>
+                    <local:ReasonPopup x:Name="RemoveRemarkReasonPopup" Result="RemoveRemarkReasonPopup_Result" Title="Why delete remark?" />
+                    <Button FontFamily="Marlett" Content="r" Click="btnRemoveRemark_Click" Padding="0" Opacity="0"
+                            Tag="{Binding ElementName=RemoveRemarkReasonPopup}"
+                            ToolTip="{Binding Mode=OneWay, Path=CategoryId, Converter={conv:EmptyToParmStringConverter}, ConverterParameter='Delete|System generated alerts should be cleared by their corresponding special Alert buttons.'}" />
+                  </Grid>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+          </DataGrid.Columns>
+        </DataGrid>
+      </GroupBox>
+
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+        <Grid ScrollViewer.CanContentScroll="True" >
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="auto" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="15" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="15" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+          </Grid.RowDefinitions>
+
+          <Label Grid.Column="0" Grid.Row="0" Content="Alerts:" />
+
+          <WrapPanel Grid.Column="1" Margin="0 0 0 5">
+
+            <Border CornerRadius="10" Background="LightPink" Padding="6 3 6 5" BorderThickness="2" BorderBrush="LightGray">
+              <Border.Visibility>
+                <MultiBinding Converter="{conv:ANDVis}" >
+                  <Binding Mode="OneWay" Path="IsExpired" />
+                  <Binding Mode="OneWay" Path="IsVoided" ConverterParameter="{conv:InverseBooleanConverter}" />
+                  <Binding Mode="OneWay" Path="IsExpired" ConverterParameter="{conv:InverseBooleanConverter}" />
+                </MultiBinding>
+              </Border.Visibility>
+              <TextBlock FontSize="16" Text="Expired" VerticalAlignment="Center" />
+            </Border>
+
+            <Border CornerRadius="10" Background="LightPink" Padding="6 3 6 5" BorderThickness="2" BorderBrush="LightGray"
+                    Visibility="{Binding Mode=OneWay, Path=IsViolation, Converter={conv:BooleanToVisibilityConverter}}" >
+              <TextBlock FontSize="16" Text="Violation" FontWeight="Black" VerticalAlignment="Center" />
+            </Border>
+
+            <Border CornerRadius="10" Background="LightPink" Padding="6 3 6 5" BorderThickness="2" BorderBrush="LightGray" Margin="3 0 0 0"
+                    Visibility="{Binding Mode=OneWay, Path=IsVoided, Converter={conv:BooleanToVisibilityConverter}}">
+              <TextBlock FontSize="16" Text="Voided" FontWeight="Black" VerticalAlignment="Center" />
+            </Border>
+
+            <Border CornerRadius="10" Background="LightPink" Padding="6 3 6 5" BorderThickness="2" BorderBrush="LightGray" Margin="3 0 0 0"
+                    Visibility="{Binding Mode=OneWay, Path=IsIncomplete, Converter={conv:BooleanToVisibilityConverter}}">
+              <TextBlock FontSize="16" Text="Incomplete" VerticalAlignment="Center" />
+            </Border>
+
+            <Border CornerRadius="10,0,0,10" Background="LightPink" Padding="6 3 6 5" BorderThickness="2,2,1,2" BorderBrush="LightGray" Margin="3 0 0 0"
+                    Visibility="{Binding Mode=OneWay, Path=Fields[InitPrt215], Converter={conv:EmptyToVisible}}">
+              <TextBlock FontSize="14" TextAlignment="Center">P.O.<LineBreak/>Not Printed</TextBlock>
+            </Border>
+
+            <Border CornerRadius="0,10,10,0" Background="LightPink" Padding="6 3 6 5" BorderThickness="1,2,2,2" BorderBrush="LightGray" Margin="0"
+                    Visibility="{Binding Mode=OneWay, Path=Fields[InitPrtAbw], Converter={conv:EmptyToVisible}}">
+              <TextBlock FontSize="14" TextAlignment="Center">Abw.<LineBreak/>Not Printed</TextBlock>
+            </Border>
+
+          </WrapPanel>
+
+          <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Vertical"
+                     Background="LightGoldenrodYellow" Margin="0,0,0,5" >
+            <StackPanel Margin="10" Visibility="Collapsed">
+              <!-- Visibility="{Binding Mode=OneWay, Path=GUID, Converter={conv:EmptyToVisible}}" -->
+              <RadioButton Content="NF2" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" GroupName="FormType"
+                           IsChecked="{Binding Mode=OneWay, Path=Fields[FormTypeId], ConverterParameter=2, Converter={conv:RadioButtonGroupIsCheckedConverter}}" />
+              <RadioButton Content="EF2" Name="rdoEF2" Margin="15,0,0,0" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" GroupName="FormType"
+                           IsChecked="{Binding Mode=OneWay, Path=Fields[FormTypeId], ConverterParameter=5, Converter={conv:RadioButtonGroupIsCheckedConverter}}" />
+              <Control IsTabStop="False" Template="{StaticResource InfoIcon}" ToolTip="Euro VAT Form" Margin="3,2,0,0" />
+            </StackPanel>
+            <StackPanel Visibility="{Binding ElementName=rdoEF2, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}">
+              <Label Content="EF2 Language: " />
+              <ComboBox SelectedIndex="0">
+                <ComboBox.Items>
+                  <ComboBoxItem Content="German" />
+                  <ComboBoxItem Content="French" />
+                  <ComboBoxItem Content="English" />
+                </ComboBox.Items>
+              </ComboBox>
+            </StackPanel>
+          </StackPanel>
+          
+          <Label Grid.Column="0" Grid.Row="2" Content="Sponsor:" />
+          <WrapPanel Grid.Column="1" Grid.Row="2" Margin="0 3 0 0">
+            <TextBlock VerticalAlignment="Top" Padding="2" Background="#eeeeee" >
+              <Hyperlink Command="{x:Static local:RoutedCommands.OpenSponsor}" CommandParameter="{Binding Mode=OneTime, Path=Fields[SponsorGUID]}">
+                <Run Text="{Binding Mode=OneWay, Path=Fields[SponsorName]}" />
+              </Hyperlink>
+            </TextBlock>
+            <TextBlock Text="{Binding Mode=OneWay, Path=Fields[SponsorCCode], StringFormat='({0})'}" 
+                       Margin="3 0 0 0" VerticalAlignment="Top" Padding="2" Background="#eeeeee"  />
+            <Label Content="Authorized Dependent:" Margin="15 -3 0 0" />
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[AuthorizedDependent]}" Style="{StaticResource ReadOnlyTextBox}" VerticalAlignment="Top" />
+          </WrapPanel>
+
+          <Label Grid.Column="0" Grid.Row="4" Content="Order Number:" />
+          <StackPanel Grid.Column="1" Grid.Row="4" Margin="0 3 0 0" >
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[OrderNumber]}" Style="{StaticResource ReadOnlyTextBox}" />
+            <!--Label Content="Package Number:" Margin="0 -3 0 0" />
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[PackageCode]}" Style="{StaticResource ReadOnlyTextBox}" /-->
+            <Label Content="Expiration:" Margin="0 -3 0 0" />
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[ExpirationDate], StringFormat={StaticResource DateTimeFormat}}" Style="{StaticResource ReadOnlyTextBox}" />
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="5" Content="Sold:"  />
+          <StackPanel Grid.Column="1" Grid.Row="5" Margin="0 3 0 15" >
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[PurchaseDate], StringFormat={StaticResource DateTimeFormat}}" Style="{StaticResource ReadOnlyTextBox}" />
+            <Label Content="by: " Margin="0 -3 0 0" />
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[IssuedBy]}" Style="{StaticResource ReadOnlyTextBox}" />
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="6" Content="Current Location:" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Grid.Row="6" Margin="0 3 0 0">
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[Location]}" Style="{StaticResource ReadOnlyTextBox}" />
+
+            <local:ucToggleButton x:Name="btnLost" ToolTip="Mark this form as LOST" ButtonPadding="3" Margin="7,0,0,0"
+                                  UpImage="/Assets/Glyphs/lost_x32.png" ImageHeight="24"
+                                  Click="btnLostVoid_Click"
+                                  IsChecked="{Binding Mode=TwoWay, Path=Fields[LocationCode], Converter={local:LostLocationCodeToBool}}"
+                                  Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                                  Tag="25" /> <!-- 25 == RemarkTypeId for Lost -->
+
+            <local:ReasonPopup x:Name="FormStatusReasonPopup" Result="FormStatusReasonPopup_Result" 
+                               DisplayMemberPath="Title" SelectedValuePath="RemarkTypeId"/>
+
+            <local:ucToggleButton x:Name="btnVoid" ToolTip="Mark this form as VOID" ButtonPadding="3" Margin="7,0,0,0"
+                                  UpImage="/Assets/Glyphs/void_x32.png" ImageHeight="24"
+                                  Click="btnLostVoid_Click"
+                                  IsChecked="{Binding Mode=TwoWay, Path=IsVoided}"
+                                  Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
+                                  Tag="14" /> <!-- 14 == RemarkTypeId for Void -->
+
+            <local:ucToggleButton x:Name="btnViolation" ToolTip="Mark this form as a Violation" ButtonPadding="3" Margin="7,0,0,0" ButtonHeight="34"
+                                  IsChecked="{Binding Mode=OneWay, Path=IsViolation}" IsCheckedChanged="btnViolation_IsCheckedChanged" 
+                                  Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                                  UpImage="{StaticResource AlertIcon}" />
+
+            <!--Button Padding="3" ToolTip="Mark this form as a Violation" Height="34" Margin="7,0,0,0" Click="btnViolation_Click"  >
+              <Grid>
+                <Path Stretch="UniformToFill" Data="M 1 0 L 2 2 0 2 Z" StrokeThickness="3" StrokeLineJoin="Round" Stroke="Red" Fill="Yellow" />
+                <TextBlock Text="!" FontWeight="Black" FontSize="15pt" Margin="9,2,0,0" FontFamily="Times New Roman"
+                           IsEnabled="{Binding Mode=OneWay, Path=IsViolation, Converter={conv:InverseBooleanConverter}}" />
+              </Grid>
+            </Button-->
+            <local:ReasonPopup x:Name="ViolationReasonPopup" ItemsSource="{Binding Mode=OneWay, Source={x:Static local:TaxFormModel.TaxFormViolationTypes}}"
+                               DisplayMemberPath="Title" SelectedValuePath="RemarkTypeId" Result="ViolationReasonPopup_Result" />
+
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="7" Content="Returned:" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Grid.Row="7" Margin="0 3 0 0" >
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[ReturnedDate], StringFormat={StaticResource DateTimeFormat}}" Style="{StaticResource ReadOnlyTextBox}" />
+            <Label Content="by: " />
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[ReturnedBy]}" Style="{StaticResource ReadOnlyTextBox}" />
+            <Button Name="btnReturn" Margin="7,0,0,0" ToolTip="Return this Tax Form" 
+                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
+                    Click="btnReturn_Click">
+              <Image Source="/Assets/Glyphs/arrow_right_green_x32.png" Height="24"/>
+            </Button>
+            <Button ToolTip="Return &amp; Close" Name="btnReturnClose" Content="r" FontFamily="Marlett" FontSize="14" VerticalAlignment="Stretch"
+                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
+                    Click="btnReturn_Click" />
+            <Button ToolTip="Give Back to Customer for Correction" Name="btnGiveCustomer" Margin="7,0,0,0"
+                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                    Click="btnGiveCustomer_Click">
+              <Button.IsEnabled>
+                <Binding Mode="OneWay" Path="Fields[LocationCode]" Converter="{conv:BoolExpressionToBool}" ConverterParameter="'?' != 'CUST'" />
+              </Button.IsEnabled>
+              <Image Source="/Assets/Glyphs/user1_back_x32.png" Height="24" />
+            </Button>
+
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="8" Content="Filed:" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Grid.Row="8" Margin="0 3 0 0" >
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[FiledDate], StringFormat={StaticResource DateTimeFormat}}" Style="{StaticResource ReadOnlyTextBox}" />
+            <Label Content="by: " />
+            <TextBox Text="{Binding Mode=OneWay, Path=Fields[FiledBy]}" Style="{StaticResource ReadOnlyTextBox}" />
+            <Button Name="btnFile" Margin="7,0,0,0" ToolTip="File - Form must be from current office"
+                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                    Click="btnFile_Click">
+              <Button.IsEnabled>
+                <MultiBinding Converter="{conv:OR}">
+                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
+                </MultiBinding>
+              </Button.IsEnabled>
+              <Image Source="/Assets/Glyphs/cabinet_x32.png" Height="24"/>
+            </Button>
+            <Button ToolTip="File &amp; Close" Content="r" FontFamily="Marlett" FontSize="14" VerticalAlignment="Stretch"
+                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
+                    Click="btnFile_Click" Name="btnFileClose">
+              <Button.IsEnabled>
+                <MultiBinding Converter="{conv:OR}">
+                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
+                </MultiBinding>
+              </Button.IsEnabled>
+            </Button>
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="10" Content="Used:" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Grid.Row="10" Margin="0 3 0 0" >
+            <DatePicker SelectedDate="{Binding Mode=TwoWay, Path=Fields[UsedDate], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
+                        IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="11" Content="Transaction Type:" />
+          <StackPanel Grid.Column="1" Grid.Row="11" Margin="0 3 0 0" Orientation="Vertical">
+            <ComboBox Name="cbxTransactionType" VerticalAlignment="Top" HorizontalAlignment="Left"
+                      ItemsSource="{Binding Mode=OneWay, Source={x:Static local:TaxFormModel.TransactionTypes}}"
+                      SelectedValuePath="TransactionTypeID"
+                      SelectedValue="{Binding Mode=TwoWay, Path=Fields[TransTypeID], ValidatesOnDataErrors=True}"
+                      IsEnabled="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:InverseBooleanConverter}}"
+                      SelectionChanged="cbxTransactionType_SelectionChanged"
+                      >
+              <!-- DisplayMemberPath="TransactionType" -->
+              <!-- nugget: disabled ComboBox items -->
+              <ComboBox.ItemContainerStyle>
+                <Style>
+                  <Style.Triggers>
+                    <DataTrigger Binding ="{Binding Mode=OneWay, Path=Active}" Value="False">
+                      <Setter Property="ComboBoxItem.Focusable" Value="False"/>
+                      <Setter Property="ComboBoxItem.IsEnabled" Value="False"/>
+                      <Setter Property="ComboBoxItem.IsHitTestVisible" Value="False"/>
+                      <!-- nugget: prevent keyboard selection of disabled ComboBox items -->
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </ComboBox.ItemContainerStyle>
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock
+                    Text="{Binding Mode=OneWay, Path=TransactionType}"
+                    Foreground="{Binding Mode=OneTime, Path=TriState, Converter={conv:IntToSolidBrushConverter}, ConverterParameter='Gray,Black,Red'}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <local:ucDetailsView x:Name="ExtendedFields" EmptyMessage="" IsReadOnly="{Binding Mode=OneWay, Path=IsReadOnly}" ItemsSource="{Binding Mode=OneWay, Path=ExtendedFields}" />
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="12" Content="Vendor:" />
+          <StackPanel Grid.Column="1" Grid.Row="12" Margin="0 3 0 0">
+            <TextBox Name="txtVendor" Text="{Binding Mode=OneWay, Path=Fields[Vendor], ValidatesOnDataErrors=True}" Style="{StaticResource ReadOnlyTextBox}" MinWidth="90" />
+            <Button Content="  ...  " Name="btnVendor" Click="btnVendor_Click" IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+            <local:VendorSearch x:Name="popVendorSearch" PlacementTarget="{Binding ElementName=txtVendor}" />
+          </StackPanel>
+
+          <!--Label Grid.Column="0" Grid.Row="8" Content="Good / Service:" />
+          <StackPanel Grid.Column="1" Grid.Row="8" Margin="0 3 0 15">
+            <TextBox Name="txtGoodService" Text="{Binding Mode=OneWay, Path=Fields[GoodsServiceName]}" Style="{StaticResource ReadOnlyTextBox}" MinWidth="90" />
+            <Button Content="  ...  " Name="btnGoodService" Click="btnGoodService_Click" IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+            <local:ucGoodsAndServicesSearch x:Name="popGoodsAndServicesSearch" PlacementTarget="{Binding ElementName=txtGoodService}" />
+          </StackPanel-->
+
+          <Label Grid.Column="0" Grid.Row="13" Content="Total Cost:" />
+          <StackPanel Orientation="Vertical" Grid.Column="1" Grid.Row="13" Margin="0 3 0 15">
+            <StackPanel >
+              <TextBox Name="txtTotalCost" Text="{Binding Mode=TwoWay, Path=Fields[TotalCost], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" MinWidth="50" 
+                    IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+              <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding Mode=TwoWay, Path=Fields[CurrencyUsed], ValidatesOnDataErrors=True}"
+                  IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
+                <ComboBoxItem Tag="2">Euro</ComboBoxItem>
+                <ComboBoxItem Tag="1">USD</ComboBoxItem>
+              </ComboBox>
+              <Label Content="Check Number:" Margin="0 -3 0 0" />
+              <TextBox Name="txtCheckNumber" MinWidth="50" 
+                        IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <CheckBox Visibility="{Binding Mode=OneWay, Path=IsTotalCostMinWarning, Converter={conv:BooleanToVisibilityConverter}}"
+                      IsChecked="{Binding Mode=TwoWay, Path=IsTotalCostMinWarningConfirmed, ValidatesOnDataErrors=True}"
+                      IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
+              <TextBlock Text="Check this box to confirm Total Cost is really that small." Background="Pink" />
+            </CheckBox>
+            <CheckBox Visibility="{Binding Mode=OneWay, Path=IsTotalCostMaxViolation, Converter={conv:BooleanToVisibilityConverter}}"
+                      IsChecked="{Binding Mode=TwoWay, Path=IsTotalCostMaxViolationConfirmed, ValidatesOnDataErrors=True}" 
+                      IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
+              <TextBlock Text="Total Cost >2499 Euro.  Check this box to confirm violation." Background="Pink" />
+            </CheckBox>
+
+          </StackPanel>
+
+          <Label Grid.Column="0" Grid.Row="14" Content="Description:" />
+          <global:ucTextBoxWatermarked Grid.Row="14" Grid.Column="1" 
+              x:Name="txtDescription" 
+              HorizontalAlignment="Left" Height="48" Width="300"
+              Watermark="For example, the type of service purchased or a brief list of items which where purchased, etc."
+              TextWrapping="Wrap" AcceptsReturn="True" 
+              Text="{Binding Mode=TwoWay, Path=Fields[Description], UpdateSourceTrigger=PropertyChanged}" 
+              IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+
+        </Grid>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+
+</local:tabBase>
+

@@ -1,0 +1,1 @@
+forvat net use \\mwr-tro-%v\ipc$ /user:%VATPCUSER% %VATPCPASS%

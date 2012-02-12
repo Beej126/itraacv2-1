@@ -1,0 +1,14 @@
+<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">
+<cross-domain-policy>
+  <allow-http-request-headers-from domain="*" headers="*"/>
+</cross-domain-policy> 
+
+<!--
+. To support test/dev web client (e.g. Silverlight) on local web server (e.g. ASP.Net Dev Server) calling to production web server for WCF/SOAP/web service, need to allow crossdomain access.
+
+. crossdomain.xml is the adobe flash standard that microsoft also supports in addition to a new microsoft specific file (clientaccesspolicy.xml)
+  . http://msdn.microsoft.com/en-us/library/cc645032%28v=vs.95%29.aspx
+  . i've read that the microsoft specific one is sometimes not working and the crossdomain.xml is often the recommended solution, so i just went with that
+  
+. this file must be placed in the web server's root folder
+-->

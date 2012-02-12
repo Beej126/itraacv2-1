@@ -1,0 +1,15 @@
+                      <StackPanel.Style>
+                        <Style TargetType="StackPanel" BasedOn="{StaticResource {x:Type StackPanel}}">
+                          <Style.Triggers>
+                            <DataTrigger Value="True">
+                              <DataTrigger.Binding>
+                                <MultiBinding Mode="OneWay" Converter="{conv:OR}" >
+                                  <Binding Mode="OneWay" Path="IsSponsor" />
+                                  <Binding Mode="OneWay" Path="IsSpouse" />
+                                </MultiBinding>
+                              </DataTrigger.Binding>
+                              <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </StackPanel.Style>

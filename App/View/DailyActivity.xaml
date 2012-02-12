@@ -1,0 +1,53 @@
+﻿<local:ucBase x:Class="iTRAACv2.DailyActivity"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:iTRAACv2"
+             xmlns:Andora="clr-namespace:Andora.UserControlLibrary;assembly=Andora.UserControlLibrary"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+  <DockPanel>
+    <DockPanel DockPanel.Dock="Top">
+      <TextBlock DockPanel.Dock="Right" Margin="5 0" VerticalAlignment="Bottom"
+                 Text="{Binding Mode=OneWay, ElementName=gridDailyActivity, Path=Items.Count, StringFormat='{}{0} item(s) found'}" />
+      <WrapPanel DockPanel.Dock="Top" Margin="5">
+        <ComboBox SelectedIndex="0" Margin="0,0,10,0" Width="71" Name="cbxActivityType" SelectionChanged="ActivityStartEnd_DateChanged" SelectedValuePath="Content">
+          <ComboBoxItem Content="Issued" />
+          <ComboBoxItem Content="Returned" />
+          <ComboBoxItem Content="Filed" />
+        </ComboBox>
+        <ComboBox Name="cbxActivityDate" Margin="0,0,10,0" SelectionChanged="cbxActivityDate_SelectionChanged" Width="100" SelectedValuePath="Tag" >
+          <ComboBoxItem Tag="TODAY" Content="Today" />
+          <ComboBoxItem Tag="WEEK" Content="This week" />
+          <ComboBoxItem Tag="2WEEK" Content="Last 2 weeks" />
+          <ComboBoxItem Tag="CUSTOM" Content="Custom Range" />
+        </ComboBox>
+        <DatePicker Name="dateActivityStart" VerticalAlignment="Center" SelectedDate="{Binding Mode=TwoWay, ElementName=dateRangeActivity, Path=LowerValue}"
+                    SelectedDateChanged="ActivityStartEnd_DateChanged" />
+        <TextBlock Text="to" VerticalAlignment="Center" Margin="5" />
+        <DatePicker Name="dateActivityEnd" Margin="0,0,10,0" VerticalAlignment="Center" SelectedDate="{Binding Mode=TwoWay, ElementName=dateRangeActivity, Path=UpperValue}"
+                    SelectedDateChanged="ActivityStartEnd_DateChanged" />
+        <Andora:DateRangeSlider x:Name="dateRangeActivity" VerticalAlignment="Center" Width="200" />
+      </WrapPanel>
+    </DockPanel>
+    <DataGrid Name="gridDailyActivity" IsReadOnly="True" >
+
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Customer" SortMemberPath="Customer">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock>
+                  <Hyperlink Command="{x:Static local:RoutedCommands.OpenSponsor}" CommandParameter="{Binding Mode=OneTime, Path=SponsorGUID}" > <!-- Hyperlink bound to a RoutedCommand vs event handler and global delegates, very slick -->
+                    <Run Text="{Binding Mode=OneTime, Path=Customer}"/>
+                  </Hyperlink>
+              </TextBlock>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+      
+    </DataGrid>
+  </DockPanel>
+
+</local:ucBase>

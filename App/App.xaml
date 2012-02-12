@@ -1,0 +1,16 @@
+﻿<Application x:Class="iTRAACv2.App" x:Name="app"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:props="clr-namespace:iTRAACv2.Properties">
+    <!-- StartupUri="Views/MainWindow.xaml" -->
+    
+  <Application.Resources>
+    <ResourceDictionary>
+      <props:Settings x:Key="AppConfigSettings" />
+      
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="View/Styles.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

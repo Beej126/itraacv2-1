@@ -1,0 +1,34 @@
+        <DataGrid.RowDetailsTemplate>
+          <DataTemplate>
+            <DataGrid Name="gridUsers" IsReadOnly="True" MaxHeight="126" HorizontalAlignment="Left" Margin="1" VerticalScrollBarVisibility="Auto">
+              <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Active" SortMemberPath="Active">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <Button Style="{StaticResource FlatButton}" Content="r" Opacity="0" FontSize="10" FontFamily="Marlett" ToolTip="Deactivate" >
+                        <Button.Triggers>
+                          <EventTrigger RoutedEvent="Mouse.MouseEnter">
+                            <BeginStoryboard>
+                              <Storyboard Storyboard.TargetProperty="Opacity">
+                                <!-- nugget: the crazy unintuitive syntax to reuse an Animation as a StaticResource: http://social.msdn.microsoft.com/Forums/en-US/wpf/thread/9e769c38-3898-4cb3-88ca-b506f3b4fa36/-->
+                                <StaticResourceExtension ResourceKey="UnDimOpacityAnim"/>
+                              </Storyboard>
+                            </BeginStoryboard>
+                          </EventTrigger>
+                          <EventTrigger RoutedEvent="Mouse.MouseLeave">
+                            <BeginStoryboard>
+                              <Storyboard Storyboard.TargetProperty="Opacity">
+                                <!-- nugget: the crazy unintuitive syntax to reuse an Animation as a StaticResource: http://social.msdn.microsoft.com/Forums/en-US/wpf/thread/9e769c38-3898-4cb3-88ca-b506f3b4fa36/-->
+                                <StaticResourceExtension ResourceKey="DimOpacityAnim"/>
+                              </Storyboard>
+                            </BeginStoryboard>
+                          </EventTrigger>
+                        </Button.Triggers>
+                      </Button>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+              </DataGrid.Columns>
+            </DataGrid>
+          </DataTemplate>
+        </DataGrid.RowDetailsTemplate>

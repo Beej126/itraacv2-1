@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="2b6eed66-ed96-4994-93ab-cf405588875d" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>true</GenerateAsynchronousMethods>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings>
+      <CollectionMapping TypeName="System.Collections.ObjectModel.ObservableCollection`1" Category="List" />
+    </CollectionMappings>
+    <GenerateSerializableTypes>false</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://localhost:3594/DashWCF.svc" Protocol="http" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="DashWCF.xsd" MetadataType="Schema" ID="4c12e42b-a290-4efc-aab8-b217591abb1d" SourceId="1" SourceUrl="http://localhost:3594/DashWCF.svc?xsd=xsd0" />
+    <MetadataFile FileName="DashWCF.disco" MetadataType="Disco" ID="0a1812ef-f81d-44f6-9e95-abb4c3eec233" SourceId="1" SourceUrl="http://localhost:3594/DashWCF.svc?disco" />
+    <MetadataFile FileName="DashWCF1.xsd" MetadataType="Schema" ID="371cd18d-5159-4c86-81d4-b2b6d80ad2e0" SourceId="1" SourceUrl="http://localhost:3594/DashWCF.svc?xsd=xsd2" />
+    <MetadataFile FileName="DashWCF2.xsd" MetadataType="Schema" ID="6664745b-f840-4ce0-b0d7-890010594730" SourceId="1" SourceUrl="http://localhost:3594/DashWCF.svc?xsd=xsd1" />
+    <MetadataFile FileName="DashWCF.wsdl" MetadataType="Wsdl" ID="a7c565f2-a949-4986-ab1d-b73122d01d18" SourceId="1" SourceUrl="http://localhost:3594/DashWCF.svc?wsdl" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

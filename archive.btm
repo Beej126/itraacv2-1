@@ -1,0 +1,51 @@
+echo off
+cls
+
+cd /d %~dp0
+
+:: take all Visual Source Safe files out of Subversion
+:: attrib /s +h *scc
+:: dir /b /s /a:h *scc >scc_files.txt
+:: for %%v in (@scc_files.txt) svn delete "%v" --keep-local
+
+call pwds.btm
+
+echo.
+echo.
+
+set _today=%_year%_%@right[2,0%_month%]_%@right[2,0%_day%]
+set _archive_file=archives\iTRAACv2_%_today%
+
+set _DB_BAK_path=C:\Brent\Dev\iTRAAC\iTRAAC v2\DB\BAK
+set _v1_DB_BAK_filename=iTRAAC_DB_%_today%.bak
+set _v2_DB_BAK_filename=iTRAACv2_DB_%_today%.bak
+
+QUERYBOX "Archive" Description: %%_description
+if "%_description%" != "" set _archive_file=%_archive_file% - %_description%
+
+::osql -S 144.170.180.80 -U andersonb -P %old_sa_pwd% -Q "BACKUP DATABASE [iTRAACv2] TO DISK = N'd:%_DB_BAK_path%' WITH NOFORMAT, NOINIT, NAME = N'iTRAACv2-Full Database Backup', SKIP, NOREWIND, NOUNLOAD,  STATS = 10"
+::copy "\\144.170.180.80\d$%_DB_BAK_path%" "DB\SQLData\%_v2_DB_BAK_filename%"
+
+inkey /K"yn" Backup V1 Database (large/slow)? [y/n]: %%_backup_v1_db
+if %_backup_v1_db% == y set _archive_file=%_archive_file% (v1 db)
+
+if %_backup_v1_db% == y osql -S .\sqlexpress2005 -U sa -P %sa_pwd% -Q "BACKUP DATABASE [iTRAAC]   TO DISK = N'%_DB_BAK_path%\%_v1_DB_BAK_filename%' WITH NOFORMAT, NOINIT, NAME = N'iTRAACv1-Full Database Backup', SKIP, NOREWIND, NOUNLOAD,  STATS = 10"
+osql -S .\sqlexpress2005 -U sa -P %sa_pwd% -Q "BACKUP DATABASE [iTRAACv2] TO DISK = N'%_DB_BAK_path%\%_v2_DB_BAK_filename%' WITH NOFORMAT, NOINIT, NAME = N'iTRAACv2-Full Database Backup', SKIP, NOREWIND, NOUNLOAD,  STATS = 10"
+
+7z a -tzip -r -x@archive_exclusions.txt "%_archive_file%" App
+7z a -tzip -r -x@archive_exclusions.txt "%_archive_file%" DB\DBObj
+
+::no real need to include the database backups in the zip, the BAK folder is fine, and it makes the zips more managable
+::if %_backup_v1_db% == y 7z a -tzip -r -x@archive_exclusions.txt "%_archive_file%" "%_DB_BAK_path%\%_v1_DB_BAK_filename%"
+::7z a -tzip -r -x@archive_exclusions.txt "%_archive_file%" "%_DB_BAK_path%\%_v2_DB_BAK_filename%"
+
+set _today=
+set _archive_file=
+set _DB_BAK_path=
+set _v1_DB_BAK_filename=
+set _v2_DB_BAK_filename=
+
+
+pause
+exit
+

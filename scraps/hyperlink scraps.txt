@@ -1,0 +1,98 @@
+                  <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell" >
+                      <TextBlock Foreground="Blue" TextDecorations="Underline" Cursor="Hand">
+                        <ContentPresenter TextBlock.Foreground="Blue" />
+                      </TextBlock>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+
+
+                <Setter Property="Foreground" Value="Blue" />
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell" >
+                      <Button Foreground="Blue" Cursor="Hand" Padding="0" Margin="0" VerticalAlignment="Center" >
+                        <Button.Content>
+                          <Underline>
+                            <ContentPresenter />
+                          </Underline>
+                        </Button.Content>
+                      </Button>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+
+
+                          <Hyperlink.CommandParameter>
+                            <MultiBinding Converter="{conv:AND}">
+                              <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="Column.SortMemberPath" />
+                              <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="DataContext" />
+                            </MultiBinding>
+                          </Hyperlink.CommandParameter>
+
+
+                          <Hyperlink.CommandParameter>
+                            <MultiBinding Converter="{conv:IndirectMultiValue}">
+                              <Binding />
+                              <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="Column.SortMemberPath" />
+                            </MultiBinding>
+                          </Hyperlink.CommandParameter>
+
+
+
+              <TextBlock Padding="4 3">
+                <Hyperlink Foreground="Blue"
+                  Command="{x:Static local:RoutedCommands.OpenTaxForm}" CommandParameter="{Binding Mode=OneWay, Path=RowGUID}">
+                  <Run>
+                    <Run.Text>
+                      <MultiBinding Mode="OneWay" Converter="{conv:IndirectMultiValue}">
+                        <Binding Mode="OneWay" />
+                        <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="Column.SortMemberPath" />
+                       </MultiBinding>
+                    </Run.Text>
+                  </Run>
+                </Hyperlink>
+              </TextBlock>
+
+
+
+
+              <TextBlock Padding="4 3">
+                <Hyperlink 
+                  Command="{x:Static local:RoutedCommands.OpenTaxForm}" CommandParameter="{Binding Mode=OneWay, Path=RowGUID}">
+                  <Run>
+                    <Run.Style>
+                      <Style TargetType="Run">
+                        <Style.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="Red"/>
+                          </Trigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Run.Style>
+                    <Run.Text>
+                      <MultiBinding Mode="OneWay" Converter="{conv:IndirectMultiValue}">
+                        <Binding Mode="OneWay" />
+                        <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="Column.SortMemberPath" />
+                       </MultiBinding>
+                    </Run.Text>
+                  </Run>
+                </Hyperlink>
+              </TextBlock>
+
+
+
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header="Form #" SortMemberPath="Form #">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock>
+                      <Hyperlink CommandParameter="{Binding Mode=OneTime, Path=RowGUID}" Click="TaxForm_Click" >
+                        <TextBlock Text="{Binding Mode=OneTime, Path=Form #}"/>
+                      </Hyperlink>
+                    </TextBlock>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>

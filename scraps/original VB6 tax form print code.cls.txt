@@ -1,0 +1,665 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+  Persistable = 0  'NotPersistable
+  DataBindingBehavior = 0  'vbNone
+  DataSourceBehavior  = 0  'vbNone
+  MTSTransactionMode  = 0  'NotAnMTSObject
+END
+Attribute VB_Name = "CUtil"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = True
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = True
+Option Explicit
+
+Private Enum FieldSpecsEnum
+    FieldNameEnum = 0
+    StartRowEnum = 1
+    StartColEnum = 2
+    MaxLengthEnum = 3
+    MaxRowsEnum = 4
+    BodyEnum = 5
+End Enum
+
+Public Enum TableIDEnum
+    tblUsers = 1
+    tblTaxOffices = 2
+    tblVendors = 3
+    tblGoodsServices = 4
+    tblTaxFormAgents = 5
+    tblOfficeManagers = 6
+    tblCustomers = 7
+    tblAttributes = 8
+    tblSponsors = 9
+    tblClients = 10
+    tblTaxFormPackages = 13
+    tblTaxForms = 14
+    tblControlLocal = 16
+    tblAudits = 18
+    tblTransactionTypes = 19
+    tblBoxes = 20
+    zzzRoles = 100
+    tblRemarks = 15
+End Enum
+
+Public Enum RoleTypeEnum
+    OfficeManagerRoleType = 1
+    TaxFormAgentRoleType = 2
+    BothRoleTypes = 3
+End Enum
+
+'Public Enum LoginModeEnum
+'    LoginBlocked = 0
+'    LoginAllowed = 1
+'End Enum
+
+Public Enum POStatusEnum
+    posIssued = 1 ' 0
+    posReturned = 2 ' 1
+    posFiled = 4 ' 2
+    posReIssued = 8 ' 3
+    posAmended = 16 ' 4
+    posVoided = 32
+    posOfficeFlag = 2097152 ' 21
+    posManagerFlag = 4194304 ' 22
+    posAuditFlag = 8388608 ' 23
+    
+    posPrinted = 536870912 ' 29
+    posRePrinted = 1073741824 ' 30
+    posNotPrinted = 268435456 ' 28
+    
+    abwPrinted = 134217728 ' 27
+    abwRePrinted = 67108864 ' 26
+    abwNotPrinted = 33554432 ' 25
+    
+'    PoPrn_AbPrn = 671088640
+'    PoPrn_AbRePrn = 603979776
+'    PoPrn_AbNoPrn = 570425344
+'    PoRePrn_AbPrn = 402653184
+'    PoRePrn_AbRePrn = 335544320
+'    PoRePrn_AbNoPrn = 301989888
+'    PoNoPrn_AbPrn = 134217728
+'    PoNoPrn_AbRePrn = 201326592
+'    PoNoPrn_AbNoPrn = 167772160
+End Enum
+
+Public Enum FormTypesEnum
+    NF1 = 1
+    NF2 = 2
+    Abwicklungsschein = 3
+    EF1 = 4
+    EF2 = 5
+End Enum
+
+Public Enum POTypesEnum
+    PricedAndUnPriced = 0
+    UnPricedPO = 1
+    PricedPO = 2
+    Abwicklungsschein = 3
+End Enum
+
+Public Enum FormClassEnum
+    fc215 = 1
+    fcAbwicklungsschein = 2
+End Enum
+
+Public Enum RemTypeEnum
+    CommentEnum = 0
+    TotalCostEnum = 1
+    CheckNumberEnum = 2
+    VINEnum = 3
+    ReprintedForm = 4
+    CurrencyEnum = 5
+    Suspension = 6
+    VehicleMake = 7
+    VehicleModel = 8
+    VehicleYear = 9
+    OverLimitUPPO = 10
+    BarredSponsor = 11
+    WeaponSerialNumber = 12
+    WeaponCaliber = 13
+    VoidedPO = 14
+    ServiceFeeChange = 15
+    WeaponModel = 16
+    WeaponMake = 17
+End Enum
+
+Public Enum ReportMembersEnum
+    Header = 1
+    Group = 2
+    Detail = 4
+    Footer = 8
+    AddInfo = 16
+    ReportSummary = 11
+    ReportDetail = 31
+End Enum
+
+Private m_lngSignAgentID As Long
+
+Public Function GetTitles(Optional TaxOfficeID As Long = 0, _
+                          Optional UserID As Long = 0, _
+                          Optional ManagerID As Long = 0, _
+                          Optional AgentID As Long = 0) As String
+
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    GetTitles = objBODT.GetTitles(TaxOfficeID & "," & UserID & "," & ManagerID & "," & AgentID)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetSponsorClientTitles(Optional SponsorID As Long = 0, _
+                                       Optional ClientID As Long = 0) As String
+
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    GetSponsorClientTitles = objBODT.GetSponsorClientTitles(SponsorID & "," & ClientID)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function ControlCheck(ByRef AdditionalData As String) As Long
+
+    Dim a() As String
+    
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    
+    a() = Split(objBODT.ControlCheck(AdditionalData), vbTab)
+    Set objBODT = Nothing
+    
+    If UBound(a) = 1 Then
+        ControlCheck = val(a(0))
+        AdditionalData = a(1)
+    Else
+        Debug.Assert 0
+    End If
+
+End Function
+
+Public Function TaxOfficeValueList() As String
+
+    Dim a() As String
+    
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    TaxOfficeValueList = objBODT.TaxOfficeValueList
+    Set objBODT = Nothing
+    
+End Function
+
+Public Function GetClientID(CCode As String) As Long
+
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    GetClientID = objBODT.GetClientID(CCode)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetSponsorID(SponsorCCode As String) As Long
+
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    GetSponsorID = objBODT.GetSponsorID(SponsorCCode)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetClientID_By_SSN(SSN As String) As Long
+
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    GetClientID_By_SSN = objBODT.GetClientID_By_SSN(SSN)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetSponsorMaxClientID(SponsorID As Long, CCode As String) As Long
+
+    Dim objBODT As CTaxOffice_BODT
+    Dim a() As String
+    
+    Set objBODT = New CTaxOffice_BODT
+    a = Split(objBODT.GetSponsorMaxClient(SponsorID), ",")
+    Set objBODT = Nothing
+    
+    If UBound(a) = 1 Then
+        GetSponsorMaxClientID = a(0)
+        CCode = a(1)
+    Else
+        Debug.Assert 0
+    End If
+
+End Function
+
+Public Function FormSpecs(TaxFormID, Optional FormCode As String = vbNullString) As String
+
+    Dim objBODT As CTaxForm_BODT
+    Set objBODT = New CTaxForm_BODT
+    FormSpecs = objBODT.FormSpecs(TaxFormID, FormCode)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetManagerID(TaxOfficeID As Long, UserID As Long) As Long
+
+    Dim objBODT As COfficeManager_BODT
+    Set objBODT = New COfficeManager_BODT
+    GetManagerID = objBODT.GetManagerID(TaxOfficeID, UserID)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function IsStartOfBusinessDay() As Boolean
+
+    Dim objBODT As CControlLocal_BODT
+    Set objBODT = New CControlLocal_BODT
+    IsStartOfBusinessDay = objBODT.IsStartOfBusinessDay
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetCentralServer() As String
+
+    Dim objBODT As CControlLocal_BODT
+    Set objBODT = New CControlLocal_BODT
+    GetCentralServer = objBODT.GetCentralServer
+    Set objBODT = Nothing
+
+End Function
+
+Public Sub UpdateFormCounts(ClientID As Long)
+
+    Dim objBODT As CControlLocal_BODT
+    Set objBODT = New CControlLocal_BODT
+    Call objBODT.UpdateFormCounts(ClientID)
+    Set objBODT = Nothing
+
+End Sub
+
+'
+
+Public Function DAR1(TaxOfficeID As Long, POType As POTypesEnum, BeginDate As Date, EndDate As Date, Optional ReportMembers As ReportMembersEnum = ReportDetail) As String
+
+'Set o = New CUtil
+'Print o.DAR1(1, 1, CDate("03-08-01"), CDate("03-08-07"))
+
+' Delimiters:
+' Chr(182) ¶ -- break up H or D from main guts
+' Chr(164) ¤ -- delimit row data
+
+    Dim objBODT As CTaxFormPackage_BODT
+    
+    Dim strSproc As String
+    strSproc = "cp_parmsel_DAR1 (" & POType & ", " & Format(BeginDate, "'yyyy-mm-dd'") & ", " & Format(EndDate, "'yyyy-mm-dd'") & ", " & ReportMembers & ", " & TaxOfficeID & ")"
+    
+    Set objBODT = New CTaxFormPackage_BODT
+    DAR1 = objBODT.Fetch_DAR1(strSproc)
+    Set objBODT = Nothing
+
+End Function
+
+Public Function GetLocalCentralAdmins() As String
+
+    Dim objBODT As CTaxOffice_BODT
+    Set objBODT = New CTaxOffice_BODT
+    GetLocalCentralAdmins = objBODT.GetLocalCentralAdmins
+    Set objBODT = Nothing
+
+End Function
+
+Public Function Print_Prep(FormCode As String, ByRef TOF As Single, SkipPrt As Boolean) As Long
+    
+    On Error GoTo errHandler
+    
+    Dim intErrPoint As Integer
+    
+    Dim objLoopPrinter As Printer
+    Dim strPrt As String
+
+    If FormCode <> vbNullString Then
+        TOF = CSng(val(GetSetting("iTRAAC Console", "Form Setup", FormCode, "0")))
+        
+        If Not SkipPrt Then
+            strPrt = GetSetting("iTRAAC Console", "Printer Setup", FormCode, vbNullString)
+            For Each objLoopPrinter In Printers
+                If objLoopPrinter.DeviceName = strPrt Then
+                    Set Printer = objLoopPrinter
+                    Exit For
+                End If
+            Next
+            Set objLoopPrinter = Nothing
+        'Else
+        '    Debug.Assert 0
+        End If
+    End If
+
+    If Printer.PaperSize = 1 Then
+        intErrPoint = 1
+        Printer.PaperSize = vbPRPSFanfoldStdGerman
+        'If Printer.PaperSize <> vbPRPSFanfoldStdGerman And Not DebugMode Then Err.Raise vbObjectError + 9999
+    End If
+    intErrPoint = 0
+    
+    If Printer.Font <> "Sans Serif 12cpi" Then
+        intErrPoint = 2
+        Printer.Font = "Sans Serif 12cpi"
+    End If
+    
+    If Printer.Font <> "Sans Serif 12cpi" Then
+'        Debug.Assert 0
+        Printer.Font = "Courier New"
+        Printer.FontSize = 12
+    End If
+    
+    intErrPoint = 0
+    
+exitHere:
+    Print_Prep = intErrPoint
+    Exit Function
+errHandler:
+    If intErrPoint = 1 And DebugMode Then
+        Beep
+        intErrPoint = 0
+        Resume Next
+    ElseIf intErrPoint = 1 Then
+        MsgBox "Could not set the PaperSize property of printer" & vbCrLf & _
+            Printer.DeviceName & vbCrLf & "to vbPRPSFanfoldStdGerman.", vbExclamation, "Printer Error"
+    ElseIf intErrPoint = 2 Then
+        MsgBox "Could not set the Font property of printer" & vbCrLf & _
+            Printer.DeviceName & vbCrLf & "to Sans Serif 12cpi.", vbExclamation, "Printer Error"
+    Else
+        intErrPoint = 9
+        MsgBox Err.Description & vbCrLf & "Please contact your systems admin.", vbExclamation, "Printer Error #" & Err.Number
+    End If
+    Resume exitHere
+
+End Function
+
+Public Function PrintShortTaxForm(FormCode As String, SProc As String, TaxFormID As Long, CurrY As Long) As Long
+
+    On Error GoTo errHandler
+    
+    Dim intErrPoint As Integer
+    Dim objTL As TextList
+    Dim i As Integer
+    Dim a() As String
+    Dim sngTOF As Single
+    
+    'Debug.Print SProc
+
+'MsgBox m_lngSignAgentID, , "m_lngSignAgentID"
+
+    
+    Set objTL = New TextList
+    objTL.Load_StoredProc SProc & " (" & TaxFormID & ", " & m_lngSignAgentID & ")"
+
+    Call Print_Prep(FormCode, sngTOF, True)
+
+    For i = 1 To objTL.ListCount
+
+        a = Split(objTL.Item(i), "|")
+
+        Printer.CurrentY = (val(a(StartRowEnum)) * 200) + CurrY + (200 * sngTOF)
+        Printer.CurrentX = val(a(StartColEnum)) * 120
+
+        If a(MaxRowsEnum) > 1 Then
+            PrintWrappedText Printer, a(BodyEnum), Printer.CurrentX, val(a(MaxLengthEnum)), val(a(MaxRowsEnum))
+
+        Else
+            Printer.Print Left$(a(BodyEnum), val(a(MaxLengthEnum)));
+
+        End If
+
+    Next
+    
+exitHere:
+    Set objTL = Nothing
+    PrintShortTaxForm = intErrPoint
+    Exit Function
+errHandler:
+    intErrPoint = 9
+    MsgBox Err.Description & vbCrLf & "Please contact your systems admin.", vbExclamation, "Printer Error #" & Err.Number
+    Resume exitHere
+
+End Function
+
+Public Function PrintTaxForm(FormCode As String, SProc As String, TaxFormID As Long, CurrY As Long) As Long
+
+    On Error GoTo errHandler
+    
+    Dim intErrPoint As Integer
+    Dim objTL As TextList
+    Dim i As Integer
+    Dim a() As String
+    Dim sngTOF As Single
+    
+    
+'Debug.Print SProc
+'MsgBox m_lngSignAgentID, , "m_lngSignAgentID"
+
+
+    Set objTL = New TextList
+    objTL.Load_StoredProc SProc & " (" & TaxFormID & ", " & m_lngSignAgentID & ")"
+
+    Call Print_Prep(FormCode, sngTOF, True)
+
+    For i = 1 To objTL.ListCount
+
+        a = Split(objTL.Item(i), "|")
+
+        Printer.CurrentY = (val(a(StartRowEnum)) * 200) + CurrY + (200 * sngTOF)
+        Printer.CurrentX = val(a(StartColEnum)) * 120
+
+        If a(MaxRowsEnum) > 1 Then
+            PrintWrappedText Printer, a(BodyEnum), Printer.CurrentX, val(a(MaxLengthEnum)), val(a(MaxRowsEnum))
+
+        Else
+            Printer.Print Left$(a(BodyEnum), val(a(MaxLengthEnum)));
+
+        End If
+
+    Next
+'Debug.Assert 0
+    'Printer.EndDoc
+    
+exitHere:
+    Set objTL = Nothing
+    PrintTaxForm = intErrPoint
+    Exit Function
+errHandler:
+    intErrPoint = 9
+    MsgBox Err.Description & vbCrLf & "Please contact your systems admin.", vbExclamation, "Printer Error #" & Err.Number
+    Resume exitHere
+
+End Function
+
+Public Function PrintAbwicklungsschein(TaxFormID As Long, SkipInitPrinter As Boolean) As Long
+    
+    On Error GoTo errHandler
+    
+    Dim intErrPoint As Integer
+    
+    Dim objLoopPrinter As Printer
+    Dim strPrt As String
+
+    Dim objTL As TextList
+    Dim i As Integer
+    Dim a() As String
+    Dim sngTOF As Single
+    
+    Dim blnReprint As Boolean
+    Dim blnInitPrint As Boolean
+    
+    Call Print_Prep("ABW", sngTOF, SkipInitPrinter)
+    
+'Debug.Print SProc
+'MsgBox m_lngSignAgentID, , "m_lngSignAgentID"
+    
+    Set objTL = New TextList
+    objTL.Load_StoredProc "cp_parmsel_TaxFormData_ABW (" & TaxFormID & ", " & m_lngSignAgentID & ")"
+
+'MsgBox GetSetting("iTRAAC Console", "Options", "SignAgentID", 0)
+
+Debug.Assert objTL.ListCount > 0
+Debug.Assert objTL.ListCount <> 14
+
+    For i = 1 To objTL.ListCount
+
+        a = Split(objTL.Item(i), "|")
+        
+        If i = 19 Then
+            If TaxFormID = 0 Then PrinterBox
+            Printer.NewPage
+        End If
+
+        Printer.CurrentY = (val(a(StartRowEnum)) * 200) + (200 * sngTOF)
+        Printer.CurrentX = val(a(StartColEnum)) * 120
+
+        If a(MaxRowsEnum) > 1 Then
+            PrintWrappedText Printer, a(BodyEnum), Printer.CurrentX, val(a(MaxLengthEnum)), val(a(MaxRowsEnum))
+
+        Else
+            Printer.Print Left$(a(BodyEnum), val(a(MaxLengthEnum)));
+
+        End If
+
+    Next
+    
+    Set objTL = Nothing
+    
+exitHere:
+    PrintAbwicklungsschein = intErrPoint
+    Exit Function
+errHandler:
+    intErrPoint = 9
+    MsgBox Err.Description & vbCrLf & "Please contact your systems admin.", vbExclamation, "Printer Error #" & Err.Number
+
+End Function
+
+Private Sub PrintWrappedText(Prt As Printer, ByVal InputString As String, LeftMargin As Integer, _
+                             MaxLength As Integer, MaxRows As Integer)
+    
+    Dim strWord As String
+    Dim i As Integer
+    Dim intRowCnt As Integer
+    Dim intPosition As Integer
+    
+    InputString = RTrim$(InputString)
+    Prt.CurrentX = LeftMargin
+    
+    intRowCnt = 1
+
+    Do While Len(InputString)
+    
+        strWord = vbNullString
+        
+        i = InStr(InputString, " ") ' Word break characters
+        If i = 0 Then i = InStr(InputString, ".")
+        If i = 0 Then i = InStr(InputString, ",")
+        If i = 0 Then i = InStr(InputString, "!")
+        If i = 0 Then i = InStr(InputString, "-")
+        If i = 0 Then i = InStr(InputString, ":")
+        If i = 0 Then i = InStr(InputString, ";")
+        If i = 0 Then i = InStr(InputString, "'")
+        If i = 0 Then i = InStr(InputString, Chr$(34))
+        If i = 0 Then
+            
+            If Len(InputString) + intPosition > MaxLength Then
+                Prt.Print
+                Prt.CurrentX = LeftMargin
+                intPosition = 0
+            
+            End If
+            
+            Do While (intPosition + Len(strWord)) < MaxLength And Len(InputString) > 0
+                strWord = strWord + Left$(InputString, 1)
+                InputString = Mid$(InputString, 2)
+            Loop
+
+            Prt.Print strWord
+            Prt.CurrentX = LeftMargin
+            intPosition = 0
+            intRowCnt = intRowCnt + 1
+            
+            If intRowCnt = MaxRows Then Exit Sub
+        
+        Else
+            strWord = Left$(InputString, i)
+            InputString = Mid$(InputString, i + 1)
+
+            If (Len(strWord) + intPosition) > MaxLength Then
+                intPosition = Len(strWord)
+                Prt.Print
+                Prt.CurrentX = LeftMargin
+                Prt.Print strWord;
+                intRowCnt = intRowCnt + 1
+                If intRowCnt = MaxRows Then Exit Sub
+                
+            Else
+                intPosition = (Len(strWord) + intPosition)
+                Prt.Print strWord;
+            End If
+
+        End If
+    
+    Loop
+
+End Sub
+
+Public Sub PrinterBox()
+    
+    Dim i As Integer
+    Dim str As String
+    
+    ' Top Left
+    Printer.CurrentX = 0: Printer.CurrentY = 0 ': Printer.Print "X";
+    
+    i = 0
+    str = "X"
+    Do While Printer.TextWidth(str) < ((Printer.ScaleWidth) - (Printer.TextWidth("X")))
+        i = i + 1
+        str = str & i Mod 10
+    Loop
+    Printer.Print str
+    
+    ' Top Right
+    Printer.CurrentX = (Printer.ScaleWidth) - (Printer.TextWidth("X")): Printer.CurrentY = 0: Printer.Print "X"
+    
+    i = 0 '1 ': Printer.CurrentX = 0
+    Do While Printer.CurrentY < (Printer.ScaleHeight) - ((Printer.TextHeight("X") * 2))
+        i = i + 1
+        Printer.Print CStr(i) ' Mod 10
+    Loop
+    
+    ' Bottom Left
+    Printer.CurrentX = 0: Printer.CurrentY = (Printer.ScaleHeight) - (Printer.TextHeight("X")): Printer.Print "X"
+    
+    ' Bottom Right
+    Printer.CurrentX = (Printer.ScaleWidth) - (Printer.TextWidth("X")): Printer.CurrentY = (Printer.ScaleHeight) - (Printer.TextHeight("X")): Printer.Print "X"
+    
+End Sub
+
+Public Sub PrinterEndDoc()
+'    If DebugMode Then
+        Debug.Print Printer.DeviceName
+'        Printer.KillDoc
+'    Else
+        Printer.EndDoc
+'    End If
+End Sub
+
+Public Sub PrinterKillDoc()
+    Printer.KillDoc
+End Sub
+
+Public Sub PrinterNewPage()
+    Printer.NewPage
+End Sub
+
+Public Property Let SignAgentID(Value As Long)
+    m_lngSignAgentID = Value
+End Property
+

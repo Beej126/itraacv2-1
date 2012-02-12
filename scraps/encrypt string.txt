@@ -1,0 +1,25 @@
+    private void EncryptString_Click(object sender, RoutedEventArgs e)
+    {
+      string enc = SecurityHelpers.StringToEncryptedHexString(Microsoft.VisualBasic.Interaction.InputBox("Input:", "Encrypt String"));
+      Clipboard.SetText(enc);
+      txtEncryptedString.Text = enc;
+      popEncryptedString.IsOpen = true;
+      txtEncryptedString.Focus();
+    }
+
+    private void btnCloseEncryptedString_Click(object sender, RoutedEventArgs e)
+    {
+      txtEncryptedString.Text = "";
+      popEncryptedString.IsOpen = false;
+    }
+
+
+    <Popup Name="popEncryptedString" StaysOpen="False" PlacementTarget="{Binding Mode=OneWay, ElementName=menuAdmin}" Placement="Bottom"
+           AllowsTransparency="True" >
+      <Border BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}" Padding="3" CornerRadius="5" >
+        <WrapPanel Orientation="Vertical">
+          <TextBox Name="txtEncryptedString" Style="{StaticResource ReadOnlyTextBox}" Width="200" Height="auto" Margin="5" TextWrapping="Wrap" />
+          <Button Content="Copy To Clipboard &amp; Close" Margin="5" IsDefault="True" IsCancel="True" Click="btnCloseEncryptedString_Click" />
+        </WrapPanel>
+      </Border>
+    </Popup>

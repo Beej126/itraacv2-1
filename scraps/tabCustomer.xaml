@@ -1,0 +1,62 @@
+﻿ 
+<local:tabBase x:Class="iTRAACv2.tabCustomer"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:WPFToolkit="clr-namespace:Microsoft.Windows.Controls;assembly=WPFToolkit"
+  xmlns:local="clr-namespace:iTRAACv2"
+  >
+
+    <DockPanel>
+
+      <GroupBox DockPanel.Dock="Top" Margin="5" Header="Household Info">
+        <local:ucDetailsView x:Name="SponsorFields" DataContext="{Binding Path=SponsorFields}" MinWidth="100" />
+      </GroupBox>
+      <GroupBox DockPanel.Dock="Top" Header="Members" Margin="5 0 5 5">
+        <WPFToolkit:DataGrid AutoGenerateColumns="true" Name="gridDependents" Margin="5" 
+                             ItemsSource="{Binding Path=Members}" Height="auto" IsReadOnly="True" />
+      </GroupBox>
+      <Grid >
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1*" />
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+
+        <GroupBox Grid.Column="0" Header="Tax Forms" Margin="5 0 1 5" >
+          <DockPanel>
+            <CheckBox DockPanel.Dock="Top" IsChecked="{Binding Path=FormUnreturnedOnly}" Content="Show Only Unreturned" Margin="5 2" />
+            <WPFToolkit:DataGrid AutoGenerateColumns="true" Name="gridForms" Margin="5" 
+                             ItemsSource="{Binding Path=TaxForms}" IsReadOnly="True" SelectionChanged="gridForms_SelectionChanged">
+              <WPFToolkit:DataGrid.Columns>
+
+                <WPFToolkit:DataGridTemplateColumn Header="Form #">
+                  <WPFToolkit:DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <TextBlock>
+                        <Hyperlink CommandParameter="{Binding Path=RowGUID}" 
+                                   Click="TaxForm_Click" >
+                          <TextBlock Text="{Binding Path=Form #}"/>
+                        </Hyperlink>
+                      </TextBlock>
+                    </DataTemplate>
+                  </WPFToolkit:DataGridTemplateColumn.CellTemplate>
+                </WPFToolkit:DataGridTemplateColumn>
+
+              </WPFToolkit:DataGrid.Columns>
+            </WPFToolkit:DataGrid>
+          </DockPanel>
+        </GroupBox>
+        
+        <StackPanel Grid.Column="2">
+          <Expander Header="Customer Diary"></Expander>
+          <Expander Header="Tax Form View">
+            <local:ucDetailsView x:Name="TaxFormDetails" EmptyMessage="" />
+          </Expander>
+        </StackPanel>
+        
+        <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Center" BorderThickness="1" BorderBrush="DarkGray" />
+      </Grid>
+
+
+    </DockPanel>
+</local:tabBase>

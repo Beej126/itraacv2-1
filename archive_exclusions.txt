@@ -1,0 +1,6 @@
+Obj\
+App.config.backup
+.svn\
+*scc
+*.vssscc
+*.vspscc
