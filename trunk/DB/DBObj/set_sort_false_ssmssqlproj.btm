@@ -1,0 +1,9 @@
+@echo off
+cls
+cd /d %~dp0
+echo.
+for /r %%v in (*.ssmssqlproj) do (echo %v & sed -i -e"s/Sorted=\"true\"/Sorted=\"false\"/g" "%v" & move /q sedDOSSUX "%v")
+::that DOSSUX comes from esoterics of "super-sed" v3.59's inability to support the --in-place arg correctly and how it names the corresponding output file
+echo.
+pause
+exit

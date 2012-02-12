@@ -1,0 +1,24 @@
+              <DataGridTemplateColumn Header="New Forms">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Click="btnNewNF1Package_Click" Style="{StaticResource FlatButton}" Padding="0" Margin="0"
+                            ToolTip="{Binding Mode=OneWay, Path=(DataContext).Class1TaxForms_RemainingToBuyToolTipText, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
+                            IsEnabled="{Binding Mode=OneWay, Path=(DataContext).Class1TaxForms_CountRemainingToBuy, 
+                                          RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid},
+                                          Converter={conv:BoolExpressionToBool}, ConverterParameter='? > 0' }">
+                      <StackPanel Orientation="Horizontal">
+                        <Image Source="/Views/glyphs/documents_new_small.png"  />
+                        <TextBlock Text="..." Margin="3 0 0 0" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+
+
+NewForms_ClientGUID = ((DataRowView)gridDependents.SelectedItem)["RowGUID"].ToString();
+
+static public string ConcatSelectedDependents(IEnumerable list)
+{
+  return( (from Sponsor.DependentLight i in list where i.IsSelected == true select i.FullName).Aggregate((String)null, (current, next) => current + "\r" + next) );
+}

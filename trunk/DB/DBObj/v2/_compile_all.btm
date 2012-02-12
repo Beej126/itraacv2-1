@@ -1,0 +1,36 @@
+@echo off
+
+:: note: this script uses "tee" syntax
+:: available in a free CMD.EXE upgrade/replacement called "Take Command Console"
+:: http://jpsoft.com/downloads.html (TCC/LE is the free version)
+
+::set dbserver=.\sqlexpress2005
+::set login=-E
+
+set dbserver=mwr-tro-v2
+set login=-U sa -P %itraac_v2_db_password%
+
+if "%itraac_v2_db_password%" NEQ "" goto run
+echo.
+echo Must set 'itraac_v2_db_password' environment variable.
+goto quit
+
+:run
+echo Server: %dbserver% >_compile_out.txt
+echo.>>_compile_out.txt
+
+:: -m 1 supresses "Changed database context to ..."
+for %%v in (*.sql) (echo %v & sqlcmd -m 1 -i "%v" -S %dbserver% %login% & echo.) | tee /a _compile_out.txt
+
+pause
+
+window min
+start "" /wait /pgm notepad _compile_out.txt
+erase _compile_out.txt
+
+exit
+
+:quit
+set dbserver=
+set login=
+set password=

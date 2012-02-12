@@ -1,0 +1,49 @@
+    <ControlTemplate x:Key="FadeawayMessageTemplate" TargetType="{x:Type Label}" >
+      <StackPanel Name="FadeawayPanel" Background="Red" HorizontalAlignment="Right" Visibility="Hidden" >
+        <TextBlock Name="MainLabel" TextWrapping="Wrap" Text="{TemplateBinding Content}" FontSize="16" Foreground="White" VerticalAlignment="Center" Padding="4,0,0,2" />
+        <!-- This TextBlock triggers the fadeaway animation when it's updated via it's binding to MainLabel's Text -->
+        <!-- This extra element hop is necessary because the TemplateBinding that's necessary to populate the label does not support NotifyOnTargetUpdate -->
+        <TextBlock Name="TriggerSource" Text="{Binding ElementName=MainLabel, Path=Text, NotifyOnTargetUpdated=True}" Visibility="Collapsed" />
+      
+      </StackPanel>
+      
+      <ControlTemplate.Triggers>
+        <Trigger SourceName="TriggerSource" Property="Text" Value="">
+          <Setter TargetName="FadeawayPanel" Property="Visibility" Value="Collapsed"  />
+        </Trigger>
+
+        <!-- Fadeaway trigger -->
+        <EventTrigger SourceName="TriggerSource" RoutedEvent="Binding.TargetUpdated" >
+          <BeginStoryboard Name="FadeawayStoryboard">
+            <Storyboard TargetName="FadeawayPanel">
+              <!-- full initial opacity -->
+              <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1.0" />
+              <!-- fadeaway opacity -->
+              <DoubleAnimation Storyboard.TargetProperty="Opacity" Duration="0:0:5" From="1.0" To="0.0" BeginTime="0:0:2" />
+
+              <!-- initially visible -->
+              <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" >
+                <DiscreteObjectKeyFrame Value="{x:Static Visibility.Visible}" KeyTime="0:0:0" />
+              </ObjectAnimationUsingKeyFrames>
+              <!-- collapsed visibility at the end -->
+              <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:7" >
+                <DiscreteObjectKeyFrame Value="{x:Static Visibility.Collapsed}" />
+              </ObjectAnimationUsingKeyFrames>
+            </Storyboard>
+          </BeginStoryboard>
+        </EventTrigger>
+
+        <EventTrigger SourceName="TriggerSource" RoutedEvent="Label.MouseEnter">
+          <SeekStoryboard BeginStoryboardName="FadeawayStoryboard" Offset="0" />
+          <PauseStoryboard BeginStoryboardName="FadeawayStoryboard" />
+        </EventTrigger>
+        <EventTrigger SourceName="TriggerSource" RoutedEvent="Label.MouseLeave">
+          <ResumeStoryboard BeginStoryboardName="FadeawayStoryboard" />
+        </EventTrigger>
+
+
+      </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+
+<Label Template="{StaticResource FadeawayMessageTemplate}" Name="lblHeaderMessage" Grid.Row="1" Visibility="Collapsed" />

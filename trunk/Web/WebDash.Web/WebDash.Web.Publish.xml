@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<publishData>
+  <publishProfile publishUrl="\\144.170.180.166\d$\Inetpub\wwwroot\www.euromwr.army.mil\Virtual Directories\ITRAAC\WebDash" deleteExistingFiles="True" ftpAnonymousLogin="False" ftpPassiveMode="True" msdeploySite="" msdeploySiteID="" msdeployRemoteSitePhysicalPath="" msdeployAllowUntrustedCertificate="False" msdeploySkipExtraFilesOnServer="True" msdeployMarkAsApp="False" profileName="Profile1" publishMethod="FileSystem" replaceMatchingFiles="False" userName="" savePWD="False" userPWD="" SelectedForPublish="True">
+    <file relUrl="Silverlight.js" publishTime="04/28/2011 13:07:00" />
+    <file relUrl="bin/WebDash.Web.dll" publishTime="09/12/2011 11:19:58" />
+    <file relUrl="WebDashTestPage.html" publishTime="09/08/2011 14:30:06" />
+    <file relUrl="DashWCF.svc" publishTime="04/28/2011 14:11:31" />
+    <file relUrl="ClientBin/WebDash.xap" publishTime="09/12/2011 11:20:08" />
+    <file relUrl="bin/WebDash.Web.pdb" publishTime="09/12/2011 11:19:58" />
+    <file relUrl="WebDashTestPage.aspx" publishTime="09/12/2011 11:21:26" />
+    <file relUrl="Web.config" publishTime="09/12/2011 10:42:51" />
+  </publishProfile>
+</publishData>

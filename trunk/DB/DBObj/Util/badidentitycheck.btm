@@ -1,0 +1,1 @@
+forvatsql -Q "if exists(SELECT 1 FROM tblClients WHERE SponsorID < 10000 AND CreateDate > '1/23/2012') print 'bad identity!'"

@@ -1,0 +1,47 @@
+﻿<BAWPF:ucBase x:Class="iTRAACv2.ucReturnForms"
+              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:conv="clr-namespace:WPFValueConverters"
+              xmlns:local="clr-namespace:iTRAACv2"
+              xmlns:BAWPF="clr-namespace:BrentAnderson.WPF"
+              >
+  
+  <GroupBox Header="Return Forms" Background="#F4FCF4" Padding="0">
+    <WrapPanel Orientation="Vertical" Margin="0 5 0 0">
+
+      <WrapPanel Orientation="Horizontal" Margin="0 0 0 5">
+        <Label Content="Form #:" />
+        <local:ucTaxFormNumber x:Name="txtOrderNumber" Grid.Column="1" Grid.Row="3" AlwaysShow="True" />
+        <Button Content="Return Form" Padding="10 2" VerticalAlignment="Center" IsDefault="True" Name="btnReturnForm" Click="btnReturnForm_Click" Background="{StaticResource OrangeGradient}" Margin="0 0 5 0"/>
+        <CheckBox Name="chkAutoFile" VerticalAlignment="Center" Content="Auto Open" ToolTip="Automatically open Tax From edit tab for rapid filing" IsChecked="True" Margin="0 0 5 0"/>
+      </WrapPanel>
+
+      <DataGrid Grid.Row="0" x:Name="gridReturnForms" AutoGenerateColumns="True" HeadersVisibility="Column" 
+                        ItemsSource="{Binding Mode=OneWay, Source={x:Static local:ReturnForms.List_BindingWrapper}}"  >
+        <DataGrid.Resources>
+          <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource PrettyDataGridCellStyle}">
+            <Style.Triggers>
+              <DataTrigger Value="True"> <!-- paint the Message field red when we get failed response --> <!-- nugget: style individual cell based on data value -->
+                <DataTrigger.Binding> <!-- nugget: -->
+                  <MultiBinding Converter="{conv:AND}"> <!-- nugget: -->
+                    <Binding Mode="OneWay" Path="Success" Converter="{conv:InverseBooleanConverter}"/> <!-- Success = false --> <!-- nugget: -->
+                    <Binding RelativeSource="{RelativeSource Mode=Self}" Path="Column.Header" Converter="{conv:BoolExpressionToBool}" ConverterParameter="'?' == 'Message'" /> <!-- Fieldname = 'Message' --> <!-- nugget: Pass DataColumn.SortMemberPath to JScript StringEvaluator to target specific columns by name, too cool! -->
+                  </MultiBinding> <!-- nugget: -->
+                </DataTrigger.Binding> <!-- nugget: -->
+                <Setter Property="Foreground" Value="Red" /> <!-- nugget: -->
+              </DataTrigger> <!-- nugget: -->
+              <DataTrigger Binding="{Binding Mode=OneWay, Path=Success}" Value="True">
+                <Setter Property="Foreground" Value="Green" />
+              </DataTrigger>
+
+            </Style.Triggers>
+          </Style>
+        </DataGrid.Resources>
+
+      </DataGrid>
+
+    </WrapPanel>
+  </GroupBox>
+
+</BAWPF:ucBase>

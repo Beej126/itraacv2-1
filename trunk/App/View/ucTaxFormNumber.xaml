@@ -1,0 +1,33 @@
+﻿<local:ucBase x:Class="iTRAACv2.ucTaxFormNumber"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+  mc:Ignorable="d" 
+  xmlns:conv="clr-namespace:WPFValueConverters"
+  xmlns:local="clr-namespace:iTRAACv2">
+  
+  <StackPanel Orientation="Horizontal" >
+    <ComboBox Name="cbxOrderNumber_FormType" SelectedValuePath="Content" Margin="3" >
+      <ComboBox.Items>
+        <ComboBoxItem Content="NF1" />
+        <ComboBoxItem Content="NF2" />
+      </ComboBox.Items>
+    </ComboBox>
+    <ComboBox Name="cbxOrderNumber_Office" Margin="3" 
+              ItemsSource="{x:Static local:TaxOfficeModel.AllOfficesPlusAny}" SelectedValue="{x:Static local:SettingsModel.TaxOfficeCode}"
+              SelectedValuePath="OfficeCode" 
+              TextSearch.TextPath="OfficeCode" > <!-- nugget: TextSearch.TextPath required on ComboBox with ItemTemplate to support keyboard item selection -->
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Foreground="{Binding Mode=OneTime, Path=Active, Converter={conv:BoolToSolidBrushConverter}, ConverterParameter='Black,Gray'}"
+                     Text="{Binding Mode=OneTime, Path=Office}" />
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <ComboBox Name="cbxOrderNumber_FiscalYear" Margin="3" DisplayMemberPath="Key" SelectedValuePath="Value" />
+    <TextBox Margin="3" Name="txtOrderNumber_CtrlNumber" MaxLength="6" Width="50" />
+    <TextBlock Margin="5" Name="lblOrderNumber" MinWidth="115" />
+  </StackPanel>
+
+</local:ucBase>
