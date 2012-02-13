@@ -1,0 +1,60 @@
+iTRAACv2_2009_10_07.rar
+iTRAACv2_2009_10_09.rar
+iTRAACv2_2009_10_13 - type ahead search works.rar
+iTRAACv2_2009_10_14.rar
+iTRAACv2_2009_10_15.rar
+iTRAACv2_2009_10_16.rar
+iTRAACv2_2009_10_19 - wait cursor works.rar
+iTRAACv2_2009_10_23.rar
+iTRAACv2_2009_11_20.7z
+iTRAACv2_2009_11_23 - customer search in user control.7z
+iTRAACv2_2009_11_24 - customer tabs poppin!.7z
+iTRAACv2_2009_11_25.7z
+iTRAACv2_2009_12_02 - tabs & BO = clean OO.7z
+iTRAACv2_2009_12_04 - generic members datagrid.7z
+iTRAACv2_2009_12_07 - forms grid.7z
+iTRAACv2_2009_12_08 - tabs more baseclassy, started TaxForm tab.7z
+iTRAACv2_2009_12_09 - not much.7z
+iTRAACv2_2009_12_11 - gradient expanders.7z
+iTRAACv2_2009_12_14 - started custom TaxForm panel.7z
+iTRAACv2_2009_12_22 - starting linq to sql.7z
+iTRAACv2_2010_02_03 - backup prior to DEV VM migration.7z
+iTRAACv2_2010_03_04 - clean_cut.7z
+iTRAACv2_2010_04_02 - starting_vendor_select_popup.7z
+iTRAACv2_2010_04_11 - prior_garmisch.7z
+iTRAACv2_2010_04_30 - ucVendorSearch_solid.7z
+iTRAACv2_2010_05_03 - customer_search_separate_fields.7z
+iTRAACv2_2010_05_05 - before_may_USA_trip.7z
+iTRAACv2_2010_06_11 - initial_extended_fields_on_taxform.7z
+iTRAACv2_2010_06_23 - tax_form_ui_alpha_0.1.7z
+iTRAACv2_2010_06_25 - ucToggleButton_Lock_looking_good.7z
+iTRAACv2_2010_06_25 - watermark_text.7z
+iTRAACv2_2010_07_02 - initial_nt_group_security.7z
+iTRAACv2_2010_07_30 - first v1 db included (v1 db).7z
+iTRAACv2_2010_07_30 - UserAccess and EF stuff.7z
+iTRAACv2_2010_08_02 - custom UserAccess, punted on EF CTP4.7z
+iTRAACv2_2010_08_04 - status bar.7z
+iTRAACv2_2010_08_11 - admin override cookin!.7z
+iTRAACv2_2010_08_20 - finally TaxForm LockToolTip refresh logic finished.7z
+iTRAACv2_2010_08_23 - fadeaway header message and taxform lock tooltip done via multibinding.7z
+iTRAACv2_2010_08_24 - TaxForm Lock ToggleButton has proper Disabled and ToolTip look.7z
+iTRAACv2_2010_09_01 - taxform validation notifications popping! (v1 db).7z
+iTRAACv2_2010_09_02 - TaxForm.ReLoad() basically done, BusinessBase heavily cleaned up.7z
+iTRAACv2_2010_09_08 - BO.IsModified indicator on Tabs works!
+iTRAACv2_2010_09_09 - font zoom slider! and dumped 'anon', yay!.7z
+iTRAACv2_2010_09_20 - tax form save baselined and new package proc started.7z
+iTRAACv2_2010_09_24 - TaxForm.Save is looking good!
+iTRAACv2_2010_09_29 - nailed the auto wait cursor in datalayer, taxform_txntype save done (v1 db).7z
+iTRAACv2_2010_09_30 - major v1 index cleanups (search rocks now) (v1 db).7z
+iTRAACv2_2010_10_01 - ucDetailsView implementation really cleaned up, DataGrids prettied up.7z
+iTRAACv2_2010_10_04 - system message 'peek' window, first name search & tax form toolbar 'frozen'.7z
+iTRAACv2_2010_10_13 - TaxForm Rapid Return screen is poppin!.7z
+iTRAACv2_2010_10_15 - global datagrid.form# to tax form tab hyperlink works!!
+iTRAACv2_2010_10_20 - good start on NF1 print (using MS's handy VB6 compatibility library).7z
+iTRAACv2_2010_11_02 - returns and statuses seem under control finally!.7z
+iTRAACv2_2010_11_05 - not much, OpenSponsor RoutedCommand.7z
+iTRAACv2_2010_12_15 - transaction review looks good.7z
+iTRAACv2_2011_01_06 - cart & sell new forms coming along.7z
+iTRAACv2_2011_02_17 - new package works (v1 db).7z
+iTRAACv2_2011_04_12 - code_review_rollup_#1 (v1 db).zip
+iTRAACv2_2011_08_04 - backup to load v2 beta server.zip
