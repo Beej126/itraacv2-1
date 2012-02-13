@@ -1,1 +1,1 @@
-forvat net use \\mwr-tro-%v\ipc$ /user:%VATPCUSER% %VATPCPASS%
+forvat net use \\mwr-tro-%v\ipc$ /user:%VATPCADMIN% %VATPCPASS%

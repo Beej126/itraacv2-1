@@ -8,11 +8,11 @@
 ::set login=-E
 
 set dbserver=mwr-tro-v2
-set login=-U sa -P %itraac_v2_db_password%
+set login=-U %SQLCMDUSER% -P %SQLCMDPASSWORD%
 
-if "%itraac_v2_db_password%" NEQ "" goto run
+if "%SQLCMDPASSWORD%" NEQ "" goto run
 echo.
-echo Must set 'itraac_v2_db_password' environment variable.
+echo Must set 'SQLCMDUSER' & 'SQLCMDPASSWORD' environment variables.
 goto quit
 
 :run
