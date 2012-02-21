@@ -108,6 +108,7 @@ public static class Extensions
   /// <returns></returns>
   public static IEnumerable<string> Uniquify(this IEnumerable<string> enumerable)
   {
+    enumerable = enumerable.Where(s => !String.IsNullOrWhiteSpace(s)); //filter out null or empty strings, this might not be preferred in all contexts but for now i'm going to keep it here rather than higher up
     //apparently we can't have this simple return at the top of an iterator implementation (i.e. using "yield" syntax)
     //so i'm just wrappering it to get around that limitation
     //basically, avoid the work of looping through renaming things if there aren't any duplicates in the list

@@ -5,7 +5,8 @@
     xmlns:kb="http://kent.boogaart/controls"
  >
 
-  <Popup StaysOpen="False" Name="popVendorSearch" Placement="Bottom" VerticalOffset="2" PopupAnimation="Slide" >
+  <Popup StaysOpen="False" Name="popVendorSearch" Placement="Bottom" VerticalOffset="2" PopupAnimation="Slide"
+         FocusManager.IsFocusScope="True">
     <kb:Resizer MinWidth="500" MinHeight="200" Width="500" Height="200" MaxHeight="450" MaxWidth="850">
       <Border BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}">
         <Grid>

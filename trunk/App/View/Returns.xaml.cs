@@ -27,30 +27,56 @@ namespace iTRAACv2
     private void btnSearch_Click(object sender, RoutedEventArgs e)
     {
       txtSequenceNumber.SelectAll();
-      gridReturns.ItemsSource = null; //blank out the existing list before we go off and search for visual aesthetics
+      gridReturns.ItemsSource = null; //for visual consistency, blank out the existing list before we go off and search
       using(Proc TaxForm_search = new Proc("TaxForm_search"))
       {
         TaxForm_search["@SequenceNumber"] = txtSequenceNumber.Text;
         gridReturns.ItemsSource = TaxForm_search.ExecuteDataSet().Table0.DefaultView;
-        FilterFiledChanged();
+        FilterChanged();
       }
+
+      //automatically open the only one found if it is only one
+      if (gridReturns.Items.Count == 1)
+        RoutedCommands.OpenTaxForm.Execute((gridReturns.Items[0] as DataRowView)["TaxFormGUID"], null);
     }
+
+    public bool FilterReturned
+    {
+      get { return (bool)GetValue(FilterReturnedProperty); }
+      set { SetValue(FilterReturnedProperty, value); }
+    }
+    public static readonly DependencyProperty FilterReturnedProperty =
+      DependencyProperty.Register("FilterReturned", typeof(bool), typeof(Returns),
+        new UIPropertyMetadata(true, (obj, args) => { (obj as Returns).FilterChanged(); }));
 
     public bool FilterFiled
     {
       get { return (bool)GetValue(FilterFiledProperty); }
       set { SetValue(FilterFiledProperty, value); }
     }
-
     public static readonly DependencyProperty FilterFiledProperty =
       DependencyProperty.Register("FilterFiled", typeof(bool), typeof(Returns),
-        new UIPropertyMetadata(true, (obj, args) => { (obj as Returns).FilterFiledChanged(); }));
+        new UIPropertyMetadata(false, (obj, args) => { (obj as Returns).FilterChanged(); }));
 
-    protected void FilterFiledChanged()
+    public bool FilterLocalOffice
+    {
+      get { return (bool)GetValue(FilterLocalOfficeProperty); }
+      set { SetValue(FilterLocalOfficeProperty, value); }
+    }
+    public static readonly DependencyProperty FilterLocalOfficeProperty =
+      DependencyProperty.Register("FilterLocalOffice", typeof(bool), typeof(Returns),
+        new UIPropertyMetadata(true, (obj, args) => { (obj as Returns).FilterChanged(); }));
+
+    
+    protected void FilterChanged()
     {
       DataView dv = (gridReturns.ItemsSource as DataView);
       if (dv == null) return;
-      dv.RowFilter = FilterFiled ? "Status not in ('Filed', 'Voided')" : "";
+      dv.RowFilter = SqlClientHelpers.BuildRowFilter(
+        FilterReturned ? "Status not in ('Returned', 'Filed')" : null,
+        FilterFiled ? "Status <> 'Filed'" : null, 
+        FilterLocalOffice ? "TaxOfficeId = " + SettingsModel.TaxOfficeId.ToString() : null
+      );
     }
   }
 }

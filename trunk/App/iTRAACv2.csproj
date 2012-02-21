@@ -97,13 +97,13 @@
   <ItemGroup>
     <Reference Include="Andora.UserControlLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=811362bb4c4375b6, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>_bin\Andora.UserControlLibrary.dll</HintPath>
+      <HintPath>bin_\Andora.UserControlLibrary.dll</HintPath>
     </Reference>
     <Reference Include="itextsharp">
-      <HintPath>_bin\itextsharp.dll</HintPath>
+      <HintPath>bin_\itextsharp.dll</HintPath>
     </Reference>
     <Reference Include="Kent.Boogaart.Windows.Controls">
-      <HintPath>_bin\Kent.Boogaart.Windows.Controls.dll</HintPath>
+      <HintPath>bin_\Kent.Boogaart.Windows.Controls.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Expression.Interactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

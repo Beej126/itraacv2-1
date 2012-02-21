@@ -30,9 +30,10 @@ namespace iTRAACv2
     protected override void UserControl_Loaded(object sender, RoutedEventArgs e)
     {
       WPFHelpers.GridSort(gridRemarks, new string[] { "Alert", "LastUpdate" }, new ListSortDirection[] { ListSortDirection.Descending, ListSortDirection.Descending });
+      UsedDate.Focus();
     }
 
-    protected override void OnClosed() {} //nothing necessary here yet
+    protected override void OnClosed(){} //nothing necessary here yet
 
     private void btnVendor_Click(object sender, RoutedEventArgs e)
     {
