@@ -3,7 +3,7 @@
 --$Modtime: 4/30/10 2:00p $
 
 /* testing:
-exec Vendor_Search @VendorName = 'hotel', @VendorName_SearchType='begins with', @VendorCity = null, @VendorCity_SearchType='begins with'
+exec Vendor_Search @VendorName = 'heidel', @VendorName_SearchType='contains', @VendorCity = null, @VendorCity_SearchType='begins with'
 select top 5 * from tblvendors where plz is not null
 */
 /****** Object:  StoredProcedure [dbo].[Vendor_Search]    Script Date: 06/19/2009 15:58:30 ******/

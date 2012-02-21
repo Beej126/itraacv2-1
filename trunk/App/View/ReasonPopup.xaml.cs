@@ -114,8 +114,13 @@ namespace iTRAACv2
 
       if (cbxReason.Items.Count == 1) cbxReason.SelectedIndex = 0;
       popupThis.IsOpen = true;
+
+      //save keyboard focus so we can return it when popup is closed
+      PrePopupFocusedElement = Keyboard.FocusedElement;
+
       txtComments.Focus();
     }
+    private IInputElement PrePopupFocusedElement;
 
     private void btnOKCancel_Click(object sender, RoutedEventArgs e)
     {
@@ -131,8 +136,13 @@ namespace iTRAACv2
 
     private void popupThis_Closed(object sender, EventArgs e)
     {
+      //the convention of always calling the callback even when user simply clicked away from the popup driving auto-close...
+      //allows for the callback to serve as the "onclosed" event handler should the client require some logic at that point
       Result(new ReasonPopupResultEventArgs(
         IsOK, Convert.ToString(cbxReason.SelectedValue), chkIsAlert.IsChecked.Value, txtComments.Text, State));
+
+      //lastly restore focus to what it was prior to poup for navigational consistency
+      Keyboard.Focus(PrePopupFocusedElement);
     }
 
     /*
@@ -144,10 +154,11 @@ namespace iTRAACv2
     nugget: http://social.msdn.microsoft.com/forums/en-US/wpf/thread/3e7cc288-f146-4b9d-9157-41efb1623c71/
     */
 
-    private void txtComments_PreviewLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-    {
-      if (popupThis.IsOpen) e.Handled = true;  
-    }
+    //problem is that this also disabled the ability to tab to any other controls... so removing for now
+    //private void txtComments_PreviewLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    //{
+    //  if (popupThis.IsOpen) e.Handled = true;  
+    //}
 
   }
 }

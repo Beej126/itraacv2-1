@@ -11,6 +11,69 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using System.Threading;
+using System.Reflection;
+
+//http://stackoverflow.com/questions/5655073/wpf-datagrid-and-the-tab-key
+public class TablessDataGrid : DataGrid
+{
+  public TablessDataGrid()
+  {
+    Style = new Style(GetType(), FindResource(typeof(DataGrid)) as Style); //nugget: inherit whatever Style base class already has
+    //IsVisibleChanged += (s, e) => { if (IsVisible) FocusManager.SetIsFocusScope(this, true); /*Keyboard.Focus(lastDataGridFocus);*/ }; //handles restoring focus when popup yields it to something else
+  }
+
+  void TablessDataGrid_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+  {
+    throw new NotImplementedException();
+  }
+  
+  private MethodInfo GetNextTab;
+  private object KeyboredNavigation;
+  protected override void OnKeyDown(KeyEventArgs e)
+  {
+    //let enter key bubble up... so it hits a default button on this form or something
+    if (e.Key == Key.Return) e.Handled = false;
+    else if (e.Key == Key.Tab) //make Shift/Tab pop out of the datagrid rather than navigating amongst cells
+    {
+      if (Keyboard.Modifiers == ModifierKeys.Shift)
+      {
+        MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous)); //somehow this works just fine, but the "Next" version goes into the cell navigation
+      }
+      else
+      {
+        //just doesn't work for sh_t: MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); 
+        if (GetNextTab == null)
+        {
+          GetNextTab = typeof(KeyboardNavigation).GetMethod("GetNextTab", BindingFlags.NonPublic | BindingFlags.Instance);
+          KeyboredNavigation = typeof(FrameworkElement).GetProperty("KeyboardNavigation", BindingFlags.NonPublic | BindingFlags.Static).GetValue(this, null);
+        }
+        object NextControl = GetNextTab.Invoke(KeyboredNavigation, new object[] { this, this.Parent, true });
+        Keyboard.Focus(NextControl as IInputElement);
+      }
+      e.Handled = true;
+    }
+    else base.OnKeyDown(e);
+  }
+
+  protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
+  {
+    if (!(e.OldFocus is DataGridCell) //only reset focus if we're coming from outside the datagrid, otherwise you get into a recursive loop of setting focus
+      && (lastDataGridFocus != null))
+    {
+      Keyboard.Focus(lastDataGridFocus);
+      e.Handled = true;
+      return;
+    }
+  }
+
+  private IInputElement lastDataGridFocus = null;
+  protected override void OnPreviewLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
+  {
+    base.OnPreviewLostKeyboardFocus(e);
+    lastDataGridFocus = Keyboard.FocusedElement;
+  }
+
+}
 
 public static class WPFHelpers
 {
@@ -322,4 +385,5 @@ public class WaitCursorWrapper : IDisposable
     return (new WaitCursorWrapper());
   }
 }
+
 

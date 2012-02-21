@@ -4,9 +4,6 @@
   xmlns:local="clr-namespace:iTRAACv2" 
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:conv="clr-namespace:WPFValueConverters"
-               
-  Focusable="True"
-  FocusManager.IsFocusScope="True"
 >
 
   <!-- nugget: when debugging complex databindings, the diagnostics namespace definition below allows for the following attribute to be specified on any XAML element, verbose binding errors are then displayed in the Visual Studio "Output" window, it's very effective -->
@@ -160,8 +157,9 @@
         </DataGrid>
       </GroupBox>
 
-      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-        <Grid ScrollViewer.CanContentScroll="True" >
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+                    KeyboardNavigation.TabNavigation="Cycle" >
+        <Grid ScrollViewer.CanContentScroll="True"  >
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="auto" />
             <ColumnDefinition Width="auto" />
@@ -185,9 +183,9 @@
             <RowDefinition Height="auto" />
           </Grid.RowDefinitions>
 
-          <Label Grid.Column="0" Grid.Row="0" Content="Alerts:" />
+          <Label Grid.Column="0" Grid.Row="0" Content="Alerts:"  />
 
-          <WrapPanel Grid.Column="1" Margin="0 0 0 5">
+          <WrapPanel Grid.Column="1" Margin="0 0 0 5" >
 
             <Border CornerRadius="10" Background="LightPink" Padding="6 3 6 5" BorderThickness="2" BorderBrush="LightGray">
               <Border.Visibility>
@@ -290,7 +288,7 @@
                                   Tag="25" /> <!-- 25 == RemarkTypeId for Lost -->
 
             <local:ReasonPopup x:Name="FormStatusReasonPopup" Result="FormStatusReasonPopup_Result" 
-                               DisplayMemberPath="Title" SelectedValuePath="RemarkTypeId"/>
+                               DisplayMemberPath="Title" SelectedValuePath="RemarkTypeId" />
 
             <local:ucToggleButton x:Name="btnVoid" ToolTip="Mark this form as VOID" ButtonPadding="3" Margin="7,0,0,0"
                                   UpImage="/Assets/Glyphs/void_x32.png" ImageHeight="24"
@@ -326,10 +324,15 @@
                     Click="btnReturn_Click">
               <Image Source="/Assets/Glyphs/arrow_right_green_x32.png" Height="24"/>
             </Button>
-            <Button ToolTip="Return &amp; Close" Name="btnReturnClose" Content="r" FontFamily="Marlett" FontSize="14" VerticalAlignment="Stretch"
+            <Button ToolTip="Return &amp; Close" Name="btnReturnClose" FontSize="14" VerticalAlignment="Stretch" 
                     Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
-                    Click="btnReturn_Click" />
-            <Button ToolTip="Give Back to Customer for Correction" Name="btnGiveCustomer" Margin="7,0,0,0"
+                    Click="btnReturn_Click">
+              <StackPanel>
+                <TextBlock FontFamily="Marlett" VerticalAlignment="Center" Text="r" />
+                <AccessText>&#160;(_r)</AccessText>
+              </StackPanel>
+            </Button>
+            <Button ToolTip="Give Back to Customer for Correction" Name="btnGiveCustomer" Margin="7,0,0,0" 
                     Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                     Click="btnGiveCustomer_Click">
               <Button.IsEnabled>
@@ -356,10 +359,15 @@
               </Button.IsEnabled>
               <Image Source="/Assets/Glyphs/cabinet_x32.png" Height="24"/>
             </Button>
-            <Button ToolTip="File &amp; Close" Content="r" FontFamily="Marlett" FontSize="14" VerticalAlignment="Stretch"
+            <Button ToolTip="File &amp; Close" FontSize="14" VerticalAlignment="Stretch"
                     Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
                     Click="btnFile_Click" Name="btnFileClose">
-              <Button.IsEnabled>
+              <StackPanel>
+                <TextBlock FontFamily="Marlett" VerticalAlignment="Center" Text="r" />
+                <AccessText>&#160;(_f)</AccessText>
+              </StackPanel>
+
+            <Button.IsEnabled>
                 <MultiBinding Converter="{conv:OR}">
                   <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
                   <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
