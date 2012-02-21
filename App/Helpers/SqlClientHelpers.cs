@@ -474,6 +474,11 @@ public static class SqlClientHelpers
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {
 
+  static public string BuildRowFilter(params string[] Filters)
+  {
+    return (String.Join(" AND ", Filters.Where(s => !String.IsNullOrWhiteSpace(s))));
+  }
+
   static public void SetReadonlyField(this DataRow row, string ColName, object Data)
   {
     bool current = row.Table.Columns[ColName].ReadOnly;

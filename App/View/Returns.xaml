@@ -3,9 +3,9 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
   xmlns:local="clr-namespace:iTRAACv2"
-  Name="thisControl" Background="#F4FCF4">
+  Name="thisControl" Background="#F4FCF4" FocusManager.IsFocusScope="True" Focusable="True" >
   
-  <GroupBox Header="Return/File Forms" Background="Transparent" Padding="0">
+  <GroupBox Header="Return/File Forms" Background="Transparent" Padding="0" >
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="auto" />
@@ -23,9 +23,17 @@
         <Button Content="Search" Padding="10 0" Margin="5,0,0,0" IsDefault="True" Click="btnSearch_Click" />
       </WrapPanel>
 
-      <local:ucToggleButton Grid.Row="1" Text="Hide Filed" ButtonPadding="3" HorizontalAlignment="Left" ImageHeight="22"
-                              UpImage="/Assets/Glyphs/funnel.png" DownImage="/Assets/Glyphs/funnel_checked.png"
-                              IsChecked="{Binding Mode=TwoWay, ElementName=thisControl, Path=FilterFiled}" /> <!-- nugget: binding to the local Window/UserControl instance: http://decav.com/blogs/andre/archive/2007/05/27/wpf-binding-to-properties-in-your-usercontrol-or-window.aspx -->
+      <StackPanel Grid.Row="1" >
+        <WrapPanel Margin="0,3,0,3">
+          <RadioButton Content="Not Returned" Margin="0,0,5,0" GroupName="rdoStatus"
+                       IsChecked="{Binding Mode=TwoWay, ElementName=thisControl, Path=FilterReturned}" /> <!-- nugget: binding to the local Window/UserControl instance: http://decav.com/blogs/andre/archive/2007/05/27/wpf-binding-to-properties-in-your-usercontrol-or-window.aspx -->
+          <RadioButton Content="Not Filed" GroupName="rdoStatus"
+                       IsChecked="{Binding Mode=TwoWay, ElementName=thisControl, Path=FilterFiled}" />
+        </WrapPanel>
+        <CheckBox Content="Only This Office" 
+                  IsChecked="{Binding Mode=TwoWay, ElementName=thisControl, Path=FilterLocalOffice}" />
+      </StackPanel>
+      
       <TextBlock Text="{Binding Mode=OneWay, ElementName=gridReturns, Path=Items.Count, StringFormat='{}{0} item(s) found'}"
                  Grid.Row="1" Grid.Column="1"
                  Margin="5 0" HorizontalAlignment="Right" VerticalAlignment="Bottom" />

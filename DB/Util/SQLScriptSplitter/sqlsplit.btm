@@ -1,0 +1,8 @@
+set _sqlsplit_folder=%@name[%1] 
+erase /x /y ".\%_sqlsplit_folder%"
+md "%_sqlsplit_folder%"
+cd "%_sqlsplit_folder%"
+set _sqlsplit_folder=
+gawk -f ..\sqlsplit.awk "..\%@replace[^",,%1]"
+erase erase_me.sql
+cd ..

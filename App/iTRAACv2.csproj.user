@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectView>ShowAllFiles</ProjectView>
+    <ProjectView>ProjectFiles</ProjectView>
     <PublishUrlHistory>\\mwr-tro-v2\Brent\v2ClickOnce\|C:\Brent\Dev\iTRAAC\iTRAAC v2\App\ClickOnce\|\\144.170.180.166\d%24\Inetpub\wwwroot\www.euromwr.army.mil\Virtual Directories\ITRAAC\v2\|publish\</PublishUrlHistory>
     <InstallUrlHistory>\\mwr-tro-v2\v2ClickOnce\|\\144.170.200.192\DeployV2\|\\144.170.200.192\iTRAACv2\|\\144.170.180.166\d%24\Inetpub\wwwroot\www.euromwr.army.mil\Virtual Directories\ITRAAC\v2\|https://public.euromwr.army.mil/itraac/v2/</InstallUrlHistory>
     <SupportUrlHistory>

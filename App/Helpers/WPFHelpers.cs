@@ -113,7 +113,7 @@ public static class WPFHelpers
 
   //dictionary the storyboards per each usage
   private static System.Collections.Generic.Dictionary<DefinitionBase, Storyboard> GridSplitterPositions = new System.Collections.Generic.Dictionary<DefinitionBase, Storyboard>();
-  public static void GridSplitterOpeningBounce(this DefinitionBase RowColDefinition, bool Opening = false, int OpenToSize = 0)
+  public static void GridSplitterOpeningBounce(this DefinitionBase RowColDefinition, bool Opening = false, int OpenToSize = 0, Action<bool> AfterCompleted = null)
   {
     if (RowColDefinition == null) return; //for when events fire before everything is initialized
 
@@ -131,6 +131,7 @@ public static class WPFHelpers
 
       GridSplitterPositions[RowColDefinition] = story = new Storyboard();
       story.Children.Add(animation);
+      if (AfterCompleted != null) story.Completed += (s,e) => AfterCompleted(Opening);
     }
 
     DependencyProperty CurrentPositionProperty = IsRow ? RowDefinition.HeightProperty : ColumnDefinition.WidthProperty;

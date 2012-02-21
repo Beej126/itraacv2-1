@@ -163,7 +163,16 @@ namespace iTRAACv2
 
     private void btnReturns_IsCheckedChanged(object sender, RoutedEventArgs e)
     {
-      WPFHelpers.GridSplitterOpeningBounce(ReturnsColumn, btnReturns.IsChecked, 300);
+      WPFHelpers.GridSplitterOpeningBounce(ReturnsColumn, btnReturns.IsChecked, 300,
+        //annoying but true... stuff has to be visible before .Focus() will work
+        //and the Returns popout dialog is not visible until the animation makes it so
+        //so we have to wait until the animation has .Completed to set focus by passing this delegate
+        (bool Opening) => { if (Opening) ReturnForms.txtSequenceNumber.Focus(); } 
+      );
+
+      //save focus so when we return/file & close Form, we can automatically put focus back in the returns search box
+      //trying to streamline rapid fire 100% keyboard driven return/files as much as possible
+      if (btnReturns.IsChecked) App.FocusStack_Push(ReturnForms.txtSequenceNumber); 
     }
 
     private void popUserMessage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
