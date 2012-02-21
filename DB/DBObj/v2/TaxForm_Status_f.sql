@@ -43,7 +43,7 @@ RETURN SELECT
     WHEN @LocationCode = 'LOST' THEN 'LOST'
     WHEN @StatusFlags & POWER(2, 2) = POWER(2, 2) THEN 'Filed'
     WHEN @Incomplete = 1 THEN 'Incomplete'
-    WHEN LEN(ISNULL(@LocationCode,'')) = 2 THEN 'Returned' --if location == an office code -> then status = returned --this handles new v2 client data
+    --i don't want to depend on this versus the status flags: WHEN LEN(ISNULL(@LocationCode,'')) = 2 THEN 'Returned' --if location == an office code -> then status = returned --this handles new v2 client data
     WHEN @StatusFlags & POWER(2, 1) = POWER(2, 1) THEN 'Returned' -- and this catches old v1 client data, had to compromise that there will be two ways to represent returned while we're running in parallel
     ELSE 'Unreturned' END AS [Status]
 

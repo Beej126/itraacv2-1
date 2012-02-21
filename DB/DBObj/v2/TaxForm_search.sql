@@ -28,20 +28,16 @@ IF (LEN(@SequenceNumber ) < 6)
 
 SELECT 
   f.OrderNumber AS [Form #],
-  CASE
-    WHEN f.LocationCode = 'Lost' THEN 'Lost'
-    WHEN f.Incomplete = 1 THEN 'Incomplete'
-    WHEN f.StatusFlags & POWER(2, 5) = POWER(2, 5) THEN 'Voided'
-    WHEN f.StatusFlags & POWER(2, 2) = POWER(2, 2) THEN 'Filed'
-    WHEN f.StatusFlags & POWER(2, 1) = POWER(2, 1) THEN 'Returned'
-    ELSE 'Unreturned' END AS [Status],
+  p.TaxOfficeId,
+  s.[Status],
   c.LName + ' (' + c.CCode + '), ' + c.FName AS Name,
   f.RowGUID AS TaxFormGUID
 FROM iTRAAC.dbo.tblTaxForms f
+CROSS APPLY dbo.TaxForm_Status_f(f.StatusFlags, f.LocationCode, f.Incomplete, f.InitPrt215, f.InitPrtAbw) s
 JOIN iTRAAC.dbo.tblTaxFormPackages p ON p.RowGUID = f.PackageGUID
 JOIN iTRAAC.dbo.tblClients c ON c.RowGUID = p.SponsorClientGUID
 WHERE f.CtrlNumber = @SequenceNumber
-
+IF 
 END
 GO
 

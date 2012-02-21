@@ -3,7 +3,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
   xmlns:local="clr-namespace:iTRAACv2"
-  Name="thisControl" Background="#F4FCF4" FocusManager.IsFocusScope="True" Focusable="True" >
+  Name="thisControl" Background="#F4FCF4" >
   
   <GroupBox Header="Return/File Forms" Background="Transparent" Padding="0" >
     <Grid>

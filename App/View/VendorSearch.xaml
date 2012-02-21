@@ -1,13 +1,13 @@
 ﻿<local:ucBase x:Class="iTRAACv2.VendorSearch"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="clr-namespace:iTRAACv2"
-    xmlns:kb="http://kent.boogaart/controls"
+              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:global="clr-namespace:;assembly="
+              xmlns:local="clr-namespace:iTRAACv2"
+              xmlns:kb="http://kent.boogaart/controls"
  >
 
-  <Popup StaysOpen="False" Name="popVendorSearch" Placement="Bottom" VerticalOffset="2" PopupAnimation="Slide"
-         FocusManager.IsFocusScope="True">
-    <kb:Resizer MinWidth="500" MinHeight="200" Width="500" Height="200" MaxHeight="450" MaxWidth="850">
+  <Popup StaysOpen="False" Name="popVendorSearch" Placement="Bottom" VerticalOffset="2" PopupAnimation="Slide">
+    <kb:Resizer MinWidth="500" MinHeight="200" Width="500" Height="200" MaxHeight="450" MaxWidth="850" IsTabStop="False">
       <Border BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}">
         <Grid>
           <Grid.RowDefinitions>
@@ -54,14 +54,23 @@
           <TextBlock Text="{Binding Mode=OneWay, ElementName=grdVendorList, Path=Items.Count, StringFormat='{}{0} item(s) found'}" 
                      Grid.Row="1" Grid.Column="1" Margin="5 0 10 5" />
 
-          <DataGrid Name="grdVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="7 0" IsReadOnly="True" MouseDoubleClick="grdVendorList_MouseDoubleClick" />
+          <global:TablessDataGrid x:Name="grdVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="7 0" IsReadOnly="True"
+                    HeadersVisibility="Column"
+                    MouseDoubleClick="grdVendorList_MouseDoubleClick"
+                    SelectionUnit="FullRow" >
+            <!--DataGrid.Resources>
+              <Style TargetType="DataGridCell">
+                <Setter Property="KeyboardNavigation.IsTabStop" Value="False" />
+              </Style>
+            </DataGrid.Resources-->
+          </global:TablessDataGrid>
 
-          <ResizeGrip Grid.Row="3" Grid.ColumnSpan="2" />
-
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="4" Grid.ColumnSpan="2" Margin="0 10">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3" Grid.ColumnSpan="2" Margin="0 10" >
             <Button Content="Select" Width="100" Name="btnSelect" Click="btnSelect_Click" IsDefault="True" />
             <Button Content="Cancel" Width="100" Margin="10 0 0 0" Name="btnCancel" IsCancel="True" Click="btnCancel_Click" />
           </StackPanel>
+          
+          <ResizeGrip Grid.Row="3" Grid.ColumnSpan="2" IsTabStop="False" />
 
         </Grid>
       </Border>

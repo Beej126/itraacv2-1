@@ -11,6 +11,97 @@
   xmlns:mwt="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
 >
 
+  <Style x:Key="PrettyDataGridCellStyle" TargetType="DataGridCell" >
+    <Style.Triggers>
+      <!-- Highlight selected rows -->
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="Lavender" />
+        <Setter Property="BorderBrush" Value="Lavender" />
+        <Setter Property="Foreground" Value="Black" />
+      </Trigger>
+
+      <!-- TODO: gut this generic overkill and toss this hyperlink column in the specific grids where it applies ... that's what i'm doing with SponsorGUID elsewhere (tabNewCustWiz) and it feels cleaner -->
+      <DataTrigger Value="True">
+        <DataTrigger.Binding>
+          <Binding RelativeSource="{RelativeSource Mode=Self}" Path="Column.Header" Converter="{conv:BoolExpressionToBool}" ConverterParameter="'?' == 'Form #'" />
+        </DataTrigger.Binding>
+        <Setter Property="Template" >
+          <Setter.Value>
+            <ControlTemplate TargetType="DataGridCell" >
+              <!-- TODO:3:this is just insane overkill and it seems like there should be a more elegant way but i've just spent waay too much time finding an alternative that looks right -->
+              <!-- if you use <ContentPresenter /> rather than binding a textual element to the actual data, then you get blasé black text w/o the hyperlink styling -->
+              <TextBlock Padding="4 3">
+                <Hyperlink Command="{x:Static local:RoutedCommands.OpenTaxForm}" CommandParameter="{Binding Mode=OneWay, Path=TaxFormGUID}">
+                  <Run>
+                    <Run.Style>
+                      <Style TargetType="Run">
+                        <Style.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="Red"/>
+                          </Trigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Run.Style>
+                    <Run.Text>
+                      <MultiBinding Mode="OneWay" Converter="{conv:IndirectMultiValue}">
+                        <Binding Mode="OneWay" />
+                        <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="Column.SortMemberPath" />
+                       </MultiBinding>
+                    </Run.Text>
+                  </Run>
+                </Hyperlink>
+              </TextBlock>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </DataTrigger>
+
+    </Style.Triggers>
+
+    <!-- Add some padding around the contents of a cell -->
+    <Setter Property="Padding" Value="4 3" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="DataGridCell">
+          <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+            <ContentPresenter />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+
+  <Style TargetType="DataGrid">
+
+    <!-- Make the border and grid lines a little less imposing -->
+    <Setter Property="BorderBrush" Value="#DDDDDD" />
+    <Setter Property="HorizontalGridLinesBrush" Value="#DDDDDD" />
+    <Setter Property="VerticalGridLinesBrush" Value="#DDDDDD" />
+
+    <Setter Property="RowStyle">
+      <Setter.Value>
+        <Style TargetType="DataGridRow">
+          <!-- Highlight a grid row as the mouse passes over -->
+          <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter Property="Background" Value="Lavender" />
+            </Trigger>
+          </Style.Triggers>
+        </Style>
+      </Setter.Value>
+    </Setter>
+
+    <Setter Property="CellStyle">
+      <Setter.Value>
+        <Style TargetType="DataGridCell" BasedOn="{StaticResource PrettyDataGridCellStyle}" />
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="DefaultDataGridCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}" />
+
   <Style x:Key="RightAlignTextBlockStyle" TargetType="{x:Type TextBlock}">
     <Setter Property="TextAlignment" Value="Right" />
   </Style>
@@ -247,96 +338,6 @@
         <Setter Property="ToolTip" Value="{Binding Column.(ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"/>
       </Trigger>
     </Style.Triggers>
-  </Style>
-
-  <!-- nugget: PrettierDataGridStyle: http://www.andymcm.com/blog/2009/10/wpf-toolkit-datagrid-is-uggo.html -->
-  <Style x:Key="PrettyDataGridCellStyle" TargetType="DataGridCell" >
-    <Style.Triggers>
-      <!-- Highlight selected rows -->
-      <Trigger Property="IsSelected" Value="True">
-        <Setter Property="Background" Value="Lavender" />
-        <Setter Property="BorderBrush" Value="Lavender" />
-        <Setter Property="Foreground" Value="Black" />
-      </Trigger>
-
-      <!-- TODO: gut this generic overkill and toss this hyperlink column in the specific grids where it applies ... that's what i'm doing with SponsorGUID elsewhere (tabNewCustWiz) and it feels cleaner -->
-      <DataTrigger Value="True">
-        <DataTrigger.Binding>
-          <Binding RelativeSource="{RelativeSource Mode=Self}" Path="Column.Header" Converter="{conv:BoolExpressionToBool}" ConverterParameter="'?' == 'Form #'" />
-        </DataTrigger.Binding>
-        <Setter Property="Template" >
-          <Setter.Value>
-            <ControlTemplate TargetType="DataGridCell" >
-              <!-- TODO:3:this is just insane overkill and it seems like there should be a more elegant way but i've just spent waay too much time finding an alternative that looks right -->
-              <!-- if you use <ContentPresenter /> rather than binding a textual element to the actual data, then you get blasé black text w/o the hyperlink styling -->
-              <TextBlock Padding="4 3">
-                <Hyperlink Command="{x:Static local:RoutedCommands.OpenTaxForm}" CommandParameter="{Binding Mode=OneWay, Path=TaxFormGUID}">
-                  <Run>
-                    <Run.Style>
-                      <Style TargetType="Run">
-                        <Style.Triggers>
-                          <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="Red"/>
-                          </Trigger>
-                        </Style.Triggers>
-                      </Style>
-                    </Run.Style>
-                    <Run.Text>
-                      <MultiBinding Mode="OneWay" Converter="{conv:IndirectMultiValue}">
-                        <Binding Mode="OneWay" />
-                        <Binding RelativeSource="{RelativeSource Mode=TemplatedParent}" Path="Column.SortMemberPath" />
-                       </MultiBinding>
-                    </Run.Text>
-                  </Run>
-                </Hyperlink>
-              </TextBlock>
-            </ControlTemplate>
-          </Setter.Value>
-        </Setter>
-      </DataTrigger>
-
-    </Style.Triggers>
-
-    <!-- Add some padding around the contents of a cell -->
-    <Setter Property="Padding" Value="4 3" />
-    <Setter Property="VerticalAlignment" Value="Center" />
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate TargetType="DataGridCell">
-          <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
-            <ContentPresenter />
-          </Border>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
-
-
-  <Style TargetType="DataGrid">
-
-    <!-- Make the border and grid lines a little less imposing -->
-    <Setter Property="BorderBrush" Value="#DDDDDD" />
-    <Setter Property="HorizontalGridLinesBrush" Value="#DDDDDD" />
-    <Setter Property="VerticalGridLinesBrush" Value="#DDDDDD" />
-
-    <Setter Property="RowStyle">
-      <Setter.Value>
-        <Style TargetType="DataGridRow">
-          <!-- Highlight a grid row as the mouse passes over -->
-          <Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-              <Setter Property="Background" Value="Lavender" />
-            </Trigger>
-          </Style.Triggers>
-        </Style>
-      </Setter.Value>
-    </Setter>
-
-    <Setter Property="CellStyle">
-      <Setter.Value>
-        <Style TargetType="DataGridCell" BasedOn="{StaticResource PrettyDataGridCellStyle}" />
-      </Setter.Value>
-    </Setter>
   </Style>
 
 

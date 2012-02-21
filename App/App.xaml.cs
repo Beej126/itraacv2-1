@@ -33,8 +33,10 @@ namespace iTRAACv2
     }
     static public void FocusStack_Pop()
     {
+      if (_focusStack.Count == 0) return;
+
       Control ctrl = _focusStack.Pop();
-      if (ctrl != null) ctrl.Focus();
+      ctrl.Focus();
     }
     static private System.Collections.Generic.Stack<Control> _focusStack = new System.Collections.Generic.Stack<Control>();
 
