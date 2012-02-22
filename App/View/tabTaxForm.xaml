@@ -158,8 +158,8 @@
       </GroupBox>
 
       <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
-                    KeyboardNavigation.TabNavigation="Cycle" >
-        <Grid ScrollViewer.CanContentScroll="True"  >
+                    KeyboardNavigation.TabNavigation="Cycle" > <!-- nugget: keep tab navigation cycling in a certain container -->
+        <Grid ScrollViewer.CanContentScroll="True" Name="MainPanel" >
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="auto" />
             <ColumnDefinition Width="auto" />
@@ -376,14 +376,14 @@
             </Button>
           </StackPanel>
 
-          <Label Grid.Column="0" Grid.Row="10" Content="Used:" VerticalAlignment="Center" />
+          <Label Grid.Column="0" Grid.Row="10" Content="_Used:" VerticalAlignment="Center" Target="{Binding ElementName=UsedDate}" />
           <StackPanel Grid.Column="1" Grid.Row="10" Margin="0 3 0 0" >
             <DatePicker Name="UsedDate"
                         SelectedDate="{Binding Mode=TwoWay, Path=Fields[UsedDate], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
                         IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
           </StackPanel>
 
-          <Label Grid.Column="0" Grid.Row="11" Content="Transaction Type:" />
+          <Label Grid.Column="0" Grid.Row="11" Content="_Transaction Type:" Target="{Binding ElementName=cbxTransactionType}" />
           <StackPanel Grid.Column="1" Grid.Row="11" Margin="0 3 0 0" Orientation="Vertical">
             <ComboBox Name="cbxTransactionType" VerticalAlignment="Top" HorizontalAlignment="Left"
                       ItemsSource="{Binding Mode=OneWay, Source={x:Static local:TaxFormModel.TransactionTypes}}"
@@ -417,11 +417,13 @@
             <local:ucDetailsView x:Name="ExtendedFields" EmptyMessage="" IsReadOnly="{Binding Mode=OneWay, Path=IsReadOnly}" ItemsSource="{Binding Mode=OneWay, Path=ExtendedFields}" />
           </StackPanel>
 
-          <Label Grid.Column="0" Grid.Row="12" Content="Vendor:" />
+          <Label Grid.Column="0" Grid.Row="12" Content="_Vendor:" Target="{Binding ElementName=btnVendor}" />
           <StackPanel Grid.Column="1" Grid.Row="12" Margin="0 3 0 0">
             <TextBox Name="txtVendor" Text="{Binding Mode=OneWay, Path=Fields[Vendor], ValidatesOnDataErrors=True}" Style="{StaticResource ReadOnlyTextBox}" MinWidth="90" />
-            <Button Content="  ...  " Name="btnVendor" Click="btnVendor_Click" IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
-            <local:VendorSearch x:Name="popVendorSearch" PlacementTarget="{Binding ElementName=txtVendor}" />
+            <Button Content="  ...  " Name="btnVendor" Click="btnVendor_Click"
+                    GotKeyboardFocus="btnVendor_GotKeyboardFocus"
+                    IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+            <local:VendorSearch x:Name="popVendorSearch" PlacementTarget="{Binding ElementName=MainPanel}" />
           </StackPanel>
 
           <!--Label Grid.Column="0" Grid.Row="8" Content="Good / Service:" />
@@ -431,7 +433,7 @@
             <local:ucGoodsAndServicesSearch x:Name="popGoodsAndServicesSearch" PlacementTarget="{Binding ElementName=txtGoodService}" />
           </StackPanel-->
 
-          <Label Grid.Column="0" Grid.Row="13" Content="Total Cost:" />
+          <Label Grid.Column="0" Grid.Row="13" Content="Total _Cost:" Target="{Binding ElementName=txtTotalCost}" />
           <StackPanel Orientation="Vertical" Grid.Column="1" Grid.Row="13" Margin="0 3 0 15">
             <StackPanel >
               <TextBox Name="txtTotalCost" Text="{Binding Mode=TwoWay, Path=Fields[TotalCost], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" MinWidth="50" 
@@ -458,7 +460,7 @@
 
           </StackPanel>
 
-          <Label Grid.Column="0" Grid.Row="14" Content="Description:" />
+          <Label Grid.Column="0" Grid.Row="14" Content="_Description:" Target="{Binding ElementName=txtDescription}" />
           <global:ucTextBoxWatermarked Grid.Row="14" Grid.Column="1" 
               x:Name="txtDescription" 
               HorizontalAlignment="Left" Height="48" Width="300"

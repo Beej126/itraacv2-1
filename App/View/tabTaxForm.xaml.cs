@@ -35,7 +35,13 @@ namespace iTRAACv2
 
     protected override void OnClosed(){} //nothing necessary here yet
 
-    private void btnVendor_Click(object sender, RoutedEventArgs e)
+    private void btnVendor_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
+    {
+      if (string.IsNullOrWhiteSpace(taxform.Fields["VendorGUID"].ToString()))
+        btnVendor_Click();
+    }
+
+    private void btnVendor_Click(object sender = null, RoutedEventArgs e = null)
     {
       popVendorSearch.Open(new VendorSearchCallback(VendorSelected));
     }

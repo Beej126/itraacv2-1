@@ -34,16 +34,16 @@ namespace iTRAACv2
       //save keyboard focus so we can restore when closing
       PrePopupFocusedElement = Keyboard.FocusedElement;
 
-      if (grdVendorList.Items.Count == 0) //only force focus to input box if we haven't been here already this session
+      if (lbxVendorList.Items.Count == 0) //only force focus to input box if we haven't been here already this session
         txtVendorName.Focus();
       else Keyboard.Focus(LastFocus);
     }
     private IInputElement PrePopupFocusedElement;
 
-    private void btnSelect_Click(object sender, RoutedEventArgs e)
+    private void btnSelect_Click(object sender, object e)
     {
       popVendorSearch.IsOpen = false;
-      DataRowView row = grdVendorList.SelectedItem as DataRowView;
+      DataRowView row = lbxVendorList.SelectedItem as DataRowView;
       if (row == null) return; //i.e. if they hit select button w/o selecting a row in the grid
       cb(row["RowGUID"], row["ShortDescription"]);
     }
@@ -53,18 +53,19 @@ namespace iTRAACv2
       popVendorSearch.IsOpen = false;
     }
 
-    private void grdVendorList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-      if (e.OriginalSource is TextBlock) //only a selection if we double clicked on cell, (not header or scroll bars)
-        btnSelect_Click(null, null);
-    }
+    //datagrid approach:
+    //private void lbxVendorList_DoubleClick(object sender, MouseButtonEventArgs e)
+    //{
+    //  if (e.OriginalSource is TextBlock) //only a selection if we double clicked on cell, (not header or scroll bars)
+    //    btnSelect_Click(null, null);
+    //}
 
     private IInputElement LastFocus;
     public VendorSearch()
     {
       InitializeComponent();
       popVendorSearch.Closed += (s, e) => { LastFocus = Keyboard.FocusedElement; Keyboard.Focus(PrePopupFocusedElement); };
-      popVendorSearch.MouseDown += (s, e) => e.Handled = true; //http://stackoverflow.com/questions/619798/why-does-a-wpf-popup-close-when-its-background-area-is-clicked
+      border.MouseDown += (s, e) => e.Handled = true; //http://stackoverflow.com/questions/619798/why-does-a-wpf-popup-close-when-its-background-area-is-clicked
     }
 
     #region PlacementTarget - propagate from containing UserControl down to nested Popup control... amazingly complicated, must be an easier way???
@@ -122,7 +123,7 @@ namespace iTRAACv2
         (txtVendorName.Text.Length < 3)
       )
       {
-        grdVendorList.ItemsSource = null;
+        lbxVendorList.ItemsSource = null;
         return;
       }
 
@@ -146,9 +147,9 @@ namespace iTRAACv2
     {
       if (state.Success)
       {
-        grdVendorList.ItemsSource = state.resultTable.DefaultView;
-        //grdVendorList.Columns[grdVendorList.Columns.Count - 1].Visibility = Visibility.Hidden; //hide ShortDescription
-        //grdVendorList.Columns[grdVendorList.Columns.Count - 2].Visibility = Visibility.Hidden; //hide VendorID
+        lbxVendorList.ItemsSource = state.resultTable.DefaultView;
+        //lbxVendorList.Columns[lbxVendorList.Columns.Count - 1].Visibility = Visibility.Hidden; //hide ShortDescription
+        //lbxVendorList.Columns[lbxVendorList.Columns.Count - 2].Visibility = Visibility.Hidden; //hide VendorID
       }
       else
         lblVendorSearchError.Text = state.Text;

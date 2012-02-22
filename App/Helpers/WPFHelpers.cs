@@ -14,12 +14,11 @@ using System.Threading;
 using System.Reflection;
 
 //http://stackoverflow.com/questions/5655073/wpf-datagrid-and-the-tab-key
-public class TablessDataGrid : DataGrid
+public class TabOutDataGrid : DataGrid
 {
-  public TablessDataGrid()
+  public TabOutDataGrid()
   {
     Style = new Style(GetType(), FindResource(typeof(DataGrid)) as Style); //nugget: inherit whatever Style base class already has
-    //IsVisibleChanged += (s, e) => { if (IsVisible) FocusManager.SetIsFocusScope(this, true); /*Keyboard.Focus(lastDataGridFocus);*/ }; //handles restoring focus when popup yields it to something else
   }
 
   void TablessDataGrid_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -41,13 +40,15 @@ public class TablessDataGrid : DataGrid
       }
       else
       {
-        //just doesn't work for sh_t: MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); 
+        //FocusNavigationDirection.Next just doesn't work: MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); 
+        //it tabs around the DataGrid cells by default
+        //so had to do the following hack... fortunately there is a hidden method KeyboardNavigation.GetNextTab() that we can use (for now, until MS tweaks the framework :(
         if (GetNextTab == null)
         {
           GetNextTab = typeof(KeyboardNavigation).GetMethod("GetNextTab", BindingFlags.NonPublic | BindingFlags.Instance);
           KeyboredNavigation = typeof(FrameworkElement).GetProperty("KeyboardNavigation", BindingFlags.NonPublic | BindingFlags.Static).GetValue(this, null);
         }
-        object NextControl = GetNextTab.Invoke(KeyboredNavigation, new object[] { this, this.Parent, true });
+        object NextControl = GetNextTab.Invoke(KeyboredNavigation, new object[] { this, this.Parent, false }); //pretty cool this works exactly how what we need, get the next tab sibling given me and my parent
         Keyboard.Focus(NextControl as IInputElement);
       }
       e.Handled = true;

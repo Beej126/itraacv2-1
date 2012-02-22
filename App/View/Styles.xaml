@@ -494,15 +494,16 @@
     </Style.Triggers>
     
     <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
 
-    <!--Setter Property="LAWPF:StylizedBehaviors.Behaviors">
+  <Style x:Key="SelectOnFocusTextBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+    <Setter Property="LAWPF:StylizedBehaviors.Behaviors">
       <Setter.Value>
         <LAWPF:StylizedBehaviorCollection>
           <global:SelectAllTextOnFocusBehavior />
         </LAWPF:StylizedBehaviorCollection>
       </Setter.Value>
-    </Setter-->
-    
+    </Setter>
   </Style>
 
   <!-- there is the Vendor popup scenario where there's a read only display field that still requires to be filled out to be valid -->
