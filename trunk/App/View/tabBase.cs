@@ -52,7 +52,7 @@ namespace iTRAACv2
 
         //lastly, add the new tab to the main tab control
         //position it to the right of the currently selected tab so that TaxForms are intuitively grouped to right of their corresponding Customer tab
-        tabControl.Items.Insert(Math.Max(1, tabControl.SelectedIndex+1), tabItem);
+        tabControl.Items.Insert(Math.Max(2 /*static tabs, current home & cus search*/, tabControl.SelectedIndex+1), tabItem);
 
         tabItem.Loaded += new RoutedEventHandler(tabItem_Loaded);
       }

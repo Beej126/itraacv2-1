@@ -7,6 +7,53 @@
 use itraac
 go
 
+
+PRINT 'Vendor cleanup - null out empty remarks'
+-- the vendor haystack is an interesting nut to consider
+-- my current perspective is: don't even worry about creating nice clean vendor entries
+-- there's really not much benefit to all the effort required to create a clean "vendor phonebook"
+-- when we go looking for a vendor based on some investigation, we do a wildcard match on the vendor name and then eyeball it from there
+-- otherwise the address and stuff is basically just free form text
+-- which has an interesting implication for filing forms... namely,
+-- the user gets to decide what they think is faster, searching for an existing one by name...
+-- thus saving themselves the trouble of re-keying...
+-- or just blasting a new one in regardless of whether it's already out there,
+-- thus saving themselves the time of searching
+UPDATE tblVendors SET remarks = NULL --> 822 rows on 2012-02-22
+WHERE remarks = 'null'
+
+UPDATE tblVendors SET remarks = NULL --> 145 rows on 2012-02-22
+WHERE rtrim(REPLACE(REPLACE(remarks, CHAR(13), ''), CHAR(10), '')) = ''
+
+-- what remains (on 2012-02-22) is only 545 records out of 97,000 (and growing) where remarks are non-null
+-- typically a phone#
+
+PRINT 'Vendor cleanup - null out common empty placeholders (null, N/A, x, -, etc)'
+UPDATE tblVendors SET addressline1=NULL WHERE addressline1 = 'null'
+UPDATE tblVendors SET addressline2=NULL WHERE addressline2 = 'null'
+UPDATE tblVendors SET addressline3=NULL WHERE addressline3 = 'null'
+
+UPDATE tblVendors SET AddressLine1 = NULL WHERE AddressLine1 IN ('n/a', 'NA')
+UPDATE tblVendors SET AddressLine2 = NULL WHERE AddressLine2 IN ('n/a', 'NA')
+UPDATE tblVendors SET AddressLine3 = NULL WHERE AddressLine3 IN ('n/a', 'NA')
+
+UPDATE tblVendors SET AddressLine1 = NULL WHERE LTRIM(REPLACE(AddressLine1, '.', '')) = ''
+UPDATE tblVendors SET AddressLine1 = NULL WHERE LTRIM(REPLACE(AddressLine1, 'x', '')) = ''
+UPDATE tblVendors SET AddressLine1 = NULL WHERE LTRIM(REPLACE(AddressLine1, '-', '')) = ''
+UPDATE tblVendors SET AddressLine1 = NULL WHERE LTRIM(REPLACE(AddressLine1, '*', '')) = ''
+
+UPDATE tblVendors SET AddressLine2 = NULL WHERE LTRIM(REPLACE(AddressLine2, '.', '')) = ''
+UPDATE tblVendors SET AddressLine2 = NULL WHERE LTRIM(REPLACE(AddressLine2, 'x', '')) = ''
+UPDATE tblVendors SET AddressLine2 = NULL WHERE LTRIM(REPLACE(AddressLine2, '-', '')) = ''
+UPDATE tblVendors SET AddressLine2 = NULL WHERE LTRIM(REPLACE(AddressLine2, '*', '')) = ''
+
+UPDATE tblVendors SET AddressLine3 = NULL WHERE LTRIM(REPLACE(AddressLine3, '.', '')) = ''
+UPDATE tblVendors SET AddressLine3 = NULL WHERE LTRIM(REPLACE(AddressLine3, 'x', '')) = ''
+UPDATE tblVendors SET AddressLine3 = NULL WHERE LTRIM(REPLACE(AddressLine3, '-', '')) = ''
+UPDATE tblVendors SET AddressLine3 = NULL WHERE LTRIM(REPLACE(AddressLine3, '*', '')) = ''
+
+
+
 PRINT 'Agent -> User'
 UPDATE a SET a.UserGUID = u.RowGUID
 FROM tblTaxFormAgents a

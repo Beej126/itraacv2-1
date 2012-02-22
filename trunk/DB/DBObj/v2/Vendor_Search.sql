@@ -29,35 +29,38 @@ AS BEGIN
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
-IF (@VendorName_SearchType = 'contains')
-  SET @VendorName = '%'+@VendorName
-SET @VendorName = iTRAAC.dbo.fn_DynParm('AND VendorName like ''?%''', @VendorName)
+SET @VendorName = @VendorName + '%'
+IF (@VendorName_SearchType = 'contains') SET @VendorName = '%'+@VendorName
+--SET @VendorName = iTRAAC.dbo.fn_DynParm('AND VendorName like ''?%''', @VendorName)
 
-IF (@VendorCity_SearchType = 'contains')
-  SET @VendorCity = '%'+@VendorCity
+IF (@VendorCity_SearchType = 'contains') SET @VendorCity = '%'+@VendorCity
 SET @VendorCity = iTRAAC.dbo.fn_DynParm('AND City like ''?%''', @VendorCity)
 
 --debug: PRINT '@VendorName: '+ISNULL(@VendorName, 'NULL')
 --debug: PRINT '@VendorCity: '+ISNULL(@VendorCity, 'NULL')
 
 
-EXEC ("
+--EXEC ("
+--SELECT
+--  VendorName,
+--  [Address],
+--  ShortDescription,
+--  RowGUID
+--FROM Vendor_Address_v
+--where Active = 1
+--"
+--+@VendorName
+--+@VendorCity
+--)
+
 SELECT
   VendorName,
-  Line2,
-  City,
-  Street,
-  PLZ,
-  Phone,
-  isnull(AddressLine1 + ', ', '') + isnull(AddressLine2 + ', ', '') + isnull(AddressLine3 + ', ', '') as Legacy,
-  VendorName + ISNULL(' ('+City+isnull(', '+Street, '')+' )', '') AS ShortDescription,
+  [Address],
+  ShortDescription,
   RowGUID
-FROM iTRAAC.dbo.tblVendors
+FROM Vendor_Address_v
 where Active = 1
-"
-+@VendorName
-+@VendorCity
-)
+AND VendorName LIKE @VendorName
 
 END
 GO

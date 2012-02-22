@@ -28,16 +28,29 @@ namespace iTRAACv2
     {
       txtSequenceNumber.SelectAll();
       gridReturns.ItemsSource = null; //for visual consistency, blank out the existing list before we go off and search
-      using(Proc TaxForm_search = new Proc("TaxForm_search"))
+      using (Proc TaxForm_Returns_Search = new Proc("TaxForm_Returns_Search"))
       {
-        TaxForm_search["@SequenceNumber"] = txtSequenceNumber.Text;
-        gridReturns.ItemsSource = TaxForm_search.ExecuteDataSet().Table0.DefaultView;
+        TaxForm_Returns_Search["@SequenceNumber"] = txtSequenceNumber.Text;
+        gridReturns.ItemsSource = TaxForm_Returns_Search.ExecuteDataSet().Table0.DefaultView;
         FilterChanged();
       }
 
       //automatically open the only one found if it is only one
-      if (gridReturns.Items.Count == 1)
-        RoutedCommands.OpenTaxForm.Execute((gridReturns.Items[0] as DataRowView)["TaxFormGUID"], null);
+      if (gridReturns.Items.Count == 1) OpenForm(gridReturns.Items[0] as DataRowView);        
+    }
+
+    private void gridReturns_KeyDown(object sender, KeyEventArgs e)
+    {
+      if (e.Key == Key.Return)
+      {
+        e.Handled = true;
+        OpenForm(gridReturns.SelectedItem as DataRowView);
+      }
+    }
+
+    private void OpenForm(DataRowView row)
+    {
+      RoutedCommands.OpenTaxForm.Execute(row["TaxFormGUID"], null);
     }
 
     public bool FilterReturned
@@ -73,10 +86,11 @@ namespace iTRAACv2
       DataView dv = (gridReturns.ItemsSource as DataView);
       if (dv == null) return;
       dv.RowFilter = SqlClientHelpers.BuildRowFilter(
-        FilterReturned ? "Status not in ('Returned', 'Filed')" : null,
+        FilterReturned ? "Status = 'UnReturned'" : null,
         FilterFiled ? "Status <> 'Filed'" : null, 
         FilterLocalOffice ? "TaxOfficeId = " + SettingsModel.TaxOfficeId.ToString() : null
       );
     }
+
   }
 }

@@ -2,10 +2,10 @@
 --$Date: 4/30/10 4:49p $
 --$Modtime: 4/30/10 4:48p $
 
-/****** Object:  StoredProcedure [dbo].[TaxForm_search]    Script Date: 06/19/2009 15:58:30 ******/
+/****** Object:  StoredProcedure [dbo].[TaxForm_Returns_Search]    Script Date: 06/19/2009 15:58:30 ******/
 
 /* testing:
-exec TaxForm_search '444'
+exec TaxForm_Returns_Search '444'
 */
 SET ANSI_NULLS ON
 GO
@@ -16,10 +16,10 @@ GO
 USE iTRAACv2
 GO
 
-if not exists(select 1 from sysobjects where name = 'TaxForm_search')
-	exec('create PROCEDURE TaxForm_search as select 1 as one')
+if not exists(select 1 from sysobjects where name = 'TaxForm_Returns_Search')
+	exec('create PROCEDURE TaxForm_Returns_Search as select 1 as one')
 GO
-alter PROCEDURE [dbo].TaxForm_search
+ALTER PROCEDURE [dbo].TaxForm_Returns_Search
 @SequenceNumber VARCHAR(50)
 AS BEGIN
 
@@ -37,9 +37,9 @@ CROSS APPLY dbo.TaxForm_Status_f(f.StatusFlags, f.LocationCode, f.Incomplete, f.
 JOIN iTRAAC.dbo.tblTaxFormPackages p ON p.RowGUID = f.PackageGUID
 JOIN iTRAAC.dbo.tblClients c ON c.RowGUID = p.SponsorClientGUID
 WHERE f.CtrlNumber = @SequenceNumber
-IF 
+
 END
 GO
 
-grant execute on TaxForm_search to public
+grant execute on TaxForm_Returns_Search to public
 go
