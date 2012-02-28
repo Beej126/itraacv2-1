@@ -26,8 +26,6 @@ public class TabOutDataGrid : DataGrid
     throw new NotImplementedException();
   }
   
-  private MethodInfo GetNextTab;
-  private object KeyboredNavigation;
   protected override void OnKeyDown(KeyEventArgs e)
   {
     //let enter key bubble up... so it hits a default button on this form or something
@@ -35,22 +33,11 @@ public class TabOutDataGrid : DataGrid
     else if (e.Key == Key.Tab) //make Shift/Tab pop out of the datagrid rather than navigating amongst cells
     {
       if (Keyboard.Modifiers == ModifierKeys.Shift)
-      {
         MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous)); //somehow this works just fine, but the "Next" version goes into the cell navigation
-      }
       else
-      {
-        //FocusNavigationDirection.Next just doesn't work: MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); 
-        //it tabs around the DataGrid cells by default
-        //so had to do the following hack... fortunately there is a hidden method KeyboardNavigation.GetNextTab() that we can use (for now, until MS tweaks the framework :(
-        if (GetNextTab == null)
-        {
-          GetNextTab = typeof(KeyboardNavigation).GetMethod("GetNextTab", BindingFlags.NonPublic | BindingFlags.Instance);
-          KeyboredNavigation = typeof(FrameworkElement).GetProperty("KeyboardNavigation", BindingFlags.NonPublic | BindingFlags.Static).GetValue(this, null);
-        }
-        object NextControl = GetNextTab.Invoke(KeyboredNavigation, new object[] { this, this.Parent, false }); //pretty cool this works exactly how what we need, get the next tab sibling given me and my parent
-        Keyboard.Focus(NextControl as IInputElement);
-      }
+        this.Parent.FocusNext(this); //the grid typically has a sub element with keyboard focus, so next from there represents somewhere else inside the grid
+                                     //therefore we need to specificy "next" relative to the grid itself by passing that in to override the default behavior
+
       e.Handled = true;
     }
     else base.OnKeyDown(e);
@@ -58,10 +45,11 @@ public class TabOutDataGrid : DataGrid
 
   protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
   {
-    if (!(e.OldFocus is DataGridCell) //only reset focus if we're coming from outside the datagrid, otherwise you get into a recursive loop of setting focus
-      && (lastDataGridFocus != null))
+    if (!(e.OldFocus is DataGridCell)) //only reset focus if we're coming from outside the datagrid, otherwise you get into a recursive loop of setting focus
+      //&& (lastDataGridFocus != null))
     {
       Keyboard.Focus(lastDataGridFocus);
+      if (SelectedIndex == -1 && Items.Count > 0) SelectedIndex = 0;
       e.Handled = true;
       return;
     }
@@ -78,6 +66,22 @@ public class TabOutDataGrid : DataGrid
 
 public static class WPFHelpers
 {
+  static private MethodInfo GetNextTab;
+  static private object KeyboredNavigation;
+  public static void FocusNext(this DependencyObject Container, IInputElement RelativeElement = null)
+  {
+    //FocusNavigationDirection.Next just doesn't work: MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); 
+    //it tabs around the DataGrid cells by default
+    //so had to do the following hack... fortunately there is a hidden method KeyboardNavigation.GetNextTab() that we can use (for now, until MS tweaks the framework :(
+    if (GetNextTab == null)
+    {
+      GetNextTab = typeof(KeyboardNavigation).GetMethod("GetNextTab", BindingFlags.NonPublic | BindingFlags.Instance);
+      KeyboredNavigation = typeof(FrameworkElement).GetProperty("KeyboardNavigation", BindingFlags.NonPublic | BindingFlags.Static).GetValue(Keyboard.FocusedElement, null);
+    }
+    object NextControl = GetNextTab.Invoke(KeyboredNavigation, new object[] { RelativeElement ?? Keyboard.FocusedElement, Container, false }); //pretty cool this works exactly how what we need, get the next tab sibling given me and my parent
+    Keyboard.Focus(NextControl as IInputElement);
+  }
+
   //public static void UIThreadSafe(Delegate method)
   //{
   //  if (!Application.Current.Dispatcher.CheckAccess())

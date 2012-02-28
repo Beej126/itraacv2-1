@@ -45,9 +45,24 @@ namespace iTRAACv2
       tabTaxForm.Open(tabsMain, e.Parameter.ToString());
     }
 
+    private void CloseTab_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+      CloseTab2(tabsMain.SelectedContent as tabBase);
+    }
+
+
     private void CloseTab(object sender, object args)
     {
-      (((sender as FrameworkElement).Tag as TabItem).Content as tabBase).Close();
+      CloseTab2(((sender as FrameworkElement).Tag as TabItem).Content as tabBase);
+    }
+
+    private void CloseTab2(tabBase thetab)
+    {
+      if (thetab == null) return;
+
+      thetab.Close();
+      if (thetab is tabTaxForm && btnReturns.IsChecked)
+        ReturnForms.txtSequenceNumber.Focus();
     }
 
     private void TabItemHeader_PreviewMouseUp(object sender, MouseButtonEventArgs e)
@@ -169,16 +184,13 @@ namespace iTRAACv2
         //so we have to wait until the animation has .Completed to set focus by passing this delegate
         (bool Opening) => { if (Opening) ReturnForms.txtSequenceNumber.Focus(); } 
       );
-
-      //save focus so when we return/file & close Form, we can automatically put focus back in the returns search box
-      //trying to streamline rapid fire 100% keyboard driven return/files as much as possible
-      if (btnReturns.IsChecked) App.FocusStack_Push(ReturnForms.txtSequenceNumber); 
     }
 
     private void popUserMessage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
       btnUserMessages.IsChecked = true;
     }
+
 
   }
 

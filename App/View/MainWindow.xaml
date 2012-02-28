@@ -25,11 +25,16 @@
     </MultiBinding>
   </Window.Title>
 
+  <Window.InputBindings>
+    <KeyBinding Key="F4" Modifiers="Control" Command="{x:Static local:RoutedCommands.CloseTab}"  />
+  </Window.InputBindings>
+  
   <Window.CommandBindings>
     <CommandBinding Command="{x:Static local:RoutedCommands.OpenTaxForm}" Executed="OpenTaxForm_Executed" />
     <CommandBinding Command="{x:Static local:RoutedCommands.OpenSponsor}" Executed="OpenSponsor_Executed" />
+    <CommandBinding Command="{x:Static local:RoutedCommands.CloseTab}" Executed="CloseTab_Executed" />
   </Window.CommandBindings>
-
+  
   <Window.Resources>
     <!-- nugget: fadeaway animation - see the code behind as well -->
     <Storyboard x:Key="Fadeaway_Animation">
@@ -56,7 +61,9 @@
         <TextBlock Name="txtTabHeader" VerticalAlignment="Center" /> <!-- ="{Binding Mode=OneWay, Path=Mem.LName}" diagnostics:PresentationTraceSources.TraceLevel="High"  /--> <!-- nugget: no Path means pass the whole DataContext as the Converter "Value" -->
         <!-- nugget: Marlett font, "r" character = the common Vista close button icon -->
         <!-- nugget: ToolBar.ButtonStyleKey provides a convenient "Flat" button look that we can steal -->
-        <Button VerticalAlignment="Center" FontFamily="Marlett" Content="r" Click="CloseTab" Style="{StaticResource FlatButton}" Margin="5 0 0 0" Tag="{Binding Mode=OneTime, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TabItem}}" /> 
+        <Button VerticalAlignment="Center" Click="CloseTab" FontFamily="Marlett" Content="r" 
+                Style="{StaticResource FlatButton}" Margin="5 0 0 0" 
+                Tag="{Binding Mode=OneTime, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TabItem}}" />
       </StackPanel>
     </DataTemplate>
 

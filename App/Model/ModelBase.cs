@@ -435,7 +435,7 @@ namespace iTRAACv2
       protected TransactionList _ParentList { get; private set; }
       public string PendingAction { get; protected set; }
 
-      public virtual void Execute() { throw new NotImplementedException(); }
+      public virtual bool Execute() { throw new NotImplementedException(); }
 
       protected TransactionItem(TransactionList ParentList) 
       {

@@ -97,8 +97,6 @@ namespace iTRAACv2
       OnClosed();
 
       model.UnLoad();
-
-      App.FocusStack_Pop();
     }
 
   }
