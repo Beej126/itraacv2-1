@@ -8,7 +8,6 @@ using System.IO;
 
 namespace iTRAACv2
 {
-
   public class TaxFormModel : ModelBase
   {
     private BindingBase _TitleBinding = new Binding("Fields[OrderNumber]") { Mode = BindingMode.OneWay };
@@ -18,17 +17,28 @@ namespace iTRAACv2
 
     public bool IsClass2 { get { return ("2,5,".Contains(Fields["FormTypeId"].ToString() + ",")); } }
 
-    public bool IsReadOnly
+    public bool IsLocked
     {
-      get { return (_IsReadOnly); }
+      get { return (_IsLocked); }
       set
       {
         if (value == false) ShowUserMessage("Remember: Unlock to make *CORRECTIONS* only (i.e. typos),\rNot *CHANGES* that _differ_ from the actual VAT form hardcopy.");
-        _IsReadOnly = value;
-        OnPropertyChanged("IsReadOnly");
+        _IsLocked = value;
+        OnPropertyChanged("IsLocked");
       }
     }
-    private bool _IsReadOnly = true;
+    private bool _IsLocked = true;
+
+    //public bool IsReturnEnabled
+    //{
+    //  get
+    //  {
+    //    return (!IsFormStatusClosed || !IsLocked);
+    //  }
+    //}
+
+    private bool IsFormFromMyOffice { get { return (SettingsModel.TaxOfficeId == Fields.Field<int>("TaxOfficeId")); } }
+    public bool IsFormStatusClosed { get { return (Fields.Field<StatusFlagsForm>("StatusFlags").HasAnyFlags(StatusFlagsForm.Filed | StatusFlagsForm.Voided)); } }
 
     static TaxFormModel()
     {
@@ -297,8 +307,7 @@ namespace iTRAACv2
       Fields.PropertyChanged += FieldChange;
       SetExtendedFields();
 
-      //default state to readonly when form has been filed or voided
-      _IsReadOnly = Fields.Field<StatusFlagsForm>("StatusFlags").HasAnyFlags(StatusFlagsForm.Filed | StatusFlagsForm.Voided);
+      _IsLocked = IsFormStatusClosed || !IsFormFromMyOffice;
 
       //create the logical lookup field for "Location" via TaxForm.LocationCode to TaxOffice.TaxOfficeCode
       dsCache.AddRelation("Location", TaxOfficeModel.TaxOfficeTable.Columns["OfficeCode"], TaxFormTable.Columns["LocationCode"], false);
@@ -531,13 +540,19 @@ namespace iTRAACv2
       */
     }
 
-    static private void Print(PackageComponent PrintComponents, string guid)
+    static private bool PrintOK()
     {
       if (String.IsNullOrEmpty(SettingsModel.Local["POPrinter"]) || String.IsNullOrEmpty(SettingsModel.Local["AbwPrinter"]))
       {
         ShowUserMessage("Dot Matrix printers have not been assigned yet.");
-        return;
+        return (false);
       }
+      return (true);
+    }
+
+    static private bool Print(PackageComponent PrintComponents, string guid)
+    {
+      if (!PrintOK()) return(false);
 
       //nugget: sending raw ESCape codes to dot matrix printer (Epson's "ESC/P" standard)
       //nugget: ESC/P reference manual: http://files.support.epson.com/pdf/general/escp2ref.pdf
@@ -571,8 +586,8 @@ namespace iTRAACv2
           POPrinter.SendToPrinter(SettingsModel.Local["AbwPrinter"]);
 
         CacheTables(TaxForm_print, "TaxForm"); //sync the updated PrintDate columns in the TableCache
-        
       }
+      return (true);
     }
 
     static private bool PrintFields(RawCharacterPage printer, DataRowCollection rows)
@@ -606,6 +621,13 @@ namespace iTRAACv2
       public TaxFormPackage(TransactionList ParentTransactionList, bool IsPending, string SponsorGUID, 
         string AuthorizedDependentClientGUID, TaxFormModel.FormType FormType, int Qty) : base(ParentTransactionList)
       {
+        //sanity check: if there are already printed forms in the shopping cart, everything else must be printed during this session... too complicated to manage otherwise
+        if (IsPending && ParentTransactionList.Any(t => !t.IsPending))
+        {
+          ShowUserMessage("Since forms have already been printed.\rAll subsequent forms must also be printed.\rPlease select 'Print Immediately' only.");
+          return;
+        }
+
         //combine all NF1's requested during this customer session into one bundle
         TaxFormPackage existingNF1Package = ParentTransactionList.OfType<TaxFormPackage>().Where(w => w.FormType == TaxFormModel.FormType.NF1 /*&& w.IsPending*/).FirstOrDefault(); //realized, filtering on IsPending is counterproductive. An NF1 package will only be in this list if generated during this customer "session" and therefore the total qty of forms is what should factor into the qty discount calc
         if (existingNF1Package != null)
@@ -613,7 +635,6 @@ namespace iTRAACv2
           Qty += existingNF1Package.Qty; //add the existing quantity to this new package...
           this.PackageCode = existingNF1Package.PackageCode; //to facilitate adding these new forms to a previously printed package
           IsPending = existingNF1Package.IsPending; //pending status must be same as whatever was already initiated
-          ParentTransactionList.Remove(existingNF1Package); //delete the old package
         }
 
         PendingAction = "Print";
@@ -626,20 +647,27 @@ namespace iTRAACv2
         this.Qty = Qty;
         this.Price = LookupPackageServiceFee(FormType, Qty);
 
-        AfterConstructor();
 
         if (!IsPending)
         {
-          new System.Threading.Thread(delegate() //pop off a background thread to create the records
+          new System.Threading.Thread(delegate(object existingPackage) //pop off a background thread to create the records
           {
-            Execute(); //hit the DB to create all the new Package/Forms records
-          }).Start();
+            if (Execute())
+            {
+              //hit the DB to create all the new Package/Forms records
+              if (existingPackage != null)
+                ParentTransactionList.Remove(existingPackage as TaxFormPackage); //delete the old package
+              AfterConstructor();
+            }
+          }).Start(existingNF1Package);
         }
 
       }
 
-      public override void Execute()
+      public override bool Execute()
       {
+        if (!PrintOK()) return (false);
+
         string[] TaxFormGUIDs;
         using (iTRAACProc TaxFormPackage_New = new iTRAACProc("TaxFormPackage_New"))
         {
@@ -663,10 +691,13 @@ namespace iTRAACv2
 
         foreach (string TaxFormGUID in TaxFormGUIDs)
         {
-          Print(PackageComponent.OrderForm | PackageComponent.Abw, TaxFormGUID);
+          if (!Print(PackageComponent.OrderForm | PackageComponent.Abw, TaxFormGUID))
+            return(false);
         }
 
         TaxFormModel.FormStatusChangeCallback(SponsorGUID);
+
+        return (true);
       }
 
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Data; //needed for IMultiValueConverter
 using System.Data;
 using System.Windows.Controls;
@@ -50,6 +51,9 @@ namespace iTRAACv2
     {
       taxform.Fields["VendorGUID"] = VendorGUID;
       taxform.Fields["Vendor"] = VendorName;
+
+      if (!String.IsNullOrWhiteSpace(VendorGUID.ToString()))
+        KeyboardFocusContainer.FocusNext();
     }
 
     private void btnGoodService_Click(object sender, RoutedEventArgs e)
@@ -100,10 +104,24 @@ namespace iTRAACv2
       if (taxform.SaveUnload()) Close();
     }
 
+    private int? lastTransactionTypeId;
     private void cbxTransactionType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
       DataRowView r = e.AddedItems[0] as DataRowView;
       App.ShowUserMessage(r["ConfirmationText"].ToString());
+
+      //if current selection is not active...
+      if (!r.Field<bool>("Active"))
+      {
+        // and we've already set an initial default from loading the page,
+        if (lastTransactionTypeId != null)
+        {
+          //then deny this change by setting it back to the last one
+          cbxTransactionType.SelectedValue = lastTransactionTypeId.Value;
+          return;
+        }
+      }
+      lastTransactionTypeId = r.Field<int>("TransactionTypeId");
 
       //extended fields (e.g weapon, vehicle)
       string ExtendedFieldsCode = r["ExtendedFieldsCode"].ToString();
@@ -299,11 +317,12 @@ namespace iTRAACv2
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
-      if (WPFHelpers.DesignMode || values[1] == DependencyProperty.UnsetValue) return ("Unlock");
+      if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return ("Unlock");
 
-      return ((bool)values[0] /*IsReadOnly*/
-        ? (bool)values[1] /*HasUnlockForm*/ ? "Unlock" : "Requires [HasUnlockForm] Access"
-        : ((TaxFormModel.StatusFlagsForm)values[2]).HasFlag(TaxFormModel.StatusFlagsForm.Filed) ?
+      return (
+        (bool)values[0] ? /*IsLocked? */
+        /*readonly*/ (bool)values[1] /*HasUnlockForm*/ ? "Unlock" : "Requires [HasUnlockForm] Access"
+        /*not readonly*/: /*filed?*/ ((TaxFormModel.StatusFlagsForm)values[2]).HasFlag(TaxFormModel.StatusFlagsForm.Filed) ?
             "Unlocked" : "This Tax Form is not yet filed and is therefore editable");
     }
 
@@ -328,22 +347,18 @@ namespace iTRAACv2
     }
   }
 
-  public class IsPrintEnabled : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class IsGiveBackToCustomerEnabled : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public IsPrintEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+    public IsGiveBackToCustomerEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
-      //values[0] = Form.IsReadOnly
-      //values[1] = Form.TaxOfficeId
-      //values[2] = User.Current.IsAdmin
-      if (values[0] == null || values[1] == null || values[2] == null ||
-        values[0] == DependencyProperty.UnsetValue ||
-        values[1] == DependencyProperty.UnsetValue ||
-        values[2] == DependencyProperty.UnsetValue ) return (false);
-
-      //PrintEnabled = IsAdmin || (!IsReadOnly && form belongs to this office)
-      return ( (bool)values[2] || ( !(bool)values[0] && System.Convert.ToInt32(values[1]) == SettingsModel.TaxOfficeId ) );
+      if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return (false);
+      TaxFormModel form = values[0] as TaxFormModel;
+      return (
+        (form.Fields.Field<string>("LocationCode") == SettingsModel.TaxOfficeCode
+        && !form.IsFormStatusClosed) 
+        || UserModel.Current.Access.IsAdmin);
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
@@ -352,33 +367,25 @@ namespace iTRAACv2
     }
   }
 
-  public class PrintToolTip : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class IsReturnFormEnabled : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public PrintToolTip() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+    public IsReturnFormEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
-      //values[0] = Form.IsReadOnly
-      //values[1] = Form.TaxOfficeId
-      //values[2] = User.Current.IsAdmin
-      if (values[0] == null || values[1] == null || values[2] == null ||
-        values[0] == DependencyProperty.UnsetValue ||
-        values[1] == DependencyProperty.UnsetValue ||
-        values[2] == DependencyProperty.UnsetValue) return (false);
-
-      if ((bool)values[2]) return ("Admin Mode - Print Forms");
-      else if (System.Convert.ToInt32(values[1]) != SettingsModel.TaxOfficeId) return ("Form does not come from this office");
-      else if ((bool)values[0]) return ("Form is Locked");
-      else return ("Print Forms");
+      if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return (false);
+      TaxFormModel form = values[0] as TaxFormModel;
+      return (
+        (form.Fields.Field<int>("TaxOfficeId") == SettingsModel.TaxOfficeId
+        && !form.IsFormStatusClosed)
+        || UserModel.Current.Access.IsAdmin);
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
     {
       throw new NotImplementedException();
     }
-  
   }
-
   #endregion
 
 

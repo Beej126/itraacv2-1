@@ -220,13 +220,6 @@ namespace iTRAACv2
 
     private void btnReadyToPrint_Click(object sender, RoutedEventArgs e)
     {
-      //sanity check: if there are already printed forms in the shopping cart, everything else must be printed during this session... too complicated to manage otherwise
-      if (sponsor.Transactions.Any(t => !t.IsPending))
-      {
-        MessageBox.Show("Since forms have already been printed.\rAll subsequent forms must also be printed.\rPlease select 'Print Immediately' only.");
-        return;
-      }
-
       //this is sort of embarrasingly old school validation...
       //these days the "proper" ViewModel way would be to putt an "IsSelected" property on a model collection and then binding that to an ItemsControl which generates the radio button group
       //(this would have to be implemented as an on-the-fly linq query wrapped around TaxForm.Type.UserSelectableClass1 which tacked on "IsSelected" as a new property via linq projection syntax)

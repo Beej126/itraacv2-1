@@ -28,29 +28,35 @@ namespace iTRAACv2
     private VendorSearchCallback cb = null;
     public void Open(VendorSearchCallback callback)
     {
-      cb = callback;
+      if (popVendorSearch.IsOpen) return; //because we want to pop this open via both keyboard focus and click, it could be double fired
       popVendorSearch.IsOpen = true;
 
       //save keyboard focus so we can restore when closing
       PrePopupFocusedElement = Keyboard.FocusedElement;
 
+      cb = callback;
+
       if (lbxVendorList.Items.Count == 0) //only force focus to input box if we haven't been here already this session
         txtVendorName.Focus();
-      else Keyboard.Focus(LastFocus);
+      else if (lbxVendorList.SelectedItem != null)
+        ((ListBoxItem)lbxVendorList.ItemContainerGenerator.ContainerFromIndex(lbxVendorList.SelectedIndex)).Focus();
+      else lbxVendorList.Focus();
     }
     private IInputElement PrePopupFocusedElement;
 
     private void btnSelect_Click(object sender, object e)
     {
-      popVendorSearch.IsOpen = false;
       DataRowView row = lbxVendorList.SelectedItem as DataRowView;
       if (row == null) return; //i.e. if they hit select button w/o selecting a row in the grid
+      popVendorSearch.IsOpen = false;
+      Keyboard.Focus(PrePopupFocusedElement);
       cb(row["RowGUID"], row["ShortDescription"]);
     }
 
     private void btnCancel_Click(object sender, RoutedEventArgs e)
     {
       popVendorSearch.IsOpen = false;
+      Keyboard.Focus(PrePopupFocusedElement); 
     }
 
     //datagrid approach:
@@ -60,11 +66,9 @@ namespace iTRAACv2
     //    btnSelect_Click(null, null);
     //}
 
-    private IInputElement LastFocus;
     public VendorSearch()
     {
       InitializeComponent();
-      popVendorSearch.Closed += (s, e) => { LastFocus = Keyboard.FocusedElement; Keyboard.Focus(PrePopupFocusedElement); };
       border.MouseDown += (s, e) => e.Handled = true; //http://stackoverflow.com/questions/619798/why-does-a-wpf-popup-close-when-its-background-area-is-clicked
     }
 
@@ -150,6 +154,15 @@ namespace iTRAACv2
         lbxVendorList.ItemsSource = state.resultTable.DefaultView;
         //lbxVendorList.Columns[lbxVendorList.Columns.Count - 1].Visibility = Visibility.Hidden; //hide ShortDescription
         //lbxVendorList.Columns[lbxVendorList.Columns.Count - 2].Visibility = Visibility.Hidden; //hide VendorID
+
+        if (lbxVendorList.Items.Count > 0)
+        {
+          Dispatcher.BeginInvoke((Action)delegate() 
+          {
+           ((ListBoxItem)lbxVendorList.ItemContainerGenerator.ContainerFromIndex(0)).Focus();
+           lbxVendorList.SelectedIndex = 0;
+          }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
       }
       else
         lblVendorSearchError.Text = state.Text;

@@ -27,19 +27,6 @@ namespace iTRAACv2
         (App.Current.MainWindow as MainWindow).popWaitAnimation.Hide();
     }
 
-    static public void FocusStack_Push(Control Ctrl)
-    {
-      if (_focusStack.Count == 0 || _focusStack.Peek() != Ctrl) _focusStack.Push(Ctrl);
-    }
-    static public void FocusStack_Pop()
-    {
-      if (_focusStack.Count == 0) return;
-
-      Control ctrl = _focusStack.Pop();
-      ctrl.Focus();
-    }
-    static private System.Collections.Generic.Stack<Control> _focusStack = new System.Collections.Generic.Stack<Control>();
-
     protected override void OnStartup(StartupEventArgs e)
     {
       //the App.DispatcherUnhandledException is the preferrable catcher because you can "Handle = true" it and prevent the app from crashing
@@ -99,7 +86,8 @@ namespace iTRAACv2
 
         WPFValueConverters.BoolExpressionToBool.VariableReplacement = delegate(ref string Expression) //nugget: dynamic variable expansion in ValueConverter
         {
-          Expression = Expression.Replace("%myoffice%", SettingsModel.TaxOfficeId.ToString());
+          Expression = Expression.Replace("%myofficeid%", SettingsModel.TaxOfficeId.ToString());
+          Expression = Expression.Replace("%myofficecode%", SettingsModel.TaxOfficeCode.ToString());
         };
 
         ucDetailsView.IsColVisible = iTRAACHelpers.DataColumnVisible;

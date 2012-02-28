@@ -36,7 +36,8 @@ namespace iTRAACv2
       }
 
       //automatically open the only one found if it is only one
-      if (gridReturns.Items.Count == 1) OpenForm(gridReturns.Items[0] as DataRowView);        
+      if (gridReturns.Items.Count == 1) OpenForm(gridReturns.Items[0] as DataRowView);
+      else if (gridReturns.Items.Count > 1) gridReturns.GetCell(0, 0).Focus();
     }
 
     private void gridReturns_KeyDown(object sender, KeyEventArgs e)

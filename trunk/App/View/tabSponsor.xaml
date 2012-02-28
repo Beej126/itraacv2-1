@@ -812,7 +812,7 @@
                   <MultiBinding Converter="{conv:OR}">
                     <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
                     <Binding Mode="OneWay" Path="Fields[SuspensionExpiry]" Converter="{conv:EmptyToTrue}" />
-                    <Binding Mode="OneWay" Path="Fields[SuspensionTaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
+                    <Binding Mode="OneWay" Path="Fields[SuspensionTaxOfficeId]" ConverterParameter="'?' == '%myofficeid%'" Converter="{conv:BoolExpressionToBool}"  />
                     <!-- introducing a dynamic variable into ValueConverter -->
                   </MultiBinding>
                 </DockPanel.IsEnabled>

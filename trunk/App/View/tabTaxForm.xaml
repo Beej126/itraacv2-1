@@ -51,21 +51,7 @@
           <Label Content="Save &amp; Close" />
         </StackPanel>
       </Button>
-      <Button Click="btnOpenPrint_Click">
-        <Button.IsEnabled>
-          <MultiBinding Converter="{local:IsPrintEnabled}">
-            <Binding Mode="OneWay" Path="IsReadOnly" />
-            <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
-            <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-          </MultiBinding>
-        </Button.IsEnabled>
-        <Button.ToolTip>
-          <MultiBinding Converter="{local:PrintToolTip}">
-            <Binding Mode="OneWay" Path="IsReadOnly" />
-            <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
-            <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-          </MultiBinding>
-        </Button.ToolTip>
+      <Button Click="btnOpenPrint_Click" IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}">
         <StackPanel Orientation="Vertical">
           <StackPanel>
             <Image Source="/Assets/Glyphs/print.png" Style="{StaticResource CanDisableNestedImage}" />
@@ -101,13 +87,13 @@
         ToggleButtonStyle="{StaticResource FlatToggleButton}"
         ImageStyle="{StaticResource CanDisableNestedImage}"
         Text="{Binding Mode=OneWay, Path=Fields[Status]}"
-        IsChecked="{Binding Mode=TwoWay, Path=IsReadOnly, Converter={conv:InverseBooleanConverter}}"
+        IsChecked="{Binding Mode=TwoWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
         IsEnabled="{Binding Mode=OneWay, Path=Access.HasUnlockForm, Source={x:Static local:UserModel.Current}}" >
         <local:ucToggleButton_Lock.ToolTip>
           <MultiBinding Converter="{local:LockToolTipConverter}" Mode="OneWay" >
-            <Binding Path="IsReadOnly" Mode="OneWay" />
-            <Binding Source="{x:Static local:UserModel.Current}" Path="Access.HasUnlockForm" Mode="OneWay" />
-            <Binding Path="Fields[StatusFlags]" Mode="OneWay" />
+            <Binding Mode="OneWay" Path="IsLocked" />
+            <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.HasUnlockForm"  />
+            <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
           </MultiBinding>
         </local:ucToggleButton_Lock.ToolTip>
       </local:ucToggleButton_Lock>
@@ -158,7 +144,8 @@
       </GroupBox>
 
       <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
-                    KeyboardNavigation.TabNavigation="Cycle" > <!-- nugget: keep tab navigation cycling in a certain container -->
+                    KeyboardNavigation.TabNavigation="Cycle"
+                    Name="KeyboardFocusContainer"> <!-- nugget: keep tab navigation cycling in a certain container -->
         <Grid ScrollViewer.CanContentScroll="True" Name="MainPanel" >
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="auto" />
@@ -284,7 +271,7 @@
                                   UpImage="/Assets/Glyphs/lost_x32.png" ImageHeight="24"
                                   Click="btnLostVoid_Click"
                                   IsChecked="{Binding Mode=TwoWay, Path=Fields[LocationCode], Converter={local:LostLocationCodeToBool}}"
-                                  Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                                  IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
                                   Tag="25" /> <!-- 25 == RemarkTypeId for Lost -->
 
             <local:ReasonPopup x:Name="FormStatusReasonPopup" Result="FormStatusReasonPopup_Result" 
@@ -294,12 +281,12 @@
                                   UpImage="/Assets/Glyphs/void_x32.png" ImageHeight="24"
                                   Click="btnLostVoid_Click"
                                   IsChecked="{Binding Mode=TwoWay, Path=IsVoided}"
-                                  Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
+                                  IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
                                   Tag="14" /> <!-- 14 == RemarkTypeId for Void -->
 
             <local:ucToggleButton x:Name="btnViolation" ToolTip="Mark this form as a Violation" ButtonPadding="3" Margin="7,0,0,0" ButtonHeight="34"
                                   IsChecked="{Binding Mode=OneWay, Path=IsViolation}" IsCheckedChanged="btnViolation_IsCheckedChanged" 
-                                  Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                                  IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
                                   UpImage="{StaticResource AlertIcon}" />
 
             <!--Button Padding="3" ToolTip="Mark this form as a Violation" Height="34" Margin="7,0,0,0" Click="btnViolation_Click"  >
@@ -320,23 +307,43 @@
             <Label Content="by: " />
             <TextBox Text="{Binding Mode=OneWay, Path=Fields[ReturnedBy]}" Style="{StaticResource ReadOnlyTextBox}" />
             <Button Name="btnReturn" Margin="7,0,0,0" ToolTip="Return this Tax Form" 
-                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
                     Click="btnReturn_Click">
+              <Button.IsEnabled>
+                <MultiBinding Converter="{local:IsReturnFormEnabled}">
+                  <Binding Mode="OneWay" />
+                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
+                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                  <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
+                </MultiBinding>
+              </Button.IsEnabled>
               <Image Source="/Assets/Glyphs/arrow_right_green_x32.png" Height="24"/>
             </Button>
             <Button ToolTip="Return &amp; Close" Name="btnReturnClose" FontSize="14" VerticalAlignment="Stretch" 
-                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
                     Click="btnReturn_Click">
+              <Button.IsEnabled>
+                <MultiBinding Converter="{local:IsReturnFormEnabled}">
+                  <Binding Mode="OneWay" />
+                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
+                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                  <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
+                </MultiBinding>
+              </Button.IsEnabled>
+
               <StackPanel>
                 <TextBlock FontFamily="Marlett" VerticalAlignment="Center" Text="r" />
                 <AccessText>&#160;(_r)</AccessText>
               </StackPanel>
             </Button>
             <Button ToolTip="Give Back to Customer for Correction" Name="btnGiveCustomer" Margin="7,0,0,0" 
-                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                    Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                     Click="btnGiveCustomer_Click">
               <Button.IsEnabled>
-                <Binding Mode="OneWay" Path="Fields[LocationCode]" Converter="{conv:BoolExpressionToBool}" ConverterParameter="'?' != 'CUST'" />
+                <MultiBinding Converter="{local:IsGiveBackToCustomerEnabled}">
+                  <Binding Mode="OneWay" />
+                  <Binding Mode="OneWay" Path="Fields[LocationCode]" />
+                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                  <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
+                </MultiBinding>
               </Button.IsEnabled>
               <Image Source="/Assets/Glyphs/user1_back_x32.png" Height="24" />
             </Button>
@@ -349,30 +356,17 @@
             <Label Content="by: " />
             <TextBox Text="{Binding Mode=OneWay, Path=Fields[FiledBy]}" Style="{StaticResource ReadOnlyTextBox}" />
             <Button Name="btnFile" Margin="7,0,0,0" ToolTip="File - Form must be from current office"
-                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
-                    Click="btnFile_Click">
-              <Button.IsEnabled>
-                <MultiBinding Converter="{conv:OR}">
-                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
-                </MultiBinding>
-              </Button.IsEnabled>
+                    Click="btnFile_Click"
+                    IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}" >
               <Image Source="/Assets/Glyphs/cabinet_x32.png" Height="24"/>
             </Button>
             <Button ToolTip="File &amp; Close" FontSize="14" VerticalAlignment="Stretch"
-                    Visibility="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" 
+                    IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}" 
                     Click="btnFile_Click" Name="btnFileClose">
               <StackPanel>
                 <TextBlock FontFamily="Marlett" VerticalAlignment="Center" Text="r" />
                 <AccessText>&#160;(_f)</AccessText>
               </StackPanel>
-
-            <Button.IsEnabled>
-                <MultiBinding Converter="{conv:OR}">
-                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" ConverterParameter="'?' == '%myoffice%'" Converter="{conv:BoolExpressionToBool}"  />
-                </MultiBinding>
-              </Button.IsEnabled>
             </Button>
           </StackPanel>
 
@@ -380,7 +374,7 @@
           <StackPanel Grid.Column="1" Grid.Row="10" Margin="0 3 0 0" >
             <DatePicker Name="UsedDate"
                         SelectedDate="{Binding Mode=TwoWay, Path=Fields[UsedDate], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
-                        IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+                        IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
           </StackPanel>
 
           <Label Grid.Column="0" Grid.Row="11" Content="_Transaction Type:" Target="{Binding ElementName=cbxTransactionType}" />
@@ -389,10 +383,10 @@
                       ItemsSource="{Binding Mode=OneWay, Source={x:Static local:TaxFormModel.TransactionTypes}}"
                       SelectedValuePath="TransactionTypeID"
                       SelectedValue="{Binding Mode=TwoWay, Path=Fields[TransTypeID], ValidatesOnDataErrors=True}"
-                      IsEnabled="{Binding Mode=OneWay, Path=IsReadOnly, Converter={conv:InverseBooleanConverter}}"
+                      IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
                       SelectionChanged="cbxTransactionType_SelectionChanged"
-                      >
-              <!-- DisplayMemberPath="TransactionType" -->
+                      TextSearch.TextPath="TransactionType">
+              <!-- nugget: to allow keyboard selection in a DataTemplate combobox - just set DisplayMemberPath to the search field -->
               <!-- nugget: disabled ComboBox items -->
               <ComboBox.ItemContainerStyle>
                 <Style>
@@ -414,22 +408,22 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <local:ucDetailsView x:Name="ExtendedFields" EmptyMessage="" IsReadOnly="{Binding Mode=OneWay, Path=IsReadOnly}" ItemsSource="{Binding Mode=OneWay, Path=ExtendedFields}" />
+            <local:ucDetailsView x:Name="ExtendedFields" EmptyMessage="" IsReadOnly="{Binding Mode=OneWay, Path=IsLocked}" ItemsSource="{Binding Mode=OneWay, Path=ExtendedFields}" />
           </StackPanel>
 
           <Label Grid.Column="0" Grid.Row="12" Content="_Vendor:" Target="{Binding ElementName=btnVendor}" />
           <StackPanel Grid.Column="1" Grid.Row="12" Margin="0 3 0 0">
             <TextBox Name="txtVendor" Text="{Binding Mode=OneWay, Path=Fields[Vendor], ValidatesOnDataErrors=True}" Style="{StaticResource ReadOnlyTextBox}" MinWidth="90" />
             <Button Content="  ...  " Name="btnVendor" Click="btnVendor_Click"
-                    GotKeyboardFocus="btnVendor_GotKeyboardFocus"
-                    IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+                    IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+            <!-- GotKeyboardFocus="btnVendor_GotKeyboardFocus" -->
             <local:VendorSearch x:Name="popVendorSearch" PlacementTarget="{Binding ElementName=MainPanel}" />
           </StackPanel>
 
           <!--Label Grid.Column="0" Grid.Row="8" Content="Good / Service:" />
           <StackPanel Grid.Column="1" Grid.Row="8" Margin="0 3 0 15">
             <TextBox Name="txtGoodService" Text="{Binding Mode=OneWay, Path=Fields[GoodsServiceName]}" Style="{StaticResource ReadOnlyTextBox}" MinWidth="90" />
-            <Button Content="  ...  " Name="btnGoodService" Click="btnGoodService_Click" IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+            <Button Content="  ...  " Name="btnGoodService" Click="btnGoodService_Click" IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
             <local:ucGoodsAndServicesSearch x:Name="popGoodsAndServicesSearch" PlacementTarget="{Binding ElementName=txtGoodService}" />
           </StackPanel-->
 
@@ -437,24 +431,24 @@
           <StackPanel Orientation="Vertical" Grid.Column="1" Grid.Row="13" Margin="0 3 0 15">
             <StackPanel >
               <TextBox Name="txtTotalCost" Text="{Binding Mode=TwoWay, Path=Fields[TotalCost], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" MinWidth="50" 
-                    IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
+                    IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
               <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding Mode=TwoWay, Path=Fields[CurrencyUsed], ValidatesOnDataErrors=True}"
-                  IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
+                  IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
                 <ComboBoxItem Tag="2">Euro</ComboBoxItem>
                 <ComboBoxItem Tag="1">USD</ComboBoxItem>
               </ComboBox>
               <Label Content="Check Number:" Margin="0 -3 0 0" />
               <TextBox Name="txtCheckNumber" MinWidth="50" 
-                        IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}, UpdateSourceTrigger=PropertyChanged}" />
+                        IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
             <CheckBox Visibility="{Binding Mode=OneWay, Path=IsTotalCostMinWarning, Converter={conv:BooleanToVisibilityConverter}}"
                       IsChecked="{Binding Mode=TwoWay, Path=IsTotalCostMinWarningConfirmed, ValidatesOnDataErrors=True}"
-                      IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
+                      IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
               <TextBlock Text="Check this box to confirm Total Cost is really that small." Background="Pink" />
             </CheckBox>
             <CheckBox Visibility="{Binding Mode=OneWay, Path=IsTotalCostMaxViolation, Converter={conv:BooleanToVisibilityConverter}}"
                       IsChecked="{Binding Mode=TwoWay, Path=IsTotalCostMaxViolationConfirmed, ValidatesOnDataErrors=True}" 
-                      IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
+                      IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" >
               <TextBlock Text="Total Cost >2499 Euro.  Check this box to confirm violation." Background="Pink" />
             </CheckBox>
 
@@ -467,8 +461,7 @@
               Watermark="For example, the type of service purchased or a brief list of items which where purchased, etc."
               TextWrapping="Wrap" AcceptsReturn="True" 
               Text="{Binding Mode=TwoWay, Path=Fields[Description], UpdateSourceTrigger=PropertyChanged}" 
-              IsEnabled="{Binding Path=IsReadOnly, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
-
+              IsEnabled="{Binding Path=IsLocked, Mode=OneWay, Converter={conv:InverseBooleanConverter}}" />
         </Grid>
       </ScrollViewer>
     </Grid>
@@ -476,3 +469,5 @@
 
 </local:tabBase>
 
+
+  
