@@ -14,6 +14,7 @@ namespace iTRAACv2
     public static readonly RoutedCommand CloseTab = new RoutedCommand();
   }
 
+  /*
   public class DelegateCommand : ICommand
   {
     private Action _executeMethod;
@@ -34,4 +35,5 @@ namespace iTRAACv2
       _executeMethod.Invoke();
     }
   }
+  */
 }

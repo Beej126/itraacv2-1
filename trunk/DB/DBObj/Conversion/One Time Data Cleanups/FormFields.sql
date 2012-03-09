@@ -9,7 +9,7 @@ ALTER TABLE tblFormFields add RowGUID uniqueidentifier not null default(newseque
 /* 
 code-gen:
 select
-'insert tblFormFields values ('+
+'insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values ('+
 CONVERT(VARCHAR, FormTypeID) + ', ' +
 right(' ''' + RTRIM(FieldName), 4) + ''', ' +
 right(' ' + CONVERT(VARCHAR, StartRow), 4) + ', ' +
@@ -27,35 +27,36 @@ type 1 = NF1
 type 2 = NF2
 type 3 = Abw
 
+SELECT * FROM vw_ABW WHERE TaxFormID= 50528628-- 50466038
+select top 5 * from tbltaxforms where TaxFormID>50466038 and formtypeid = 2
 */
-
-
 
 USE iTRAAC
 go
 
 BEGIN TRAN
-TRUNCATE TABLE tblformfields
+DELETE tblformfields
 
---                          ID,  Name,  Row,  Col, Len, MaxRows
-insert tblFormFields values (1,  'F1', 10.0, 60.0,  20,  1, 'OrderNumber')
-insert tblFormFields values (1,  'F2', 10.0,  4.0,  40,  1, 'VAT Office Name')
-insert tblFormFields values (1,  'F3', 11.0,  4.0,  40,  1, 'VAT Office Addr1')
-insert tblFormFields values (1,  'F4', 12.0,  4.0,  40,  1, 'VAT Office Addr2')
-insert tblFormFields values (1,  'F5', 13.0,  4.0,  40,  1, 'VAT Office Addr3')
-insert tblFormFields values (1,  'F6', 14.0, 60.0,  20,  1, 'From Date')
-insert tblFormFields values (1,  'F7', 18.0, 60.0,  20,  1, 'Expiration Date')
-insert tblFormFields values (1,  'F8', 20.0,  4.0,  40,  1, 'VAT Agent Name')
-insert tblFormFields values (1,  'F9', 27.0,  4.0,   4,  2, 'NFx Checkbox')
-insert tblFormFields values (1, 'F10', 36.0, 69.0,  23,  1, 'NF1 Amount')
-insert tblFormFields values (1, 'F11', 52.0, 69.0,  23, -3, 'NF2 Amount (negative rowcount means wordwrap up vs down)')
-insert tblFormFields values (1, 'F12', 58.0,  4.0,  25,  2, 'Sponsor Name + CCode')
-insert tblFormFields values (1, 'F13', 62.0,  4.0,  25,  1, 'Auth. Dependent Name')
-insert tblFormFields values (1, 'F14', 70.0,  4.0,  43,  3, 'Description')
-insert tblFormFields values (1, 'F15', 59.0,  4.0,   7,  1, 'Not Used, used to be Sponsor CCode, see F12') --... now that we're stamping SponsorName + CCode onto the TaxForm when names change, it's easier to maintain this as a single field
-insert tblFormFields values (1, 'F16', 70.0, 54.0,  35,  1, 'Vendor Name')
-insert tblFormFields values (1, 'F17', 77.0, 30.0,  35,  1, 'Returned/Filed Check Boxes')
+-- NF1 fields
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F1', 10.0, 60.0,  20,  1, 'OrderNumber')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F2', 10.0,  4.0,  40,  1, 'VAT Office Name')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F3', 11.0,  4.0,  40,  1, 'VAT Office Addr1')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F4', 12.0,  4.0,  40,  1, 'VAT Office Addr2')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F5', 13.0,  4.0,  40,  1, 'VAT Office Addr3')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F6', 14.0, 60.0,  20,  1, 'From Date')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F7', 18.0, 60.0,  20,  1, 'Expiration Date')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F8', 20.0,  4.0,  40,  1, 'VAT Agent Name')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1,  'F9', 27.0,  4.0,   4,  2, 'NFx Checkbox')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F10', 36.0, 69.0,  23,  1, 'NF1 Amount')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F11', 52.0, 69.0,  23, -3, 'NF2 Amount (negative rowcount means wordwrap up vs down)')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F12', 59.0,  4.0,  27,  2, 'Sponsor Name')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F13', 62.0,  4.0,  25,  1, 'Auth. Dependent Name')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F14', 70.0,  4.0,  43,  3, 'Description')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F15', 58.0,  4.0,   7,  1, 'Sponsor CCode')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F16', 70.0, 54.0,  35,  1, 'Vendor Name')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (1, 'F17', 77.0, 30.0,  35,  1, 'Returned/Filed Check Boxes')
 
+-- NF2 fields, basically the same as NF1
 INSERT tblFormFields ( FormTypeID, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description )
 SELECT 2, FieldName, StartRow, StartCol, MaxLength, MaxRows, DESCRIPTION
 FROM tblFormFields WHERE FormTypeID = 1
@@ -63,30 +64,31 @@ FROM tblFormFields WHERE FormTypeID = 1
 --this is the only one that should be different between NF1 & NF2
 UPDATE tblFormFields SET StartRow = 41 WHERE FormTypeID = 2 AND FieldName = 'F9' -- NF2 Checkbox
 
-insert tblFormFields values (3, 'F1',   9.5, 19.0,  4, 1, null)
-insert tblFormFields values (3, 'F2',  21.0, 60.0, 50, 1, null)
-insert tblFormFields values (3, 'F3',  22.0, 60.0, 50, 1, null)
-insert tblFormFields values (3, 'F4',  23.0, 60.0, 50, 1, null)
-insert tblFormFields values (3, 'F5',  26.5, 44.0, 16, 1, null)
-insert tblFormFields values (3, 'F6',  27.0, 59.0, 15, 1, null)
-insert tblFormFields values (3, 'F7',  28.0, 44.0, 50, 1, null)
-insert tblFormFields values (3, 'F8',  29.0, 44.0, 50, 1, null)
-insert tblFormFields values (3, 'F9',  30.0, 44.0, 50, 1, null)
-insert tblFormFields values (3, 'F10', 33.0, 44.0, 50, 1, null)
-insert tblFormFields values (3, 'F11', 34.0, 44.0, 50, 1, null)
-insert tblFormFields values (3, 'F12', 46.0, 83.0,  4, 1, null)
-insert tblFormFields values (3, 'F13', 49.0, 19.0, 50, 1, null)
-insert tblFormFields values (3, 'F14', 73.5, 83.0, 10, 1, null)
-insert tblFormFields values (3, 'F15', 52.0, 19.0, 50, 1, null)
-insert tblFormFields values (3, 'F16', 53.0, 19.0, 50, 1, null)
-insert tblFormFields values (3, 'F17', 54.0, 19.0, 50, 1, null)
-insert tblFormFields values (3, 'F18', 55.0, 19.0, 50, 1, null)
-insert tblFormFields values (3, 'F19', 17.0, 39.0, 22, 1, null)
-insert tblFormFields values (3, 'F20', 20.5, 30.0,  4, 1, null)
-insert tblFormFields values (3, 'F21', 24.0, 13.0,  4, 1, null)
-insert tblFormFields values (3, 'F22', 25.5, 58.0, 20, 1, null)
-insert tblFormFields values (3, 'F23', 33.5,  7.0, 20, 1, null)
-insert tblFormFields values (3, 'F24', 33.5, 58.0, 75, 1, null)
+-- Abw fields
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F1',  9.5, 19.0,   4,  1, 'XXXX for NATO box')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F2', 21.0, 60.0,  50,  1, 'Vendor Name')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F3', 22.0, 60.0,  50,  2, 'Vendor Address')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F4', 23.0, 60.0,  50,  1, '(not used, previously address line2, now combining into F2, and wordwrapping two lines)')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F5', 26.5, 44.0,  16,  1, 'Order Number')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F6', 27.0, 59.0,  15,  1, 'Date, but not printed??')
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F7', 28.0, 44.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F8', 29.0, 44.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3,  'F9', 30.0, 44.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F10', 33.0, 44.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F11', 34.0, 44.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F12', 46.0, 83.0,   4,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F13', 49.0, 19.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F14', 73.5, 83.0,  10,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F15', 52.0, 19.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F16', 53.0, 19.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F17', 54.0, 19.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F18', 55.0, 19.0,  50,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F19', 17.0, 39.0,  22,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F20', 20.5, 30.0,   4,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F21', 24.0, 13.0,   4,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F22', 25.5, 58.0,  20,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F23', 33.5,  7.0,  20,  1, NULL)
+insert tblFormFields (FormTypeId, FieldName, StartRow, StartCol, MaxLength, MaxRows, Description) values (3, 'F24', 33.5, 58.0,  75,  1, NULL)
 
 /*
 The Euro VAT forms should be implemented as a filled PDF

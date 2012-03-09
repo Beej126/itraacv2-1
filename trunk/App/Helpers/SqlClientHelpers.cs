@@ -415,34 +415,10 @@ public class Proc : IDisposable
     return (_cmd.ExecuteReader(CommandBehavior.SingleResult | CommandBehavior.CloseConnection));
   }
 
-
   public NameValueCollection ExecuteNameValueCollection(NameValueCollection vals = null)
   {
-    using (DataSet ds = ExecuteDataSet().dataSet) return (DataTableToNameValueCollection(Table0, vals));
+    return (SqlClientHelpers.DataTableToNameValueCollection(Table0, vals));
   }
-
-  /// <summary>
-  /// Add to an existing NameValueCollection
-  /// </summary>
-  static private NameValueCollection DataTableToNameValueCollection(DataTable table, NameValueCollection vals = null)
-  {
-    if ((table == null) || (table.Rows.Count == 0)) return (null);
-
-    if (table.Columns[0].ColumnName.ToLower() == "name") //row based name-value pairs
-    {
-      if (vals == null) vals = new NameValueCollection(table.Rows.Count - 1);
-      foreach (DataRow row in table.Rows) vals[row["name"].ToString()] = row["value"].ToString();
-    }
-    else //column based...
-    {
-      if (vals == null) vals = new NameValueCollection(table.Columns.Count - 1);
-      foreach (DataColumn col in table.Columns) vals[col.ColumnName] = table.Rows[0][col.ColumnName].ToString();
-    }
-
-    return (vals);
-  }
-
-
 
   public object this[string key]
   {
@@ -467,12 +443,39 @@ public class Proc : IDisposable
         (_cmd.Parameters[key].SqlDbType == SqlDbType.UniqueIdentifier) ? new Guid(value.ToString()) : value;
     }
   }
+
+  public virtual void ClearParms()
+  {
+    for (int i = 0; i < Parameters.Count; i++)
+      Parameters[i].Value = DBNull.Value;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 public static class SqlClientHelpers
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {
+
+  /// <summary>
+  /// Add to an existing NameValueCollection
+  /// </summary>
+  static public NameValueCollection DataTableToNameValueCollection(DataTable table, NameValueCollection vals = null)
+  {
+    if ((table == null) || (table.Rows.Count == 0)) return (null);
+
+    if (table.Columns[0].ColumnName.ToLower() == "name") //row based name-value pairs
+    {
+      if (vals == null) vals = new NameValueCollection(table.Rows.Count - 1);
+      foreach (DataRow row in table.Rows) vals[row["name"].ToString()] = row["value"].ToString();
+    }
+    else //column based...
+    {
+      if (vals == null) vals = new NameValueCollection(table.Columns.Count - 1);
+      foreach (DataColumn col in table.Columns) vals[col.ColumnName] = table.Rows[0][col.ColumnName].ToString();
+    }
+
+    return (vals);
+  }
 
   static public string BuildRowFilter(params string[] Filters)
   {

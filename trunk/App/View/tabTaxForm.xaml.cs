@@ -356,8 +356,7 @@ namespace iTRAACv2
       if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return (false);
       TaxFormModel form = values[0] as TaxFormModel;
       return (
-        (form.Fields.Field<string>("LocationCode") == SettingsModel.TaxOfficeCode
-        && !form.IsFormStatusClosed) 
+        form.Fields.Field<string>("LocationCode") != "CUST"
         || UserModel.Current.Access.IsAdmin);
     }
 
@@ -376,8 +375,7 @@ namespace iTRAACv2
       if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return (false);
       TaxFormModel form = values[0] as TaxFormModel;
       return (
-        (form.Fields.Field<int>("TaxOfficeId") == SettingsModel.TaxOfficeId
-        && !form.IsFormStatusClosed)
+        "LOST,CUST".Contains(form.Fields.Field<string>("LocationCode"))
         || UserModel.Current.Access.IsAdmin);
     }
 

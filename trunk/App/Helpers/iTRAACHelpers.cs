@@ -155,9 +155,20 @@ namespace iTRAACv2
   {
     public iTRAACProc(string ProcName) : base(ProcName)
     {
+      InitParms();
+    }
+
+    private void InitParms()
+    {
       this["@UserGUID"] = UserModel.Current.GUID;
       this["@TaxOfficeId"] = SettingsModel.TaxOfficeId;
       this["@TaxOfficeCode"] = SettingsModel.TaxOfficeCode;
+    }
+
+    public override void ClearParms()
+    {
+      base.ClearParms();
+      InitParms();
     }
   }
 
