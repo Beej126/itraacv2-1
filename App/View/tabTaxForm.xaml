@@ -271,7 +271,7 @@
                                   UpImage="/Assets/Glyphs/lost_x32.png" ImageHeight="24"
                                   Click="btnLostVoid_Click"
                                   IsChecked="{Binding Mode=TwoWay, Path=Fields[LocationCode], Converter={local:LostLocationCodeToBool}}"
-                                  IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
+                                  Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                                   Tag="25" /> <!-- 25 == RemarkTypeId for Lost -->
 
             <local:ReasonPopup x:Name="FormStatusReasonPopup" Result="FormStatusReasonPopup_Result" 
@@ -281,12 +281,12 @@
                                   UpImage="/Assets/Glyphs/void_x32.png" ImageHeight="24"
                                   Click="btnLostVoid_Click"
                                   IsChecked="{Binding Mode=TwoWay, Path=IsVoided}"
-                                  IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
+                                  Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                                   Tag="14" /> <!-- 14 == RemarkTypeId for Void -->
 
             <local:ucToggleButton x:Name="btnViolation" ToolTip="Mark this form as a Violation" ButtonPadding="3" Margin="7,0,0,0" ButtonHeight="34"
                                   IsChecked="{Binding Mode=OneWay, Path=IsViolation}" IsCheckedChanged="btnViolation_IsCheckedChanged" 
-                                  IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}"
+                                  Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                                   UpImage="{StaticResource AlertIcon}" />
 
             <!--Button Padding="3" ToolTip="Mark this form as a Violation" Height="34" Margin="7,0,0,0" Click="btnViolation_Click"  >
@@ -307,25 +307,25 @@
             <Label Content="by: " />
             <TextBox Text="{Binding Mode=OneWay, Path=Fields[ReturnedBy]}" Style="{StaticResource ReadOnlyTextBox}" />
             <Button Name="btnReturn" Margin="7,0,0,0" ToolTip="Return this Tax Form" 
-                    Click="btnReturn_Click">
+                    Click="btnReturn_Click"
+                    Visibility="{Binding Mode=OneWay, Path=IsFormStatusClosed, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}">
               <Button.IsEnabled>
                 <MultiBinding Converter="{local:IsReturnFormEnabled}">
                   <Binding Mode="OneWay" />
-                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
+                  <Binding Mode="OneWay" Path="Fields[LocationCode]" />
                   <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-                  <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
                 </MultiBinding>
               </Button.IsEnabled>
               <Image Source="/Assets/Glyphs/arrow_right_green_x32.png" Height="24"/>
             </Button>
             <Button ToolTip="Return &amp; Close" Name="btnReturnClose" FontSize="14" VerticalAlignment="Stretch" 
-                    Click="btnReturn_Click">
+                    Click="btnReturn_Click"
+                    Visibility="{Binding Mode=OneWay, Path=IsFormStatusClosed, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}">
               <Button.IsEnabled>
                 <MultiBinding Converter="{local:IsReturnFormEnabled}">
                   <Binding Mode="OneWay" />
-                  <Binding Mode="OneWay" Path="Fields[TaxOfficeId]" />
+                  <Binding Mode="OneWay" Path="Fields[LocationCode]" />
                   <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-                  <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
                 </MultiBinding>
               </Button.IsEnabled>
 
@@ -335,14 +335,13 @@
               </StackPanel>
             </Button>
             <Button ToolTip="Give Back to Customer for Correction" Name="btnGiveCustomer" Margin="7,0,0,0" 
-                    Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
+                    Visibility="{Binding Mode=OneWay, Path=IsFormStatusClosed, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                     Click="btnGiveCustomer_Click">
               <Button.IsEnabled>
                 <MultiBinding Converter="{local:IsGiveBackToCustomerEnabled}">
                   <Binding Mode="OneWay" />
                   <Binding Mode="OneWay" Path="Fields[LocationCode]" />
                   <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
-                  <Binding Mode="OneWay" Path="Fields[StatusFlags]" />
                 </MultiBinding>
               </Button.IsEnabled>
               <Image Source="/Assets/Glyphs/user1_back_x32.png" Height="24" />
@@ -357,11 +356,11 @@
             <TextBox Text="{Binding Mode=OneWay, Path=Fields[FiledBy]}" Style="{StaticResource ReadOnlyTextBox}" />
             <Button Name="btnFile" Margin="7,0,0,0" ToolTip="File - Form must be from current office"
                     Click="btnFile_Click"
-                    IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}" >
+                    Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}">
               <Image Source="/Assets/Glyphs/cabinet_x32.png" Height="24"/>
             </Button>
             <Button ToolTip="File &amp; Close" FontSize="14" VerticalAlignment="Stretch"
-                    IsEnabled="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:InverseBooleanConverter}}" 
+                    Visibility="{Binding Mode=OneWay, Path=IsLocked, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                     Click="btnFile_Click" Name="btnFileClose">
               <StackPanel>
                 <TextBlock FontFamily="Marlett" VerticalAlignment="Center" Text="r" />

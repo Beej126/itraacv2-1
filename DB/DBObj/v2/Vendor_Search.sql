@@ -33,8 +33,8 @@ SET @VendorName = @VendorName + '%'
 IF (@VendorName_SearchType = 'contains') SET @VendorName = '%'+@VendorName
 --SET @VendorName = iTRAAC.dbo.fn_DynParm('AND VendorName like ''?%''', @VendorName)
 
-IF (@VendorCity_SearchType = 'contains') SET @VendorCity = '%'+@VendorCity
-SET @VendorCity = iTRAAC.dbo.fn_DynParm('AND City like ''?%''', @VendorCity)
+--IF (@VendorCity_SearchType = 'contains') SET @VendorCity = '%'+@VendorCity
+--SET @VendorCity = iTRAAC.dbo.fn_DynParm('AND City like ''?%''', @VendorCity)
 
 --debug: PRINT '@VendorName: '+ISNULL(@VendorName, 'NULL')
 --debug: PRINT '@VendorCity: '+ISNULL(@VendorCity, 'NULL')

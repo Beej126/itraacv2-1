@@ -17,10 +17,10 @@ GO
 select top 5 * from tbltaxforms where rowguid = '3d2676e1-7cee-4edc-ae0b-f0155c1e7653'
 select * from tblRemarks where rowid = 270003525 --need to write conversion for tblRemarks to extended tax form tables and that will have to run in an ongoing loop during rollout
 
-select * from tbltaxforms where ordernumber = 'nf1-wi-10-06620'
+select * from tbltaxforms where ordernumber = 'NF1-RA-07-29410'
 
 declare @TableNames varchar(100)
-exec TaxForm_s @GUID='6683EAC4-7D25-4559-8A0A-06748D4334C0', @TableNames=@TableNames out
+exec TaxForm_s @GUID='96A8BC5C-063D-4163-9BCD-8D57201F2458', @TableNames=@TableNames out
 select @TableNames as TableNames
 
 select itraac.dbo.statusflags_f(671088675)
@@ -70,6 +70,7 @@ SELECT
   f.Incomplete,
   f.LocationCode,
   f.FormTypeID,
+  f.InitPrt215,
   f.InitPrtAbw,
 
   p.PurchaseDate,

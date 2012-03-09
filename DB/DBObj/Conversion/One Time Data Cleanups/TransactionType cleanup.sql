@@ -1,3 +1,78 @@
+/* second round of tweaks prompted by Erica's feedback (Baumholder)
+
+- changed "services" to be the new misc goods or service bucket ... with that said, he wants it to be somewhat annoying to select so it's less overused... something like a popup that asks are you sure, with some examples in the popup text
+- broke home into household goods and repair
+- added new entries for the examples you came up with garden, baby, animal, clothing & TKS
+- provided a few clarifying examples at the bottom and is basically leaving the rest up to me i guess
+- i say amusement park goes under recreation - executive decision :)
+- i'll add one for hair... maybe "cosmetic" or something more encompasing like that
+- everything else on his list i guess i'd just throw under household
+ 
+
+
+
+1        Vehicle Repair/Maintenance
+1        Vehicle Purchase
+1        Furniture
+1        Groceries
+       Household Items (misc) => description becomes mandator
+1        Electronics
+1        Tools
+       Home Repair Purchase
+
+       Garden Maintenance/Supplies
+
+1        Legal/Tax Advisor Fees
+1        Travel/Hotels
+1        Fuel Oil, Mineral Oil, Gas
+
+       Telephones/Internet
+
+1        Utilities (red flag)
+1        Restaurants
+1        Social Events (Wedding/Communion/Party)
+1        Funeral Expenses
+1        Group Purchases
+1        Jewelry
+1        Collectibles and Valuables
+
+       Medical/Optical
+
+       Recreational Supplies/activities
+
+       Rentals (not long-term)
+1        Weapons
+
+0        Pre-Purchased VAT Forms
+0        Advertising (moved to 'Services')
+0        (don't use) Insurance
+0        Renovations & Replacements (moved to 'Home')
+0        (don't use) Television Service
+0        Travel (moved to 'Travel/Hotel')
+0        (don't use) Trade-Ins
+
+       Baby Items
+       Clothing/Shoes
+       Animal Supplies/Care
+
+1      Services
+
+Where to put:
+- pots/pans  (Household Items)
+- Hairdresser/Beauty Salon
+- CD/DVD/Vinyl/Software  (electronics?)
+- Books
+- AC units (Household Items?)
+- Curtains (household items)
+- Light Fixures (Household items?)
+- Wallets/Pens
+- Mattresses
+- Moving Supplies
+- Office Supplies (personal only)
+-
+
+*/
+
 /* 
 . this is the new list in the proper sort order
 . and add a SortOrder column for displaying in the drop down box
@@ -32,6 +107,8 @@ Weapons
 need conversion script mapping old to new
 see: C:\Brent\Dev\iTRAAC\iTRAAC v2\DB\Code Table Cleanup\Transaction Type cleanup.xlsx
 
+
+select * from tbltransactiontypes
 */
 
 USE iTRAAC

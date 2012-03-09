@@ -8,84 +8,141 @@
 
   <Popup StaysOpen="False" Name="popVendorSearch" Placement="Center" PopupAnimation="Slide">
     <!-- Placement="Bottom" VerticalOffset="2" -->
-    <kb:Resizer MinWidth="500" MinHeight="200" MaxHeight="450" MaxWidth="850" IsTabStop="False">
+    <kb:Resizer Width="600" Height="450" IsTabStop="False">
       <Border Name="border" BorderThickness="1" BorderBrush="DarkGray" Background="{StaticResource PopUpBackgroundBrush}">
         <Grid>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="auto"/>
-          </Grid.RowDefinitions>
           <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition />
+            <ColumnDefinition Width="auto" />
           </Grid.ColumnDefinitions>
-
-          <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2" Margin="5 5 5 0" >
-            <StackPanel>
-              <StackPanel Orientation="Horizontal" Margin="0 0 0 5">
-                <Label Content="Vendor _Name contains:" Target="{Binding ElementName=txtVendorName}" />
-                <ComboBox SelectedIndex="1" Name="cbxVendorNameSearchType" SelectionChanged="VendorSearchCriteriaChanged" Margin="0 3 0 3"
-                          Visibility="Collapsed">
-                  <ComboBox.Items>
-                    <ComboBoxItem Content="Begins With (faster)" />
-                    <ComboBoxItem Content="Contains" />
-                  </ComboBox.Items>
-                </ComboBox>
-              </StackPanel>
-              <TextBox Name="txtVendorName" Width="100" Margin="0 3 0 5" TextChanged="VendorSearchCriteriaChanged" />
-            </StackPanel>
-
-            <StackPanel Margin="5 0 0 0" Visibility="Collapsed">
-              <StackPanel Orientation="Horizontal" Margin="0 0 0 5">
-                <Label Content="_City:" Target="{Binding ElementName=txtVendorCity}" />
-                <ComboBox SelectedIndex="0" Name="cbxVendorCitySearchType" SelectionChanged="VendorSearchCriteriaChanged" Margin="0 3 0 3">
-                  <ComboBox.Items>
-                    <ComboBoxItem Content="Begins With (faster)" />
-                    <ComboBoxItem Content="Contains" />
-                  </ComboBox.Items>
-                </ComboBox>
-              </StackPanel>
-              <TextBox Name="txtVendorCity" Width="100" Margin="0 3 0 5" TextChanged="VendorSearchCriteriaChanged" />
-            </StackPanel>
-
-          </StackPanel>
-
-          <TextBlock Grid.Row="1" Name="lblVendorSearchError" Foreground="Red" TextWrapping="WrapWithOverflow" Margin="10 0 0 5" />
-          <TextBlock Text="{Binding Mode=OneWay, ElementName=lbxVendorList, Path=Items.Count, StringFormat='{}{0} item(s) found'}" 
-                     Grid.Row="1" Grid.Column="1" Margin="5 0 10 5" />
-
-          <!--global:TabOutDataGrid x:Name="lbxVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="7 0" IsReadOnly="True"
-                    HeadersVisibility="Column"
-                    MouseDoubleClick="lbxVendorList_DoubleClick"
-                    SelectionUnit="FullRow" /-->
-          <ListBox Name="lbxVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="5">
-            <ListBox.ItemContainerStyle>
-              <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-                <EventSetter Event="MouseDoubleClick" Handler="btnSelect_Click"/>
-              </Style>
-            </ListBox.ItemContainerStyle>
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                  <TextBlock Text="{Binding Mode=OneWay, Path=VendorName}" FontWeight="Bold" />
-                  <TextBlock Text="&#160;-&#160;" />
-                  <TextBlock Text="{Binding Mode=OneWay, Path=Address}" FontWeight="Light" />
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-
-          <!-- resize grip must come before buttons in the control hierarchy so we get the button click event bubbled up from the button first -->
-          <ResizeGrip Grid.Row="3" Grid.ColumnSpan="2" IsTabStop="False" />
-
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3" Grid.ColumnSpan="2" Margin="0 10" >
-            <Button Content="Select" Width="100" Name="btnSelect" Click="btnSelect_Click" IsDefault="True" />
-            <Button Content="Cancel" Width="100" Margin="10 0 0 0" Name="btnCancel" IsCancel="True" Click="btnCancel_Click" />
-          </StackPanel>
           
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="*" />
+              <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
 
+            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2" Margin="5 5 5 0" >
+              <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0 0 0 5">
+                  <Label Content="Vendor _Name contains:" Target="{Binding ElementName=txtVendorName}" />
+                  <ComboBox SelectedIndex="1" Name="cbxVendorNameSearchType" SelectionChanged="VendorSearchCriteriaChanged" Margin="0 3 0 3"
+                            Visibility="Collapsed">
+                    <ComboBox.Items>
+                      <ComboBoxItem Content="Begins With (faster)" />
+                      <ComboBoxItem Content="Contains" />
+                    </ComboBox.Items>
+                  </ComboBox>
+                </StackPanel>
+                <TextBox Name="txtVendorName" Width="100" Margin="0 3 0 5" TextChanged="VendorSearchCriteriaChanged" />
+              </StackPanel>
+
+              <StackPanel Margin="5 0 0 0" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Margin="0 0 0 5">
+                  <Label Content="_City:" Target="{Binding ElementName=txtVendorCity}" />
+                  <ComboBox SelectedIndex="0" Name="cbxVendorCitySearchType" SelectionChanged="VendorSearchCriteriaChanged" Margin="0 3 0 3">
+                    <ComboBox.Items>
+                      <ComboBoxItem Content="Begins With (faster)" />
+                      <ComboBoxItem Content="Contains" />
+                    </ComboBox.Items>
+                  </ComboBox>
+                </StackPanel>
+                <TextBox Name="txtVendorCity" Width="100" Margin="0 3 0 5" TextChanged="VendorSearchCriteriaChanged" />
+              </StackPanel>
+
+            </StackPanel>
+
+            <TextBlock Grid.Row="1" Name="lblVendorSearchError" Foreground="Red" TextWrapping="WrapWithOverflow" Margin="10 0 0 5" />
+            <TextBlock Text="{Binding Mode=OneWay, ElementName=lbxVendorList, Path=Items.Count, StringFormat='{}{0} item(s) found'}" 
+                       Grid.Row="1" Grid.Column="1" Margin="5 0 10 0" />
+
+            <!--global:TabOutDataGrid x:Name="lbxVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="7 0" IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      MouseDoubleClick="lbxVendorList_DoubleClick"
+                      SelectionUnit="FullRow" /-->
+            <ListBox Name="lbxVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="5 0 5 5">
+              <ListBox.ItemContainerStyle>
+                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                  <EventSetter Event="MouseDoubleClick" Handler="btnSelect_Click"/>
+                </Style>
+              </ListBox.ItemContainerStyle>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                    <TextBlock Text="{Binding Mode=OneWay, Path=VendorName}" FontWeight="Bold" />
+                    <TextBlock Text="&#160;-&#160;" />
+                    <TextBlock Text="{Binding Mode=OneWay, Path=Address}" FontWeight="Light" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- resize grip must come before buttons in the control hierarchy so we get the button click event bubbled up from the button first -->
+            <ResizeGrip Grid.Row="3" Grid.ColumnSpan="2" IsTabStop="False" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3" Grid.ColumnSpan="2" Margin="0 10" >
+              <Button Content="Select" Width="100" Name="btnSelect" Click="btnSelect_Click" IsDefault="True" />
+              <Button Content="Cancel" Width="100" Margin="10 0 0 0" Name="btnCancel" IsCancel="True" Click="btnCancel_Click" />
+            </StackPanel>
+
+          </Grid>
+
+          <GroupBox Header="New Vendor" Grid.Column="1" Margin="5" VerticalAlignment="Top">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <Grid.Resources>
+                <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
+                  <Style.Setters>
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                  </Style.Setters>
+                </Style>
+
+                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                  <Style.Setters>
+                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                  </Style.Setters>
+                </Style>
+
+              </Grid.Resources>
+
+              <Label Grid.Row="0" Content="Name:" />
+              <Label Grid.Row="1" Content="Line 2 (Attn, etc):" />
+              <Label Grid.Row="2" Content="Street + Number:" />
+              <Label Grid.Row="3" Content="City:" />
+              <Label Grid.Row="4" Content="Postal:" />
+              <Label Grid.Row="5" Content="Phone:" />
+
+              <TextBox Grid.Column="1" Grid.Row="0" MinWidth="100" Text="{Binding Mode=TwoWay, Path=[@VendorName], UpdateSourceTrigger=PropertyChanged}" />
+              <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding Mode=TwoWay, Path=[@Line2], UpdateSourceTrigger=PropertyChanged}" />
+              <TextBox Grid.Column="1" Grid.Row="2" Text="{Binding Mode=TwoWay, Path=[@Street], UpdateSourceTrigger=PropertyChanged}" />
+              <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding Mode=TwoWay, Path=[@City], UpdateSourceTrigger=PropertyChanged}" />
+              <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Mode=TwoWay, Path=[@PLZ], UpdateSourceTrigger=PropertyChanged}" />
+              <TextBox Grid.Column="1" Grid.Row="5" Text="{Binding Mode=TwoWay, Path=[@Phone], UpdateSourceTrigger=PropertyChanged}" />
+              <StackPanel HorizontalAlignment="Center" Grid.Row="6" Grid.ColumnSpan="2" >
+                <Button Margin="5" Padding="10,5" Content="Add" FontSize="13" Click="AddVendor_Click" />
+                <Button Margin="5" Padding="10,5" Content="Clear" FontSize="13" Click="ClearVendor_Click" />
+              </StackPanel>
+            </Grid>
+          </GroupBox>
+          
         </Grid>
       </Border>
     </kb:Resizer>

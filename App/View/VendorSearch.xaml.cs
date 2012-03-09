@@ -25,7 +25,6 @@ namespace iTRAACv2
     private object _VendorGUID = DBNull.Value;
     private object _VendorName = DBNull.Value;
 
-    private VendorSearchCallback cb = null;
     public void Open(VendorSearchCallback callback)
     {
       if (popVendorSearch.IsOpen) return; //because we want to pop this open via both keyboard focus and click, it could be double fired
@@ -43,20 +42,26 @@ namespace iTRAACv2
       else lbxVendorList.Focus();
     }
     private IInputElement PrePopupFocusedElement;
+    private VendorSearchCallback cb = null;
+    private Proc Vendor_New = new iTRAACProc("Vendor_New");
 
     private void btnSelect_Click(object sender, object e)
     {
       DataRowView row = lbxVendorList.SelectedItem as DataRowView;
       if (row == null) return; //i.e. if they hit select button w/o selecting a row in the grid
-      popVendorSearch.IsOpen = false;
-      Keyboard.Focus(PrePopupFocusedElement);
+      CommonCloseLogic();
       cb(row["RowGUID"], row["ShortDescription"]);
     }
 
     private void btnCancel_Click(object sender, RoutedEventArgs e)
     {
+      CommonCloseLogic();
+    }
+
+    private void CommonCloseLogic()
+    {
       popVendorSearch.IsOpen = false;
-      Keyboard.Focus(PrePopupFocusedElement); 
+      Keyboard.Focus(PrePopupFocusedElement);
     }
 
     //datagrid approach:
@@ -68,6 +73,7 @@ namespace iTRAACv2
 
     public VendorSearch()
     {
+      DataContext = Vendor_New;
       InitializeComponent();
       border.MouseDown += (s, e) => e.Handled = true; //http://stackoverflow.com/questions/619798/why-does-a-wpf-popup-close-when-its-background-area-is-clicked
     }
@@ -168,6 +174,19 @@ namespace iTRAACv2
         lblVendorSearchError.Text = state.Text;
     }
     #endregion
+
+    private void AddVendor_Click(object sender, RoutedEventArgs e)
+    {
+      Vendor_New.ExecuteNonQuery();
+      CommonCloseLogic();
+      cb(Vendor_New["@VendorGUID"], Vendor_New["@VendorName"]);
+    }
+
+    private void ClearVendor_Click(object sender, RoutedEventArgs e)
+    {
+      Vendor_New.ClearParms();
+      DataContext = null; DataContext = Vendor_New; //since Proc class is a POCO we have to manually refresh the UI bindings, NBD in this case.
+    }
 
   }
 
