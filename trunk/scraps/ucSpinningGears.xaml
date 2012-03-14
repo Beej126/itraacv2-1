@@ -4,7 +4,7 @@
   xmlns:View="clr-namespace:iTRAACv2.View"
 >
   
-	<!--UserControl.Resources>
+	<UserControl.Resources>
 		<Storyboard x:Name="spinner" x:Key="spinner" RepeatBehavior="Forever" >
 			<DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="bottomCog" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)">
 				<EasingDoubleKeyFrame KeyTime="00:00:00" Value="15"/>
@@ -17,7 +17,7 @@
 				<EasingDoubleKeyFrame KeyTime="00:00:01" Value="-360"/>
 			</DoubleAnimationUsingKeyFrames>
 		</Storyboard>
-	</UserControl.Resources-->
+	</UserControl.Resources>
   
 	<!--UserControl.Triggers>
 		<EventTrigger RoutedEvent="FrameworkElement.Loaded">

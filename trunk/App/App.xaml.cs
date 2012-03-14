@@ -18,18 +18,18 @@ namespace iTRAACv2
       if (mainWindow != null) mainWindow.ShowUserMessage(text);
     }
 
-    static public void ShowWaitAnimation()
-    {
-      var mainWindow = Current.MainWindow as MainWindow;
-      if (mainWindow != null) mainWindow.popWaitAnimation.Show();
-    }
+    //static public void ShowWaitAnimation()
+    //{
+    //  var mainWindow = Current.MainWindow as MainWindow;
+    //  if (mainWindow != null) mainWindow.popWaitAnimation.Show();
+    //}
 
-    static public void StopWaitAnimation()
-    {
-      if (Current != null && !Current.Dispatcher.CheckAccess()) { Current.Dispatcher.Invoke((Action)StopWaitAnimation); return; }
-      if (Current != null && Current.MainWindow != null && (Current.MainWindow as MainWindow) != null && (Current.MainWindow as MainWindow).popWaitAnimation != null) 
-        (Current.MainWindow as MainWindow).popWaitAnimation.Hide();
-    }
+    //static public void StopWaitAnimation()
+    //{
+    //  if (Current != null && !Current.Dispatcher.CheckAccess()) { Current.Dispatcher.Invoke((Action)StopWaitAnimation); return; }
+    //  if (Current != null && Current.MainWindow != null && (Current.MainWindow as MainWindow) != null && (Current.MainWindow as MainWindow).popWaitAnimation != null) 
+    //    (Current.MainWindow as MainWindow).popWaitAnimation.Hide();
+    //}
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -122,7 +122,7 @@ namespace iTRAACv2
 
     private void DefaultExceptionHandler(Exception ex)
     {
-      StopWaitAnimation();
+      //StopWaitAnimation();
       while (ex.InnerException != null) ex = ex.InnerException; //drill down to root exception since this is 99.9% the most useful information
 
       MessageBox.Show("[" + ex.GetType() + "]\r\n" +

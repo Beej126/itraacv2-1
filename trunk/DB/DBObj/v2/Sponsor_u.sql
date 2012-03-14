@@ -76,7 +76,7 @@ OUTPUT CASE WHEN ISNULL(DELETED.IsUTAPActive,0) <> ISNULL(INSERTED.IsUTAPActive,
 WHERE RowGUID = @RowGUID
 
 IF (@@ROWCOUNT = 1) BEGIN
-  SELECT @Remarks = master.dbo.Concat([Changes]) FROM @ChangesTbl WHERE [Changes] IS NOT NULL
+  SELECT @Remarks = master.dbo.Concat([Changes],',') FROM @ChangesTbl WHERE [Changes] IS NOT NULL
   IF (@Remarks IS NOT null) EXEC Remark_u
     @TaxOfficeId = @TaxOfficeId,
     @UserGUID = @UserGUID,

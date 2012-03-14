@@ -96,6 +96,7 @@ namespace iTRAACv2.View
       public DataTable ResultTable;
 // ReSharper disable FieldCanBeMadeReadOnly.Local - Text & Success can be set by reflection via Proc.ExecuteDataset()
 // ReSharper disable UnassignedField.Local
+#pragma warning disable 0649
       public string Text; //put a text propertyName on this object so that the generic ExecuteDataset(label) method can populate it with any error
 // ReSharper restore UnassignedField.Local
 // ReSharper restore FieldCanBeMadeReadOnly.Local
@@ -103,6 +104,7 @@ namespace iTRAACv2.View
 // ReSharper disable FieldCanBeMadeReadOnly.Local
 // ReSharper disable UnassignedField.Local
       public bool Success;
+#pragma warning restore 0649
 // ReSharper restore UnassignedField.Local
 // ReSharper restore FieldCanBeMadeReadOnly.Local
 // ReSharper restore ConvertToConstant.Local

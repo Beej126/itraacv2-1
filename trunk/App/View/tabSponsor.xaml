@@ -607,14 +607,14 @@
                 <Button.IsEnabled>
                   <MultiBinding Converter="{conv:AND}">
                     <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
-                    <Binding Mode="OneWay" Path="Class1TaxForms_CountRemainingToBuy"
+                    <Binding Mode="OneWay" Path="Class1TaxFormsCountRemainingToBuy"
                              Converter="{conv:BoolExpressionToBool}" ConverterParameter="? > 0" />
                   </MultiBinding>
                 </Button.IsEnabled>
                 <Button.ToolTip>
                   <MultiBinding Converter="{View:Class1SellButtonToolTipConverter}">
                     <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
-                    <Binding Mode="OneWay" Path="Class1TaxForms_CountRemainingToBuy" />
+                    <Binding Mode="OneWay" Path="Class1TaxFormsCountRemainingToBuy" />
                   </MultiBinding>
                 </Button.ToolTip>
 
@@ -696,25 +696,25 @@
 
               <StackPanel VerticalAlignment="Center">
                 <RadioButton Grid.Column="0" Grid.Row="0" GroupName="rdogrpTaxFormsListFilter" Content="Show All" />
-                <RadioButton Grid.Column="1" Grid.Row="0" Name="rdoShowUnPrintedTaxFormsOnly" GroupName="rdogrpTaxFormsListFilter" Content="Not Printed" IsChecked="{Binding Mode=TwoWay, Path=TaxForms_UnPrintedOnlyFilter}"   />
+                <RadioButton Grid.Column="1" Grid.Row="0" Name="rdoShowUnPrintedTaxFormsOnly" GroupName="rdogrpTaxFormsListFilter" Content="Not Printed" IsChecked="{Binding Mode=TwoWay, Path=TaxFormsUnPrintedOnlyFilter}"   />
               </StackPanel>
               <Border Style="{StaticResource FatLabel}" Name="UnreturnedLabel"
                       MouseLeftButtonUp="EndBackgroundAnimation" >
                 <RadioButton Name="rdoHideReturnedTaxForms" GroupName="rdogrpTaxFormsListFilter"
-                             IsChecked="{Binding Mode=TwoWay, Path=TaxForms_UnReturnedOnlyFilter}">
+                             IsChecked="{Binding Mode=TwoWay, Path=TaxFormsUnReturnedOnlyFilter}">
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Unreturned:" Margin="0 0 3 0" />
-                    <TextBlock Text="{Binding Mode=OneWay, Path=Class1TaxForms_CountUnreturned}" FontWeight="Bold" />
+                    <TextBlock Text="{Binding Mode=OneWay, Path=Class1TaxFormsCountUnreturned}" FontWeight="Bold" />
                   </StackPanel>
                 </RadioButton>
               </Border>
               <Border Style="{StaticResource FatLabel}" Name="ReturnedNotFiledLabel"
                       MouseLeftButtonUp="EndBackgroundAnimation">
                 <RadioButton Name="rdoShowReturnedNotFiledTaxFormsOnly" GroupName="rdogrpTaxFormsListFilter"
-                             IsChecked="{Binding Mode=TwoWay, Path=TaxForms_ReturnedNotFiledOnlyFilter}">
+                             IsChecked="{Binding Mode=TwoWay, Path=TaxFormsReturnedNotFiledOnlyFilter}">
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Returned Not Filed:" Margin="0 0 3 0" />
-                    <TextBlock Text="{Binding Mode=OneWay, Path=TaxForms_CountReturnedNotFiled}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Mode=OneWay, Path=TaxFormsCountReturnedNotFiled}" FontWeight="Bold"/>
                   </StackPanel>
                 </RadioButton>
               </Border>
@@ -820,11 +820,12 @@
                 <ToggleButton DockPanel.Dock="Left" Name="btnSuspend" Margin="0" Padding="4 3 4 4" VerticalAlignment="Top" Content="Suspend"
                               Checked="BtnSuspendChecked"
                               IsChecked="{Binding Mode=OneWay, Path=Fields[SuspensionExpiry], Converter={conv:NotEmptyToTrue}}"
-                              Style="{StaticResource DistractingToggleButton}">
-                  <ToggleButton.ToolTip>
+                              Style="{StaticResource DistractingToggleButton}"
+                              ToolTipService.ShowOnDisabled="True" >
+                  <global:BindableToolTipService.ToolTip>
                     <ToolTip Content="As a precaution, Suspension can only be removed by Suspending office."
                              Visibility="{Binding Mode=OneWay, ElementName=dockSuspension, Path=IsEnabled, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"/>
-                  </ToggleButton.ToolTip>
+                  </global:BindableToolTipService.ToolTip>
                 </ToggleButton>
                 <View:ReasonPopup x:Name="SuspensionReasonPopup" Result="SuspensionReasonPopupResult" PlacementTarget="{Binding ElementName=dockSuspension}" />
                 <WrapPanel Orientation="Vertical" Margin="5 0 0 0"

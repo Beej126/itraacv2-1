@@ -497,7 +497,7 @@ namespace iTRAACv2.View
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
-      if (WPFHelpers.DesignMode) return (null);
+      if (WPFHelpers.DesignMode || values[1] == DependencyProperty.UnsetValue) return (null);
 
       if (!(bool)values[0]) return("Deactive Sponsor, no new forms can be sold.");
       return (int)values[1] < 1 ? (String.Format("The maximum {0} NF1 forms have already been issued", SettingsModel.MaxClass1FormsCount)) : ("Sell New < 2500€ VAT Forms (NF1)");

@@ -242,7 +242,7 @@ BEGIN TRY
   --debug: PRINT '4: ' + CONVERT(VARCHAR, GETDATE(), 14)
   COMMIT TRANSACTION;
   
-  SELECT @TaxFormGUIDs = master.dbo.CONCAT(RowGUID) FROM @NewTaxFormRowGUIDs
+  SELECT @TaxFormGUIDs = master.dbo.CONCAT(RowGUID,',') FROM @NewTaxFormRowGUIDs
   
 END TRY
 BEGIN CATCH

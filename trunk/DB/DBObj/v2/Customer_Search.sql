@@ -41,7 +41,7 @@ IF (@OrderNumber IS NOT null) BEGIN
   SET @TaxFormJoin = 'JOIN iTRAAC.dbo.tblTaxFormPackages p on p.SponsorClientGUID = c.RowGUID '+
                      'JOIN iTRAAC.dbo.tblTaxForms f on f.PackageGUID = p.RowGUID '
   SET @GroupBy = 'group by c.SponsorGUID, c.LName, c.SuffixName, c.FName, c.CCode, c.SSN'
-  SET @Notes = ', master.dbo.Concat(f.OrderNumber) as Notes'
+  SET @Notes = ', master.dbo.Concat(f.OrderNumber, '','') as Notes'
 END
 
 

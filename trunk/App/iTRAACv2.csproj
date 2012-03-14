@@ -181,6 +181,7 @@
       <DependentUpon>ReasonPopup.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\tabBase.cs" />
+    <Compile Include="View\BindableToolTip.cs" />
     <Compile Include="View\ucTextBoxWatermarked.cs" />
     <Compile Include="View\DailyActivity.xaml.cs">
       <DependentUpon>DailyActivity.xaml</DependentUpon>
@@ -190,9 +191,6 @@
     </Compile>
     <Compile Include="View\ucShowHideCheckBox.cs">
       <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="View\ucSpinningGears.xaml.cs">
-      <DependentUpon>ucSpinningGears.xaml</DependentUpon>
     </Compile>
     <Page Include="View\ReasonPopup.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -245,10 +243,6 @@
     <Page Include="View\SettingsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="View\ucSpinningGears.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="View\ucTaxFormNumber.xaml">
       <SubType>Designer</SubType>

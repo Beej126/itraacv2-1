@@ -41,7 +41,7 @@ alter PROCEDURE [dbo].[Sponsor_SetCCodesSame]
 AS BEGIN
 
 DECLARE @Remarks VARCHAR(900)
-SELECT @Remarks = master.dbo.Concat(distinct CCode + ' (' + FName + ')') FROM iTRAAC.dbo.tblClients WHERE SponsorGUID = @SponsorGUID AND CCode <> @NewCCode
+SELECT @Remarks = master.dbo.Concat(distinct CCode + ' (' + FName + ')', ',') FROM iTRAAC.dbo.tblClients WHERE SponsorGUID = @SponsorGUID AND CCode <> @NewCCode
 IF (@Remarks IS null) RETURN -- nothing to do
 
 SET @TableNames = 'Client'
