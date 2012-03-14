@@ -13,8 +13,8 @@ IF EXISTS(SELECT * FROM sys.objects WHERE name = 'RegexMatches' AND type = 'FT')
 IF EXISTS(SELECT * FROM sys.objects WHERE name = 'RegexReplace' AND type = 'FS')
   DROP FUNCTION dbo.RegexReplace
 
-IF EXISTS(SELECT * FROM sys.objects WHERE name = 'Concat' AND type = 'AF')
-  DROP AGGREGATE dbo.[Concat]
+IF EXISTS(SELECT * FROM sys.objects WHERE name = 'concat' AND type = 'AF')
+  DROP AGGREGATE dbo.[concat]
 
 IF EXISTS(SELECT * FROM sys.objects WHERE name = 'OpenQueryCLR' AND type = 'PC')
   DROP PROCEDURE dbo.OpenQueryCLR
@@ -24,42 +24,42 @@ IF EXISTS(SELECT * FROM sys.assemblies WHERE name = 'SQLCLR')
 
 ALTER DATABASE MASTER SET TRUSTWORTHY ON;
 
--- master..xp_cmdshell 'dir d:\sqldata\'
+-- master..xp_cmdshell 'dir d:\sqldata\' -- 
 
-CREATE ASSEMBLY SQLCLR AUTHORIZATION dbo FROM 'c:\sqldata\SQLCLR.dll' WITH PERMISSION_SET = UNSAFE
+CREATE ASSEMBLY SQLCLR AUTHORIZATION dbo FROM 'd:\sqldata\SQLCLR.dll' WITH PERMISSION_SET = UNSAFE
 go
 
-CREATE FUNCTION dbo.Split(@Source nvarchar(4000), @Delimiter nvarchar(4000))
+CREATE FUNCTION dbo.Split(@Source nvarchar(max), @Delimiter nvarchar(max))
 RETURNS  TABLE (
 	SeqNo int NULL,
-	Value nvarchar(4000) NULL
+	Value nvarchar(max) NULL
 ) WITH EXECUTE AS CALLER
 AS 
 EXTERNAL NAME SQLCLR.Split.InitMethod
 GO
 
-CREATE FUNCTION dbo.RegexMatches(@Input nvarchar(4000), @Pattern nvarchar(4000))
+CREATE FUNCTION dbo.RegexMatches(@Input nvarchar(max), @Pattern nvarchar(max))
 RETURNS  TABLE (
-	Match nvarchar(4000) NULL
+	Match nvarchar(max) NULL
 ) WITH EXECUTE AS CALLER
 AS 
 EXTERNAL NAME SQLCLR.RegexMatches.InitMethod
 GO
 
-CREATE FUNCTION dbo.RegexReplace(@Input nvarchar(4000), @Pattern nvarchar(4000), @Replacement nvarchar(4000))
-RETURNS nvarchar(4000) WITH EXECUTE AS CALLER
+CREATE FUNCTION dbo.RegexReplace(@Input nvarchar(max), @Pattern nvarchar(max), @Replacement nvarchar(max))
+RETURNS nvarchar(max) WITH EXECUTE AS CALLER
 AS 
 EXTERNAL NAME SQLCLR.UserDefinedFunctions.RegexReplace
 GO
 
-CREATE AGGREGATE dbo.[CONCAT](@value NVARCHAR(4000))
-RETURNS nvarchar(4000)
-EXTERNAL NAME SQLCLR.[Concat]
+CREATE AGGREGATE dbo.[concat](@value nvarchar(max), @delimiter nvarchar(max))
+RETURNS nvarchar(max)
+EXTERNAL NAME SQLCLR.[concat]
 GO
 
 CREATE PROCEDURE dbo.OpenQueryCLR
-	@ConnStr nvarchar(4000),
-	@Query nvarchar(4000)
+	@ConnStr nvarchar(max),
+	@Query nvarchar(max)
 WITH EXECUTE AS CALLER
 AS
 EXTERNAL NAME SQLCLR.StoredProcedures.OpenQueryCLR

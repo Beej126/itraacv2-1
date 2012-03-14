@@ -1,33 +1,31 @@
 ﻿using System;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Data;
-using System.Text.RegularExpressions;
-using System.Text;
-using System.IO;
 
-namespace iTRAACv2
+namespace iTRAACv2.Model
 {
   public class TaxFormModel : ModelBase
   {
-    private BindingBase _TitleBinding = new Binding("Fields[OrderNumber]") { Mode = BindingMode.OneWay };
-    public override BindingBase TitleBinding { get { return (_TitleBinding); } }
+    private readonly BindingBase _titleBinding = new Binding("Fields[OrderNumber]") { Mode = BindingMode.OneWay };
+    public override BindingBase TitleBinding { get { return (_titleBinding); } }
 
     public static event Action<string> FormStatusChangeCallback;
 
-    public bool IsClass2 { get { return ("2,5,".Contains(Fields["FormTypeId"].ToString() + ",")); } }
+    public bool IsClass2 { get { return ("2,5,".Contains(Fields["FormTypeId"] + ",")); } }
 
     public bool IsLocked
     {
-      get { return (_IsLocked); }
+      get { return (_isLocked); }
       set
       {
         if (value == false) ShowUserMessage("Remember: Unlock to make *CORRECTIONS* only (i.e. typos),\rNot *CHANGES* that _differ_ from the actual VAT form hardcopy.");
-        _IsLocked = value;
+        _isLocked = value;
         OnPropertyChanged("IsLocked");
       }
     }
-    private bool _IsLocked = true;
+    private bool _isLocked = true;
 
     //public bool IsReturnEnabled
     //{
@@ -45,26 +43,27 @@ namespace iTRAACv2
       if (WPFHelpers.DesignMode) return;
 
       //piggyback the TransactionType code table load with the TaxForm to ExtendedFields by TransactionType master-detail tables
-      string[] TableNames = CacheTables("TaxForm_init"); //among other things, this query will initialize an empty "TaxForm" DataTable in dsCache ... since this is a static constructor which fires before everything else, it is safe to assume TaxFormTable property will be non null in all other contexts
+      var tableNames = CacheTables("TaxForm_init"); //among other things, this query will initialize an empty "TaxForm" DataTable in dsCache ... since this is a static constructor which fires before everything else, it is safe to assume TaxFormTable property will be non null in all other contexts
 
-      TransactionTypes = new DataView(dsCache.Tables["TransactionType"]);
-      TableNames.Where(name => name.Left(8) == "taxform_"). //nugget:
-        Select(ExtTableName => { dsCache.AddRelation(ExtTableName, TaxFormTable.Columns["RowGUID"], dsCache.Tables[ExtTableName].Columns["TaxFormGUID"]); return(false); } ).Count(); //nugget:
+      TransactionTypes = new DataView(DsCache.Tables["TransactionType"]);
+      tableNames.Where(name => name.Left(8) == "taxform_"). //nugget:
+// ReSharper disable ReturnValueOfPureMethodIsNotUsed
+        Select(extTableName => { DsCache.AddRelation(extTableName, TaxFormTable.Columns["RowGUID"], DsCache.Tables[extTableName].Columns["TaxFormGUID"]); return(false); } ).Count(); //nugget:
+// ReSharper restore ReturnValueOfPureMethodIsNotUsed
       //nugget: wrapping a void function in an inline method which returns something makes LINQ Select happy
       //nugget: make sure to include something like .Count() at the end to short circuit LINQ's deferred execution behavior
 
-      TaxFormViolationTypes = new DataView(dsCache.Tables["RemarkType"]);
-      TaxFormViolationTypes.RowFilter = "CategoryId = 'FORM_VIOLATION'";
+      TaxFormViolationTypes = new DataView(DsCache.Tables["RemarkType"]) {RowFilter = "CategoryId = 'FORM_VIOLATION'"};
 
-      TaxFormPackageServiceFees = new DataView(dsCache.Tables["TaxFormPackageServiceFee"]);
-      TaxFormPackageServiceFees.Sort = "FormTypeId, FormCount";
+      TaxFormPackageServiceFees = new DataView(DsCache.Tables["TaxFormPackageServiceFee"])
+                                    {Sort = "FormTypeId, FormCount"};
 
-      TaxFormOrderNumberView = new DataView(TaxFormTable); TaxFormOrderNumberView.Sort = "OrderNumber";
+      TaxFormOrderNumberView = new DataView(TaxFormTable) {Sort = "OrderNumber"};
     }
 
-    static public decimal LookupPackageServiceFee(FormType formType, int Qty)
+    static public decimal LookupPackageServiceFee(FormType formType, int qty)
     {
-      return (Convert.ToDecimal(TaxFormPackageServiceFees.FindRows(new object[] {(int)formType, Qty})[0]["TotalServiceFee"]));
+      return (Convert.ToDecimal(TaxFormPackageServiceFees.FindRows(new object[] {(int)formType, qty})[0]["TotalServiceFee"]));
     }
 
     // Note: once we wrap a Fields[] member with a real property like this, then we should avoid all direct access to this member via Fields
@@ -93,11 +92,11 @@ namespace iTRAACv2
       }
     }
 
-    public bool IsViolation { get { return ((Fields == null) ? false : TaxFormRemarks.Cast<DataRowView>().Any(r => r.Field<string>("CategoryId") == "FORM_VIOLATION" && r["DeleteReason"].ToString() == "")); } }
+    public bool IsViolation { get { return (Fields != null && TaxFormRemarks.Cast<DataRowView>().Any(r => r.Field<string>("CategoryId") == "FORM_VIOLATION" && r["DeleteReason"].ToString() == "")); } }
 
     private double? TotalCost { get { return (Fields["TotalCost"] == DBNull.Value ? (double?)null : Convert.ToDouble(Fields["TotalCost"])); } }
 
-    private string Currency { get { string c = Fields["CurrencyUsed"].ToString(); return (c == "1" ? "USD" : (c == "2") ? "EUR" : "{undefined}"); } }
+    private string Currency { get { var c = Fields["CurrencyUsed"].ToString(); return (c == "1" ? "USD" : (c == "2") ? "EUR" : "{undefined}"); } }
 
     public bool IsTotalCostMinWarning { get { return (TotalCost <= SettingsModel.TaxFormTotalCostMin); } }
     public bool IsTotalCostMinWarningConfirmed { get; set; }
@@ -111,9 +110,9 @@ namespace iTRAACv2
 
     public DataView TaxFormRemarks { get; private set; }
 
-    static private DataTable TaxFormTable { get { return (dsCache.Tables["TaxForm"]); } }
+    static private DataTable TaxFormTable { get { return (DsCache.Tables["TaxForm"]); } }
     static private DataView TaxFormOrderNumberView { get; set; }
-    static private DataTable TaxFormRemarksTable { get { return (dsCache.Tables["TaxForm_Remark"]); } }
+    static private DataTable TaxFormRemarksTable { get { return (DsCache.Tables["TaxForm_Remark"]); } }
 
     public void GiveBackToCustomer()
     {
@@ -132,17 +131,18 @@ namespace iTRAACv2
 
     /// <summary>
     /// </summary>
-    /// <param name="FormType">NF1 or NF2</param>
-    /// <param name="OfficeCode">HD, RA, MA, etc</param>
-    /// <param name="FiscalYear2Digit">09, 10, etc</param>
-    /// <param name="CtrlNumber">5 or 6 digits, less than 5 will be left padded with zeros</param>
+    /// <param name="alwaysShow"> </param>
+    /// <param name="formType">NF1 or NF2</param>
+    /// <param name="officeCode">HD, RA, MA, etc</param>
+    /// <param name="fiscalYear2Digit">09, 10, etc</param>
+    /// <param name="ctrlNumber">5 or 6 digits, less than 5 will be left padded with zeros</param>
     /// <returns></returns>
-    static public string FormatOrderNumber(bool AlwaysShow, string FormType, string OfficeCode, string FiscalYear2Digit, string CtrlNumber)
+    static public string FormatOrderNumber(bool alwaysShow, string formType, string officeCode, string fiscalYear2Digit, string ctrlNumber)
     {
-      return ((CtrlNumber == "" && !AlwaysShow) ? "" : String.Format("{0}-{1}-{2}-{3}", FormType, OfficeCode, FiscalYear2Digit,
+      return ((ctrlNumber == "" && !alwaysShow) ? "" : String.Format("{0}-{1}-{2}-{3}", formType, officeCode, fiscalYear2Digit,
         //this field is little weird, it's 5 digits, "0" padded to the left, but it can also be 6 digits :)
         //basically the original design assumed 5 digits but Ramstein has been going over the 99,999 mark
-        ("00000" + CtrlNumber).Right(Math.Max(5, CtrlNumber.Length))
+        ("00000" + ctrlNumber).Right(Math.Max(5, ctrlNumber.Length))
       ));
     }
 
@@ -158,18 +158,18 @@ namespace iTRAACv2
       }
     }
 
-    private string UserMessagePrefix { get { return ("[Tax Form #: " + Fields["OrderNumber"].ToString() + "] "); } }
+    private string UserMessagePrefix { get { return ("[Tax Form #: " + Fields["OrderNumber"] + "] "); } }
 
-    public void SetViolation(int RemarkTypeId, string Remarks)
+    public void SetViolation(int remarkTypeId, string remarks)
     {
-      RemarkModel.SaveNew(GUID, RemarkTypeId, Remarks);
+      RemarkModel.SaveNew(GUID, remarkTypeId, remarks);
       OnPropertyChanged("IsViolation");
       OnFormStatusChange();
     }
 
-    public void RemoveRemark(DataRowView RemarkRow, string Reason)
+    public void RemoveRemark(DataRowView remarkRow, string reason)
     {
-      RemarkModel.Remove(RemarkRow, Reason);
+      RemarkModel.Remove(remarkRow, reason);
       OnPropertyChanged("IsViolation");
     }
 
@@ -177,29 +177,31 @@ namespace iTRAACv2
     /// 
     /// </summary>
     /// <returns>The SponsorGUID for the new replacement form</returns>
-    public void VoidAndNew(out string SponsorGUID, out string NewTaxFormGUID, out decimal ServiceFee)
+    public void VoidAndNew(out string sponsorGUID, out string newTaxFormGUID, out decimal serviceFee)
     {
-      using (Proc TaxForm_VoidAndNew = new iTRAACProc("TaxForm_VoidAndNew"))
+      using (Proc taxFormVoidAndNew = new iTRAACProc("TaxForm_VoidAndNew"))
       {
-        TaxForm_VoidAndNew["@VoidTaxFormGUID"] = GUID;
-        SponsorGUID = TaxForm_VoidAndNew["@SponsorGUID"].ToString();
-        NewTaxFormGUID = TaxForm_VoidAndNew["@NewTaxFormGUID"].ToString();
-        ServiceFee = Convert.ToDecimal(TaxForm_VoidAndNew["@NewTaxFormGUID"]);
+        taxFormVoidAndNew["@VoidTaxFormGUID"] = GUID;
+        sponsorGUID = taxFormVoidAndNew["@SponsorGUID"].ToString();
+        newTaxFormGUID = taxFormVoidAndNew["@NewTaxFormGUID"].ToString();
+        serviceFee = Convert.ToDecimal(taxFormVoidAndNew["@NewTaxFormGUID"]);
       }
     }
 
-    public bool ReturnForm(bool IsClosing = false, bool DisplaySuccess = true)
+    public bool ReturnForm(bool isClosing = false, bool displaySuccess = true)
     {
       Save();
 
+// ReSharper disable InconsistentNaming
       using (Proc TaxForm_ReturnFile = new iTRAACProc("TaxForm_ReturnFile"))
+// ReSharper restore InconsistentNaming
       {
         TaxForm_ReturnFile["@TaxFormGUID"] = GUID;
         TaxForm_ReturnFile["@File"] = false;
         if (!TaxForm_ReturnFile.ExecuteDataSet(UserMessagePrefix + "Return - ", true)) return (false);
 
         //if we're firing Returned and this object is remaining visible (i.e. user didn't select the Return-and-Close button) then pull back the updated values reflecting the Returned status change
-        if (!IsClosing)
+        if (!isClosing)
         {
           CacheTables(TaxForm_ReturnFile);
           OnPropertyChanged("Fields"); //nugget: amazingly inconsistent IMHO, DataTable.Merge() does *not* fire DataRowView.PropertyChanged events!?! (tsk tsk Microsoft!!) 
@@ -210,40 +212,40 @@ namespace iTRAACv2
       return (true);
     }
 
-    private bool Validate(bool IsFiling = false)
+    private bool Validate(bool isFiling = false)
     {
       //Validate will be called for the initial NF2 printing scenario where all fields except Description and DateUsed must filled
       // -OR- the final filing scenario where all fields must be populated 
 
       //needed to structure this as individual validation method calls otherwise execution short circuits on the first false
       //and it's naturally preferable to show all the little red validation boxes at once rather than making the user continue hitting submit to discover each new error
-      bool IsValid = true;
-      if (IsFiling) Validate_Generic(ref IsValid, "UsedDate");
-      Validate_Generic(ref IsValid, "TransTypeID", "'?' != '2'");
-      Validate_Generic(ref IsValid, "Vendor");
-      Validate_Generic(ref IsValid, "CurrencyUsed");
-      Validate_Generic(ref IsValid, "TotalCost");
+      var isValid = true;
+      if (isFiling) ValidateGeneric(ref isValid, "UsedDate");
+      ValidateGeneric(ref isValid, "TransTypeID", "'?' != '2'");
+      ValidateGeneric(ref isValid, "Vendor");
+      ValidateGeneric(ref isValid, "CurrencyUsed");
+      ValidateGeneric(ref isValid, "TotalCost");
       //description can't be mandatory, too much for clerk to think about... we'll just get garbage: if (IsFiling) Validate_Generic(ref IsValid, "Description");
 
       //note: we have a chronic amount of rediculously small and over 2500 NF1's ... trying to plug that hole...
 
       //make sure user meant to enter small total cost
-      if (IsValid && IsTotalCostMinWarning && !IsTotalCostMinWarningConfirmed)
-        Validate_Generic(ref IsValid, "TotalCost", "false", "Are you sure Total Cost is that small?");
+      if (isValid && IsTotalCostMinWarning && !IsTotalCostMinWarningConfirmed)
+        ValidateGeneric(ref isValid, "TotalCost", "false", "Are you sure Total Cost is that small?");
 
       //make sure user meant to enter a >2500 Euro total cost... and create appropriate violation records if so...
-      if (IsValid && !IsClass2 && IsTotalCostMaxViolation && !IsTotalCostMaxViolationConfirmed)
-        Validate_Generic(ref IsValid, "TotalCost", "false", "Total Cost greater than 2499 Euros.\nIs this really a violation?");
+      if (isValid && !IsClass2 && IsTotalCostMaxViolation && !IsTotalCostMaxViolationConfirmed)
+        ValidateGeneric(ref isValid, "TotalCost", "false", "Total Cost greater than 2499 Euros.\nIs this really a violation?");
 
-      return (IsValid);
+      return (isValid);
     }
 
-    public bool FileForm(bool IsClosing = false)
+    public bool FileForm(bool isClosing = false)
     {
       //the moment we're attempting to file a form means it's physically at this office
       Fields["LocationCode"] = SettingsModel.TaxOfficeCode;
 
-      bool isvalid = Validate(IsFiling: true);
+      var isvalid = Validate(isFiling: true);
       IsIncomplete = !isvalid; //right at the time of testing validity to completely "File" is where we flip the incomplete flag on
       //while tempting, don't move this "IsIncomplete" line into Validate() because that would create a cyclic dependency between the two values in LoadFields()
       if (!isvalid)
@@ -254,48 +256,49 @@ namespace iTRAACv2
 
       //we're leaving the form IsReadOnly=false for the convenience of immediate typo type edits while it's still open, it will be safely locked (IsReadOnly=true) the next time it's opened
 
-      if (SaveMe(IsFiling: true, UpdateSponsor: false)) //don't update sponsor because we're going to do that next here below
+      if (SaveMe(isFiling: true, updateSponsor: false)) //don't update sponsor because we're going to do that next here below
       {
-        if (isvalid && IsTotalCostMaxViolation) 
+        if (IsTotalCostMaxViolation) 
           SetViolation(10, String.Format("Total Cost: {0} {1}", TotalCost, Currency)); //this also calls OnFormStatusChange() to update Sponsor UI
         else 
           OnFormStatusChange();
       }
       else return (false);
 
-      if (!IsClosing)
+      if (!isClosing)
         OnPropertyChanged("Fields");
 
       return (true);
     }
 
-    public TaxFormPackage ParentPackage = null;
-    static public TaxFormModel NewNF2(TransactionList ParentTransactionList, string SponsorGUID, string SponsorName,
-      string AuthorizedDependentClientGUID, string AuthorizedDependentName)
+    public TaxFormPackage ParentPackage;
+    static public TaxFormModel NewNF2(TransactionList parentTransactionList, string sponsorGUID, string sponsorName,
+      string authorizedDependentClientGUID, string authorizedDependentName)
     {
-      TaxFormPackage pkg = new TaxFormPackage(
-        ParentTransactionList: ParentTransactionList,
-        IsPending: true, 
-        SponsorGUID: SponsorGUID,
-        AuthorizedDependentClientGUID: AuthorizedDependentClientGUID, 
-        FormType: FormType.NF2, Qty: 1);
+      // ReSharper disable RedundantArgumentName
+      var pkg = new TaxFormPackage(
+        parentTransactionList: parentTransactionList,
+        isPending: true, 
+        sponsorGUID: sponsorGUID,
+        authorizedDependentClientGUID: authorizedDependentClientGUID, 
+        formType: FormType.NF2, qty: 1);
+      // ReSharper restore RedundantArgumentName
 
-      TaxFormModel frm = Lookup<TaxFormModel>(Guid.Empty.ToString()); //empty guid triggers new form logic in sproc
+      var frm = Lookup<TaxFormModel>(Guid.Empty.ToString()); //empty guid triggers new form logic in sproc
       frm.ParentPackage = pkg;
-      frm.Fields["SponsorGUID"] = SponsorGUID;
-      frm.Fields["SponsorName"] = SponsorName;
-      frm.Fields["AuthorizedDependent"] = AuthorizedDependentName;
+      frm.Fields["SponsorGUID"] = sponsorGUID;
+      frm.Fields["SponsorName"] = sponsorName;
+      frm.Fields["AuthorizedDependent"] = authorizedDependentName;
 
       return (frm);
     }
 
     #region DataAccess
 
-    protected override string AltLookup(string AltId)
+    protected override string AltLookup(string altId)
     {
-      DataRowView[] forms = TaxFormOrderNumberView.FindRows(AltId);
-      if (forms.Length > 0) return (forms[0]["RowGUID"].ToString());
-      return (null);
+      var forms = TaxFormOrderNumberView.FindRows(altId);
+      return forms.Length > 0 ? (forms[0]["RowGUID"].ToString()) : (null);
     }
 
     protected override void LoadSubClass()
@@ -307,24 +310,24 @@ namespace iTRAACv2
       Fields.PropertyChanged += FieldChange;
       SetExtendedFields();
 
-      _IsLocked = IsFormStatusClosed || !IsFormFromMyOffice;
+      _isLocked = IsFormStatusClosed || !IsFormFromMyOffice;
 
       //create the logical lookup field for "Location" via TaxForm.LocationCode to TaxOffice.TaxOfficeCode
-      dsCache.AddRelation("Location", TaxOfficeModel.TaxOfficeTable.Columns["OfficeCode"], TaxFormTable.Columns["LocationCode"], false);
+      DsCache.AddRelation("Location", TaxOfficeModel.TaxOfficeTable.Columns["OfficeCode"], TaxFormTable.Columns["LocationCode"], false);
       if (!TaxFormTable.Columns.Contains("Location"))
         TaxFormTable.Columns.Add("Location", typeof(string), "Parent(Location).Office");
 
       //create the TaxForm_Remark relationship 
-      dsCache.AddRelation("TaxForm_Remark", TaxFormTable.Columns["RowGUID"], TaxFormRemarksTable.Columns["FKRowGUID"], false);
+      DsCache.AddRelation("TaxForm_Remark", TaxFormTable.Columns["RowGUID"], TaxFormRemarksTable.Columns["FKRowGUID"], false);
       TaxFormRemarks = Fields.CreateChildView("TaxForm_Remark");
       ShowDeletedRemarks = false;
       RemarkModel.CommonRemarkTableSettings(TaxFormRemarks);
-      TaxFormRemarks.Table.RowChanged += TaxFormRemarks_RowChanged;
+      TaxFormRemarks.Table.RowChanged += TaxFormRemarksRowChanged;
 
       if (IsIncomplete) Validate(); //flip on all the red boxes so the user is prompted to resolve right away
     }
 
-    void TaxFormRemarks_RowChanged(object sender, DataRowChangeEventArgs e)
+    void TaxFormRemarksRowChanged(object sender, DataRowChangeEventArgs e)
     {
       if (e.Row["FKRowGUID"].ToString() == GUID) IsModified = true;
     }
@@ -354,7 +357,7 @@ namespace iTRAACv2
       {
         return (
           (Fields.IsDirty() ? "\n   * Taxform edits" : null) +
-          (TaxFormRemarks.IsDirty(RespectRowFilter: false) ? "\n   * Remarks edits" : null)
+          (TaxFormRemarks.IsDirty(respectRowFilter: false) ? "\n   * Remarks edits" : null)
         );
       }
     }
@@ -371,11 +374,11 @@ namespace iTRAACv2
     {
       if (ParentPackage != null) ParentPackage.Rollback(); //only happens under NF2 scenario
 
-      if (TaxFormRemarks != null) TaxFormRemarks.Table.RowChanged -= TaxFormRemarks_RowChanged;
+      if (TaxFormRemarks != null) TaxFormRemarks.Table.RowChanged -= TaxFormRemarksRowChanged;
       TaxFormRemarks.DetachRowsAndDispose();
 
       //blow away child row first to avoid the 'missing foreign to primary key' exception from the dataset police
-      if (ExtendedFields != null) ExtendedFields.PropertyChanged -= ExtendedFields_PropertyChanged;
+      if (ExtendedFields != null) ExtendedFields.PropertyChanged -= ExtendedFieldsPropertyChanged;
       ExtendedFields.DetachRow();
 
       if (Fields != null) Fields.PropertyChanged -= FieldChange;
@@ -387,7 +390,7 @@ namespace iTRAACv2
       return (SaveMe()); //so that we can support having a default parm (not something we want to force all subclasses to implement from the base class declaration)
     }
 
-    protected bool SaveMe(bool IsFiling = false, bool UpdateSponsor = true)
+    protected bool SaveMe(bool isFiling = false, bool updateSponsor = true)
     {
       // generally, inserts and deletes will be edge cases handled elsewhere, modified fields on existing rows are the primary save scenario for child lists hanging off main entities like TaxForm (e.g. TaxFormRemarks)
 
@@ -400,25 +403,29 @@ namespace iTRAACv2
 
       if (Fields.IsDirty()) //the "Fields" logic does actually need to be here if called from FileForm() rather than base.Save();
       {
-        using (iTRAACProc TaxForm_u = new iTRAACProc("TaxForm_u"))
+// ReSharper disable InconsistentNaming
+        using (var TaxForm_u = new iTRAACProc("TaxForm_u"))
+// ReSharper restore InconsistentNaming
         {
           TaxForm_u.AssignValues(Fields);
-          TaxForm_u["@IsFiling"] = IsFiling;
-          if (!TaxForm_u.ExecuteDataSet(UserMessagePrefix, false)) return (false);
+          TaxForm_u["@IsFiling"] = isFiling;
+          if (!TaxForm_u.ExecuteDataSet(UserMessagePrefix)) return (false);
           Fields.AcceptChanges();
-          if (IsFiling) CacheTables(TaxForm_u);
+          if (isFiling) CacheTables(TaxForm_u);
         }
 
-        if (UpdateSponsor) OnFormStatusChange();
+        if (updateSponsor) OnFormStatusChange();
       }
 
       if (ExtendedFields.IsDirty())
       {
-        using (Proc TaxForm_TransactionTypeExt_u = new Proc("TaxForm_TransactionTypeExt_u"))
+// ReSharper disable InconsistentNaming
+        using (var TaxForm_TransactionTypeExt_u = new Proc("TaxForm_TransactionTypeExt_u"))
+// ReSharper restore InconsistentNaming
         {
           TaxForm_TransactionTypeExt_u.AssignValues(ExtendedFields);
           TaxForm_TransactionTypeExt_u["@TaxFormGUID"] = GUID;
-          if (!TaxForm_TransactionTypeExt_u.ExecuteNonQuery(UserMessagePrefix, false)) return (false);
+          if (!TaxForm_TransactionTypeExt_u.ExecuteNonQuery(UserMessagePrefix)) return (false);
         }
         ExtendedFields.AcceptChanges();
       }
@@ -430,51 +437,50 @@ namespace iTRAACv2
 
     private void SetExtendedFields()
     {
-      if (ExtendedFields != null)
+      if (ExtendedFields == null) return;
+      ExtendedFields.PropertyChanged -= ExtendedFieldsPropertyChanged;
+      ExtendedFields.DetachRow();
+      var extable = GetCurrentTransactionTypeExtendedTableName();
+
+      if (DsCache.Relations.Contains(extable)) //if this is a transaction type with extended fields required...
       {
-        ExtendedFields.PropertyChanged -= ExtendedFields_PropertyChanged;
-        ExtendedFields.DetachRow ();
-      }
+        var extFields = Fields.CreateChildView(extable);
 
-      string extable = GetCurrentTransactionTypeExtendedTableName();
-
-      if (dsCache.Relations.Contains(extable)) //if this is a transaction type with extended fields required...
-      {
-        DataView ExtFields = Fields.CreateChildView(extable);
-
-        if (ExtFields.Count == 0) //if no row already exists, create a default row for this tax form and transaction type to provide the empty slot for fields to be filled out
+        if (extFields.Count == 0)
+          //if no row already exists, create a default row for this tax form and transaction type to provide the empty slot for fields to be filled out
         {
-          DataTable extTable = dsCache.Tables[extable];
+          DataTable extTable = DsCache.Tables[extable];
 
           //it'd be cool to break this out into a generic AddBlankRow() function that populates a GUID PK if present and cruises the column types to create blank default values
-          DataRow extrow = extTable.NewRow();
-          DataColumnCollection cols = extTable.Columns;
-          foreach (DataColumn col in cols) if (!col.ColumnName.Contains("GUID")) extrow[col.ColumnName] = ""; //fill out all non GUID fields generically to dodge not null errors
+          var extrow = extTable.NewRow();
+          var cols = extTable.Columns;
+          foreach (var col in cols.Cast<DataColumn>().Where(col => !col.ColumnName.Contains("GUID")))
+            extrow[col.ColumnName] = ""; //fill out all non GUID fields generically to dodge not null errors
           extrow["RowGUID"] = Guid.NewGuid();
           extrow["TaxFormGUID"] = GUID;
           extTable.Rows.Add(extrow);
           extrow.AcceptChanges();
         }
 
-        ExtendedFields = ExtFields[0];
-        ExtendedFields.PropertyChanged += ExtendedFields_PropertyChanged;
+        ExtendedFields = extFields[0];
+        ExtendedFields.PropertyChanged += ExtendedFieldsPropertyChanged;
       }
 
-      OnPropertyChanged("ExtendedFields");  //let the UI know to update the extended fields display when we change TransactionType
-
+      OnPropertyChanged("ExtendedFields");
+        //let the UI know to update the extended fields display when we change TransactionType
     }
 
-    void ExtendedFields_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    void ExtendedFieldsPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
       IsModified = true;
     }
 
     private string GetCurrentTransactionTypeExtendedTableName()
     {
-      string TransTypeId = Fields["TransTypeID"].ToString();
-      if (TransTypeId == "") return (null);
-      DataRowView[] drv = TransactionTypes.Table.DefaultView.FindRows(TransTypeId);
-      string ext = drv[0]["ExtendedFieldsCode"].ToString().ToLower();
+      var transTypeId = Fields["TransTypeID"].ToString();
+      if (transTypeId == "") return (null);
+      var drv = TransactionTypes.Table.DefaultView.FindRows(transTypeId);
+      var ext = drv[0]["ExtendedFieldsCode"].ToString().ToLower();
       return ((ext != "") ? "taxform_" + ext : null);
     }
 
@@ -489,15 +495,15 @@ namespace iTRAACv2
     [Flags]
     public enum StatusFlagsForm { Issued = 1 << 0, Returned = 1 << 1, Filed = 1 << 2, Reissued = 1 << 3, Amended = 1 << 4, Voided = 1 << 5}
 
-    public void Print(PackageComponent PrintComponent)
+    public void Print(PackageComponent printComponent)
     {
       if (!SaveMe() || (IsClass2 && !Validate())) return;
-      TaxFormModel.Print(PrintComponent, GUID);
+      Print(printComponent, GUID);
       OnPropertyChanged("Fields"); //to twiddle the InitPrtAbw field that is presumably bound to an "Un-Printed" type visual alert
     }
 
 
-    static public void ResetPrinterSettings(PackageComponent PrintComponent)
+    static public void ResetPrinterSettings(PackageComponent printComponent)
     {
       //this routine sends a binary payload that resets the Epson FX-890 printer back to desirable defaults (listed below)
 
@@ -513,17 +519,17 @@ namespace iTRAACv2
       //this binary file also sets the top-of-form position to the smallest value (0.167)
       //and defaults the pitch to 12cpi
 
-      using(Stream reset_epson = AssemblyHelper.GetEmbeddedResource("reset_epson.bin"))
+      using(var resetEpson = AssemblyHelper.GetEmbeddedResource("reset_epson.bin"))
       {
         RawPrinterHelper.SendStreamToPrinter(
-          SettingsModel.Local[PrintComponent == PackageComponent.OrderForm ? "POPrinter" : "AbwPrinter"],
-          reset_epson);
+          SettingsModel.Local[printComponent == PackageComponent.OrderForm ? "POPrinter" : "AbwPrinter"],
+          resetEpson);
       }
     }
 
-    static public void PrintTest(PackageComponent PrintComponent)
+    static public void PrintTest(PackageComponent printComponent)
     {
-      Print(PrintComponent, Guid.Empty.ToString());
+      Print(printComponent, Guid.Empty.ToString());
 
       /*this is a good place to jump in and do some test logic...
       CharacterPrinter POPrinter = new CharacterPrinter(
@@ -540,7 +546,7 @@ namespace iTRAACv2
       */
     }
 
-    static private bool PrintOK()
+    static private bool IsPrintOK()
     {
       if (String.IsNullOrEmpty(SettingsModel.Local["POPrinter"]) || String.IsNullOrEmpty(SettingsModel.Local["AbwPrinter"]))
       {
@@ -550,9 +556,9 @@ namespace iTRAACv2
       return (true);
     }
 
-    static private bool Print(PackageComponent PrintComponents, string guid)
+    static private bool Print(PackageComponent printComponents, string guid)
     {
-      if (!PrintOK()) return(false);
+      if (!IsPrintOK()) return(false);
 
       //nugget: sending raw ESCape codes to dot matrix printer (Epson's "ESC/P" standard)
       //nugget: ESC/P reference manual: http://files.support.epson.com/pdf/general/escp2ref.pdf
@@ -564,26 +570,33 @@ namespace iTRAACv2
       //ESC p 0 = turn off proportional
       //ESC 2   = 1/6" line spacing = 0.166666666666666
 
-      using (Proc TaxForm_print = new Proc("TaxForm_print"))
+// ReSharper disable InconsistentNaming
+      using (var TaxForm_print = new Proc("TaxForm_print"))
+// ReSharper restore InconsistentNaming
       {
         TaxForm_print["@TaxFormGUID"] = guid; //for testprint, pass Guid.Empty i.e. '00000000-0000-0000-0000-000000000000'
-        TaxForm_print["@PrintComponent"] = (int)PrintComponents;
+        TaxForm_print["@PrintComponent"] = (int)printComponents;
 
         TaxForm_print.ExecuteDataSet();
 
-        RawCharacterPage POPrinter = new RawCharacterPage(
+        var poPrinter = new RawCharacterPage(
           SettingsModel.Global["FormPrinterInitCodes"],
           Convert.ToInt16(SettingsModel.Global["FormPrinterWidth"]),
           Convert.ToInt16(SettingsModel.Global["FormPrinterHeight"]));
 
-        if (guid == Guid.Empty.ToString()) POPrinter.PrintTestRulers();
-        RawCharacterPage AbwPrinter = POPrinter.Clone();
+        var abwPrinter = poPrinter.Clone();
 
-        if (PrintFields(POPrinter, TaxForm_print.dataSet.Tables[0].Rows))
-          POPrinter.SendToPrinter(SettingsModel.Local["POPrinter"]);
+        if (PrintFields(poPrinter, TaxForm_print.DataSet.Tables[0].Rows))
+        {
+          if (guid == Guid.Empty.ToString()) poPrinter.PrintTestRulers();
+          poPrinter.SendToPrinter(SettingsModel.Local["POPrinter"]);
+        }
 
-        if (PrintFields(AbwPrinter, TaxForm_print.dataSet.Tables[1].Rows))
-          POPrinter.SendToPrinter(SettingsModel.Local["AbwPrinter"]);
+        if (PrintFields(abwPrinter, TaxForm_print.DataSet.Tables[1].Rows))
+        {
+          if (guid == Guid.Empty.ToString()) abwPrinter.PrintTestRulers();
+          abwPrinter.SendToPrinter(SettingsModel.Local["AbwPrinter"]);
+        }
 
         CacheTables(TaxForm_print, "TaxForm"); //sync the updated PrintDate columns in the TableCache
       }
@@ -610,7 +623,7 @@ namespace iTRAACv2
       //public string Description (TransactionItem baseclass)
       public string SponsorGUID { get; private set; }
       public string AuthorizedDependentClientGUID { get; private set; }
-      public TaxFormModel.FormType FormType { get; private set; }
+      public FormType FormType { get; private set; }
       public int Qty { get; private set; }
 
       //outputs
@@ -618,37 +631,36 @@ namespace iTRAACv2
       //public string GUID (TransactionItem baseclass)
       public string PackageCode { get; private set; }
 
-      public TaxFormPackage(TransactionList ParentTransactionList, bool IsPending, string SponsorGUID, 
-        string AuthorizedDependentClientGUID, TaxFormModel.FormType FormType, int Qty) : base(ParentTransactionList)
+      public TaxFormPackage(TransactionList parentTransactionList, bool isPending, string sponsorGUID, 
+        string authorizedDependentClientGUID, FormType formType, int qty) : base(parentTransactionList)
       {
         //sanity check: if there are already printed forms in the shopping cart, everything else must be printed during this session... too complicated to manage otherwise
-        if (IsPending && ParentTransactionList.Any(t => !t.IsPending))
+        if (isPending && parentTransactionList.Any(t => !t.IsPending))
         {
           ShowUserMessage("Since forms have already been printed.\rAll subsequent forms must also be printed.\rPlease select 'Print Immediately' only.");
           return;
         }
 
         //combine all NF1's requested during this customer session into one bundle
-        TaxFormPackage existingNF1Package = ParentTransactionList.OfType<TaxFormPackage>().Where(w => w.FormType == TaxFormModel.FormType.NF1 /*&& w.IsPending*/).FirstOrDefault(); //realized, filtering on IsPending is counterproductive. An NF1 package will only be in this list if generated during this customer "session" and therefore the total qty of forms is what should factor into the qty discount calc
+        var existingNF1Package = parentTransactionList.OfType<TaxFormPackage>().FirstOrDefault(w => w.FormType == FormType.NF1); //realized, filtering on IsPending is counterproductive. An NF1 package will only be in this list if generated during this customer "session" and therefore the total qty of forms is what should factor into the qty discount calc
         if (existingNF1Package != null)
         {
-          Qty += existingNF1Package.Qty; //add the existing quantity to this new package...
-          this.PackageCode = existingNF1Package.PackageCode; //to facilitate adding these new forms to a previously printed package
-          IsPending = existingNF1Package.IsPending; //pending status must be same as whatever was already initiated
+          qty += existingNF1Package.Qty; //add the existing quantity to this new package...
+          PackageCode = existingNF1Package.PackageCode; //to facilitate adding these new forms to a previously printed package
+          isPending = existingNF1Package.IsPending; //pending status must be same as whatever was already initiated
         }
 
         PendingAction = "Print";
 
-        this.IsPending = IsPending;
-        this.Description = String.Format("New {0} Package {1}", Enum.GetName(typeof(TaxFormModel.FormType), FormType), FormType == TaxFormModel.FormType.NF1 ? "(" + Qty.ToString() + ")" : ""); //Extensions.Pluralize("{count} New {0} Form{s}", Qty, Enum.GetName(typeof(TaxForm.FormType), FormType));
-        this.SponsorGUID = SponsorGUID;
-        this.AuthorizedDependentClientGUID = AuthorizedDependentClientGUID;
-        this.FormType = FormType;
-        this.Qty = Qty;
-        this.Price = LookupPackageServiceFee(FormType, Qty);
+        IsPending = isPending;
+        Description = String.Format("New {0} Package {1}", Enum.GetName(typeof(FormType), formType), formType == FormType.NF1 ? "(" + qty.ToString(CultureInfo.InvariantCulture) + ")" : ""); //Extensions.Pluralize("{count} New {0} Form{s}", Qty, Enum.GetName(typeof(TaxForm.FormType), FormType));
+        SponsorGUID = sponsorGUID;
+        AuthorizedDependentClientGUID = authorizedDependentClientGUID;
+        FormType = formType;
+        Qty = qty;
+        Price = LookupPackageServiceFee(formType, qty);
 
-
-        if (!IsPending)
+        if (!isPending)
         {
           new System.Threading.Thread(delegate(object existingPackage) //pop off a background thread to create the records
           {
@@ -656,7 +668,7 @@ namespace iTRAACv2
             {
               //hit the DB to create all the new Package/Forms records
               if (existingPackage != null)
-                ParentTransactionList.Remove(existingPackage as TaxFormPackage); //delete the old package
+                parentTransactionList.Remove(existingPackage as TaxFormPackage); //delete the old package
               AfterConstructor();
             }
           }).Start(existingNF1Package);
@@ -666,36 +678,35 @@ namespace iTRAACv2
 
       public override bool Execute()
       {
-        if (!PrintOK()) return (false);
+        if (!IsPrintOK()) return (false);
 
-        string[] TaxFormGUIDs;
-        using (iTRAACProc TaxFormPackage_New = new iTRAACProc("TaxFormPackage_New"))
+        string[] taxFormGUIDs;
+        using (var taxFormPackageNew = new iTRAACProc("TaxFormPackage_New"))
         {
-          TaxFormPackage_New["@PackageCode"] = PackageCode; //for merging multiple requests for the same form type during this same customer session
-          TaxFormPackage_New["@FormTypeID"] = Convert.ToInt32(FormType);
-          TaxFormPackage_New["@FormCount"] = Qty;
-          TaxFormPackage_New["@SponsorGUID"] = SponsorGUID;
-          TaxFormPackage_New["@ClientGUID"] = AuthorizedDependentClientGUID;
-          TaxFormPackage_New["@Pending"] = IsPending;
+          taxFormPackageNew["@PackageCode"] = PackageCode; //for merging multiple requests for the same form type during this same customer session
+          taxFormPackageNew["@FormTypeID"] = Convert.ToInt32(FormType);
+          taxFormPackageNew["@FormCount"] = Qty;
+          taxFormPackageNew["@SponsorGUID"] = SponsorGUID;
+          taxFormPackageNew["@ClientGUID"] = AuthorizedDependentClientGUID;
+          taxFormPackageNew["@Pending"] = IsPending;
 
-          TaxFormPackage_New.ExecuteNonQuery();
+          taxFormPackageNew.ExecuteNonQuery();
 
-          this.Price = (decimal)TaxFormPackage_New["@ServiceFee"];
-          this.GUID = TaxFormPackage_New["@TaxFormPackageGUID"].ToString();
-          this.PackageCode = TaxFormPackage_New["@PackageCode"].ToString();
-          TaxFormGUIDs = TaxFormPackage_New["@TaxFormGUIDs"].ToString().Split(',');
+          Price = (decimal)taxFormPackageNew["@ServiceFee"];
+          GUID = taxFormPackageNew["@TaxFormPackageGUID"].ToString();
+          PackageCode = taxFormPackageNew["@PackageCode"].ToString();
+          taxFormGUIDs = taxFormPackageNew["@TaxFormGUIDs"].ToString().Split(',');
 
-          this.IsPending = false;
+          IsPending = false;
           NotifyPropertyChanged("IsPending");
         }
 
-        foreach (string TaxFormGUID in TaxFormGUIDs)
+        if (taxFormGUIDs.Any(taxFormGUID => !Print(PackageComponent.OrderForm | PackageComponent.Abw, taxFormGUID)))
         {
-          if (!Print(PackageComponent.OrderForm | PackageComponent.Abw, TaxFormGUID))
-            return(false);
+          return(false);
         }
 
-        TaxFormModel.FormStatusChangeCallback(SponsorGUID);
+        FormStatusChangeCallback(SponsorGUID);
 
         return (true);
       }

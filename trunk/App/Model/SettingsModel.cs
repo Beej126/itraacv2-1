@@ -1,12 +1,4 @@
-﻿using System.IO;
-using System.IO.IsolatedStorage;
-using System.Collections.Specialized;
-using System.Runtime.Serialization.Formatters.Soap;
-using System.Runtime.Serialization;
-using System.Linq;
-using System.Data;
-using System.Collections.Generic;
-using System;
+﻿using System.Data;
 
 // Settings Approach Explained
 // There are four different types of settings "bags", which are accessed & persisted thusly:
@@ -20,7 +12,7 @@ using System;
 //    this Settubgs database table will be replicated up to the central server all the global settings will be kept consistent across offices (e.g. updating the admin override password)
 //    (the office specific settings won't be changing often enough to worry about an inordinate amount of replication chatter)
 
-namespace iTRAACv2
+namespace iTRAACv2.Model
 {
   public class SettingsModel
   {
@@ -43,7 +35,9 @@ namespace iTRAACv2
 
       //load db settings...
       //realized this should parameterized on OfficeCode so that we leave the option open to connect directly to the central DB, so using "iTRAACProc" which supplies OfficeCode, vs generic "Proc"
-      using (Proc Settings_s = new Proc("Settings_s"))
+// ReSharper disable InconsistentNaming
+      using (var Settings_s = new Proc("Settings_s"))
+// ReSharper restore InconsistentNaming
       {
         Settings_s["@TaxOfficeCode"] = TaxOfficeCode;
         Settings_s.ExecuteDataSet();
@@ -55,43 +49,42 @@ namespace iTRAACv2
       }
     }
 
-    //ensure this class is only called via static members
-    private SettingsModel() { }
-
     private SettingsModel(DataTable table)
     {
-      this.table = table;
-      this.table.PrimaryKey = new DataColumn[] { this.table.Columns["Name"] };
+      _table = table;
+      _table.PrimaryKey = new[] { _table.Columns["Name"] };
     } 
 
-    private DataTable table;
+    private readonly DataTable _table;
 
     public string this[string name]
     {
       get
       {
-        DataRow r = table.Rows.Find(name);
+        var r = _table.Rows.Find(name);
         return (r != null ? r["Value"].ToString() : null);
       }
       set
       {
-        DataRow r = table.Rows.Find(name);
+        var r = _table.Rows.Find(name);
         if (r == null) 
         {
-          r = table.NewRow();
+          r = _table.NewRow();
           r.ItemArray = new object[] { name, value };
-          table.Rows.Add(r); //i always forget this!!!
+          _table.Rows.Add(r); //i always forget this!!!
         }
         else r["Value"] = value;
       }
     }
 
-    static public void SaveLocalSettings(bool DisplaySuccess = false)
+    static public void SaveLocalSettings(bool displaySuccess = false)
     {
-      using (Proc Settings_u = new iTRAACProc("Settings_u"))
+// ReSharper disable InconsistentNaming
+      using (var Settings_u = new iTRAACProc("Settings_u"))
+// ReSharper restore InconsistentNaming
       {
-        Settings_u["@Settings"] = Local.table;
-        Settings_u.ExecuteNonQuery("Settings - ", DisplaySuccess);
+        Settings_u["@Settings"] = Local._table;
+        Settings_u.ExecuteNonQuery("Settings - ", displaySuccess);
       }
     }
 
@@ -99,9 +92,9 @@ namespace iTRAACv2
 
   public static class SettingsModelExtensions
   {
-    public static T Field<T>(this SettingsModel settings, string FieldName)
+    public static T Field<T>(this SettingsModel settings, string fieldName)
     {
-      return UnboxT<T>.Unbox(settings[FieldName]);
+      return UnboxT<T>.Unbox(settings[fieldName]);
     }
   }
 

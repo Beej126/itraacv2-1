@@ -1,24 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Media.Animation;
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Media.Animation;
 
 /// <summary>
 /// Animates a grid length value just like the DoubleAnimation animates a double value
 /// </summary>
+// ReSharper disable CheckNamespace
 public class GridLengthAnimation : AnimationTimeline
+// ReSharper restore CheckNamespace
 {
-  private bool isCompleted;
+  private bool _isCompleted;
 
   /// <summary>
   /// Marks the animation as completed
   /// </summary>
   public bool IsCompleted
   {
-    get { return isCompleted; }
-    set { isCompleted = value; }
+    get { return _isCompleted; }
+    set { _isCompleted = value; }
   }
 
   /// <summary>
@@ -51,7 +51,7 @@ public class GridLengthAnimation : AnimationTimeline
   /// Creates an instance of the animation object
   /// </summary>
   /// <returns>Returns the instance of the GridLengthAnimation</returns>
-  protected override System.Windows.Freezable CreateInstanceCore()
+  protected override Freezable CreateInstanceCore()
   {
     return new GridLengthAnimation();
   }
@@ -68,11 +68,11 @@ public class GridLengthAnimation : AnimationTimeline
   {
     get
     {
-      return (GridLength)GetValue(GridLengthAnimation.FromProperty);
+      return (GridLength)GetValue(FromProperty);
     }
     set
     {
-      SetValue(GridLengthAnimation.FromProperty, value);
+      SetValue(FromProperty, value);
     }
   }
 
@@ -88,35 +88,33 @@ public class GridLengthAnimation : AnimationTimeline
   {
     get
     {
-      return (GridLength)GetValue(GridLengthAnimation.ToProperty);
+      return (GridLength)GetValue(ToProperty);
     }
     set
     {
-      SetValue(GridLengthAnimation.ToProperty, value);
+      SetValue(ToProperty, value);
     }
   }
   
-  AnimationClock clock;
-  
+  AnimationClock _clock;
+
   /// <summary>
   /// registers to the completed event of the animation clock
   /// </summary>
-  /// <param name=”clock”>the animation clock to notify completion status</param>
+  /// <param name="clock">the animation clock to notify completion status</param>
   void VerifyAnimationCompletedStatus(AnimationClock clock)
   {
-    if (this.clock == null)
-    {
-      this.clock = clock;
-      this.clock.Completed += new EventHandler(delegate(object sender, EventArgs e) { isCompleted = true; });
-    }
+    if (_clock != null) return;
+    _clock = clock;
+    _clock.Completed += delegate { _isCompleted = true; };
   }
 
   /// <summary>
   /// Animates the grid let set
   /// </summary>
-  /// <param name=”defaultOriginValue”>The original value to animate</param>
-  /// <param name=”defaultDestinationValue”>The final value</param>
-  /// <param name=”animationClock”>The animation clock (timer)</param>
+  /// <param name="defaultOriginValue">The original value to animate</param>
+  /// <param name="defaultDestinationValue">The final value</param>
+  /// <param name="animationClock">The animation clock (timer)</param>
   /// <returns>Returns the new grid length to set</returns>
   public override object GetCurrentValue(object defaultOriginValue,
   object defaultDestinationValue, AnimationClock animationClock)
@@ -125,32 +123,37 @@ public class GridLengthAnimation : AnimationTimeline
     VerifyAnimationCompletedStatus(animationClock);
     
     //check if the animation was completed
-    if (isCompleted)
+    if (_isCompleted)
       return (GridLength)defaultDestinationValue;
     
     //if not then create the value to animate
-    double fromVal = this.From.Value;
-    double toVal = this.To.Value;
+    var fromVal = From.Value;
+    var toVal = To.Value;
     
     //check if the value is already collapsed
-    if (((GridLength)defaultOriginValue).Value == toVal)
+    if (Math.Abs(((GridLength)defaultOriginValue).Value - toVal) < 0.1)
     {
       fromVal = toVal;
-      toVal = this.ReverseValue;
+      toVal = ReverseValue;
     }
     else
       //check to see if this is the last tick of the animation clock.
-      if (animationClock.CurrentProgress.Value == 1.0)
+    {
+      Debug.Assert(animationClock.CurrentProgress != null, "animationClock.CurrentProgress != null");
+      if (Math.Abs(animationClock.CurrentProgress.Value - 1.0) < 0.1)
         return To;
+    }
 
-    EasingFunctionBase easing = new ElasticEase() {Oscillations = 2, EasingMode = EasingMode.EaseOut, Springiness = 10};
-
+    EasingFunctionBase easing = new ElasticEase {Oscillations = 2, EasingMode = EasingMode.EaseOut, Springiness = 10};
+    Debug.Assert(animationClock.CurrentProgress != null, "animationClock.CurrentProgress != null");
+  
     if (fromVal > toVal)
+    {
       return new GridLength((1 - easing.Ease(animationClock.CurrentProgress.Value)) * (fromVal - toVal) + toVal,
-                            this.From.IsStar ? GridUnitType.Star : GridUnitType.Pixel);
-    else
-      return new GridLength(easing.Ease(animationClock.CurrentProgress.Value) * (toVal - fromVal) + fromVal, 
-                            this.From.IsStar ? GridUnitType.Star : GridUnitType.Pixel);
+                            From.IsStar ? GridUnitType.Star : GridUnitType.Pixel);
+    }
+    return new GridLength(easing.Ease(animationClock.CurrentProgress.Value) * (toVal - fromVal) + fromVal, 
+                          From.IsStar ? GridUnitType.Star : GridUnitType.Pixel);
   }
 
   /// <summary>
@@ -162,8 +165,8 @@ public class GridLengthAnimation : AnimationTimeline
     /// <summary>
     /// Dependency property for the From property
     /// </summary>
-    public static readonly DependencyProperty FromProperty = DependencyProperty.Register("From", typeof(double?),
-    typeof(ExpanderDoubleAnimation));
+    //public static readonly DependencyProperty FromProperty = DependencyProperty.Register("From", typeof(double?),
+    //typeof(ExpanderDoubleAnimation));
     
     /// <summary>
     /// CLR Wrapper for the From depenendency property
@@ -172,19 +175,19 @@ public class GridLengthAnimation : AnimationTimeline
     {
       get
       {
-        return (double?)GetValue(ExpanderDoubleAnimation.FromProperty);
+        return (double?)GetValue(FromProperty);
       }
       set
       {
-        SetValue(ExpanderDoubleAnimation.FromProperty, value);
+        SetValue(FromProperty, value);
       }
     }
     
     /// <summary>
     /// Dependency property for the To property
     /// </summary>
-    public static readonly DependencyProperty ToProperty = DependencyProperty.Register("To", typeof(double?),
-    typeof(ExpanderDoubleAnimation));
+    //public static readonly DependencyProperty ToProperty = DependencyProperty.Register("To", typeof(double?),
+    //typeof(ExpanderDoubleAnimation));
     
     /// <summary>
     /// CLR Wrapper for the To property
@@ -193,11 +196,11 @@ public class GridLengthAnimation : AnimationTimeline
     {
       get
       {
-        return (double?)GetValue(ExpanderDoubleAnimation.ToProperty);
+        return (double?)GetValue(ToProperty);
       }
       set
       {
-        SetValue(ExpanderDoubleAnimation.ToProperty, value);
+        SetValue(ToProperty, value);
       }
     }
     
@@ -213,8 +216,8 @@ public class GridLengthAnimation : AnimationTimeline
     /// <summary>
     /// Sets the reverse value for the second animation
     /// </summary>
-    public static readonly DependencyProperty ReverseValueProperty =
-    DependencyProperty.Register("ReverseValue", typeof(double?), typeof(ExpanderDoubleAnimation), new UIPropertyMetadata(0.0));
+    //public static readonly DependencyProperty ReverseValueProperty =
+    //DependencyProperty.Register("ReverseValue", typeof(double?), typeof(ExpanderDoubleAnimation), new UIPropertyMetadata(0.0));
 
     /// <summary>
     /// Creates an instance of the animation
@@ -228,24 +231,31 @@ public class GridLengthAnimation : AnimationTimeline
     /// <summary>
     /// Animates the double value
     /// </summary>
-    /// <param name=”defaultOriginValue”>The original value to animate</param>
-    /// <param name=”defaultDestinationValue”>The final value</param>
-    /// <param name=”animationClock”>The animation clock (timer)</param>
+    /// <param name="defaultOriginValue">The original value to animate</param>
+    /// <param name="defaultDestinationValue">The final value</param>
+    /// <param name="animationClock">The animation clock (timer)</param>
     /// <returns>Returns the new double to set</returns>
     protected override double GetCurrentValueCore(double defaultOriginValue, double defaultDestinationValue, AnimationClock animationClock)
     {
-      double fromVal = this.From.Value;
-      double toVal = this.To.Value;
+      Debug.Assert(From != null, "From != null");
+      Debug.Assert(To != null, "To != null");
+      Debug.Assert(ReverseValue != null, "ReverseValue != null");
+      Debug.Assert(animationClock.CurrentProgress != null, "animationClock.CurrentProgress != null");
 
-      if (defaultOriginValue == toVal)
+      var fromVal = From.Value;
+      var toVal = To.Value;
+
+      if (Math.Abs(defaultOriginValue - toVal) < 0.1)
       {
         fromVal = toVal;
-        toVal = this.ReverseValue.Value;
+        toVal = ReverseValue.Value;
       }
+
       if (fromVal > toVal)
+      {
         return (1 - animationClock.CurrentProgress.Value) * (fromVal - toVal) + toVal;
-      else
-        return (animationClock.CurrentProgress.Value *  (toVal - fromVal) + fromVal);
+      }
+      return (animationClock.CurrentProgress.Value *  (toVal - fromVal) + fromVal);
     }
 
   }

@@ -1,24 +1,25 @@
-﻿<local:tabBase x:Class="iTRAACv2.tabSponsor"
+﻿<View:TabBase x:Class="iTRAACv2.View.TabSponsor"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:global="clr-namespace:;assembly="
-  xmlns:local="clr-namespace:iTRAACv2"
   xmlns:conv="clr-namespace:WPFValueConverters"
   xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
-  xmlns:ic="clr-namespace:Microsoft.Expression.Interactivity.Core;assembly=Microsoft.Expression.Interactions"                       
+  xmlns:ic="clr-namespace:Microsoft.Expression.Interactivity.Core;assembly=Microsoft.Expression.Interactions"
+  xmlns:Model="clr-namespace:iTRAACv2.Model"
+  xmlns:View="clr-namespace:iTRAACv2.View"
 >
 
   <!-- xmlns:diagnostics="clr-namespace:System.Diagnostics;assembly=WindowsBase" -->
   <!-- diagnostics:PresentationTraceSources.TraceLevel="High" -->
 
-  <local:tabBase.Resources>
+  <View:TabBase.Resources>
 
     <LinearGradientBrush x:Key="TabBackground" StartPoint="0,0" EndPoint="0,1">
       <GradientStop Color="#DCEDFF" Offset="0.0"/>
       <GradientStop Color="#5BA0E5" Offset="1.0"/>
     </LinearGradientBrush>
 
-  </local:tabBase.Resources>
+  </View:TabBase.Resources>
 
 
   <Grid>
@@ -36,13 +37,13 @@
       </Grid.ColumnDefinitions>
 
       <ToolBar Grid.Row="0">
-        <Button Name="btnSave" Click="btnSave_Click" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
+        <Button Name="btnSave" Click="BtnSaveClick" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
           <StackPanel>
             <Image Source="/Assets/Glyphs/save.png" Style="{StaticResource CanDisableNestedImage}" />
             <Label Content="Save" />
           </StackPanel>
         </Button>
-        <Button Name="btnSaveClose" Click="btnSaveClose_Click" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
+        <Button Name="btnSaveClose" Click="BtnSaveCloseClick" IsEnabled="{Binding Mode=OneWay, Path=IsModified}">
           <StackPanel>
             <Image Source="/Assets/Glyphs/save_close.png" Style="{StaticResource CanDisableNestedImage}" />
             <Label Content="Save &amp; Close" />
@@ -51,9 +52,9 @@
       </ToolBar>
 
       <ToolBar Grid.Column="2">
-        <local:ucToggleButton x:Name="btnCart" ToolTip="Shopping Cart" Text="Cart" Width="50" 
+        <View:UcToggleButton x:Name="btnCart" ToolTip="Shopping Cart" Text="Cart" Width="50" 
                                 ToggleButtonStyle="{StaticResource FlatToggleButton}"
-                                IsCheckedChanged="btnCart_IsCheckedChanged"/>
+                                IsCheckedChanged="BtnCartIsCheckedChanged"/>
       </ToolBar>
     </Grid>
 
@@ -79,7 +80,7 @@
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Members" VerticalAlignment="Center" FontSize="16" />
                 <Line VerticalAlignment="Center" Stroke="#D5DFE5" StrokeThickness="1" X1="0" X2="80" Y1="2" Y2="2" Margin="2,0,3,0" />
-                <Button Content="Add Member (Marriage)" Padding="3 2" Click="AddMember_Click" Style="{StaticResource PrettyFlatButton}"  />
+                <Button Content="Add Member (Marriage)" Padding="3 2" Click="AddMemberClick" Style="{StaticResource PrettyFlatButton}"  />
                 <CheckBox Name="chkShowDeactiveMembers" VerticalAlignment="Center" Margin="15,0,0,0" 
                           IsChecked="{Binding Mode=TwoWay, Path=ShowDeactiveMembers}">
                   <CheckBox.Content>
@@ -125,13 +126,13 @@
                         <DataTemplate>
                           <DockPanel MinWidth="130">
                             <Button Content="Set Sponsor" ToolTip="Set As Sponsor"
-                              Click="SetSponsor_Click"
+                              Click="SetSponsorClick"
                               Tag="{Binding Mode=OneWay, Path=RowGUID}" 
                               Style="{StaticResource DimFlatButton}"
                               DockPanel.Dock="Left" Margin="0,0,3,0">
                               <Button.Visibility>
-                                <MultiBinding Mode="OneWay" Converter="{local:ShowSetSponsor}">
-                                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                                <MultiBinding Mode="OneWay" Converter="{View:ShowSetSponsor}">
+                                  <Binding Mode="OneWay" Source="{x:Static Model:UserModel.Current}" Path="Access.IsAdmin" />
                                   <Binding Mode="OneWay" />
                                   <Binding Mode="OneWay" Path="IsSponsor" />
                                 </MultiBinding>
@@ -139,23 +140,23 @@
                             </Button>
 
                             <Button Content="Set Spouse" ToolTip="Set as Spouse" HorizontalAlignment="Right" 
-                              Click="SetSpouse_Click" Tag="{Binding Mode=OneWay, Path=RowGUID}" 
+                              Click="SetSpouseClick" Tag="{Binding Mode=OneWay, Path=RowGUID}" 
                               Visibility="{Binding Mode=OneWay, Path=IsSponsorOrSpouse, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"
                               DockPanel.Dock="Right" Style="{StaticResource DimFlatButton}" />
 
                             <Button Content="Clear Spouse" ToolTip="Clear Spouse" HorizontalAlignment="Right" 
-                                    Click="SetSpouse_Click" 
+                                    Click="SetSpouseClick" 
                                     DockPanel.Dock="Left" Style="{StaticResource DimFlatButton}">
                               <Button.Visibility>
                                 <MultiBinding Mode="OneWay" Converter="{conv:ANDVis}">
                                   <Binding Mode="OneWay" Path="IsSpouse" />
-                                  <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                                  <Binding Mode="OneWay" Source="{x:Static Model:UserModel.Current}" Path="Access.IsAdmin" />
                                 </MultiBinding>
                               </Button.Visibility>
                             </Button>
 
                             <Button Content="Divorce" Padding="3 2" Margin="10,0,0,0" 
-                                    Click="Divorce_Click"
+                                    Click="DivorceClick"
                                     DockPanel.Dock="Left" Style="{StaticResource DimFlatButton}" >
                               <Button.Visibility>
                                 <MultiBinding Mode="OneWay" Converter="{conv:ANDVis}">
@@ -188,7 +189,7 @@
                         <DataTemplate>
                           <CheckBox IsTabStop="False" Style="{StaticResource RedXCheckBox}" VerticalAlignment="Center"
                                     IsChecked="{Binding Mode=OneWay, Path=Active}"
-                                    Click="ClientActive_Click"
+                                    Click="ClientActiveClick"
                                     Tag="{Binding Mode=OneWay}"/>
                         </DataTemplate>
                       </GridViewColumn.CellTemplate>
@@ -199,13 +200,13 @@
                         <DataTemplate>
                           <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <TextBox Name="txtSSN1"
-                                     Width="35" MaxLength="3" PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     Width="35" MaxLength="3" PreviewTextInput="NumericOnlyPreviewTextInput"
                                      Text="{Binding Mode=TwoWay, Path=SSN1, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="-" VerticalAlignment="Center" />
-                            <TextBox Width="30" MaxLength="2" PreviewTextInput="NumericOnly_PreviewTextInput"
+                            <TextBox Width="30" MaxLength="2" PreviewTextInput="NumericOnlyPreviewTextInput"
                                      Text="{Binding Mode=TwoWay, Path=SSN2, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="-" VerticalAlignment="Center" />
-                            <TextBox Width="40" MaxLength="4" PreviewTextInput="NumericOnly_PreviewTextInput"
+                            <TextBox Width="40" MaxLength="4" PreviewTextInput="NumericOnlyPreviewTextInput"
                                      Text="{Binding Mode=TwoWay, Path=SSN3, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
                           </StackPanel>
                         </DataTemplate>
@@ -271,7 +272,7 @@
                       <GridViewColumn.Header>
                         <StackPanel Orientation="Horizontal">
                           <TextBlock Text="CCode" />
-                          <Button IsTabStop="False" Content="*" ToolTip="Set All CCode's The Same" Click="CCodeSame_Click"
+                          <Button IsTabStop="False" Content="*" ToolTip="Set All CCode's The Same" Click="CCodeSameClick"
                                   Padding="-1" Margin="3,0,0,0" Height="14" VerticalAlignment="Center"
                                   Style="{StaticResource PrettyFlatButton}" />
                         </StackPanel>
@@ -333,11 +334,11 @@
                   <TextBlock Text="Duty Phone:" />
                   <StackPanel Orientation="Horizontal" Name="pnlDutyPhone">
                     <TextBlock Text="DSN:" />
-                    <TextBox Width="32" PreviewTextInput="NumericOnly_PreviewTextInput" Name="txtDSN1" 
+                    <TextBox Width="32" PreviewTextInput="NumericOnlyPreviewTextInput" Name="txtDSN1" 
                              Text="{Binding Mode=TwoWay, Path=DutyPhoneDSN1, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[DutyPhoneDSN1].MaxLength}" />
                     <TextBlock Text="-" />
-                    <TextBox Width="40" PreviewTextInput="NumericOnly_PreviewTextInput"
+                    <TextBox Width="40" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=DutyPhoneDSN2, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[DutyPhoneDSN2].MaxLength}" />
                   </StackPanel>
@@ -352,7 +353,7 @@
                 <StackPanel Style="{StaticResource StackField}">
                   <TextBlock Text="Rank:" />
                   <!-- nugget: List/ComboBox DisplayMemberPath & SelectedValuePath are simple field names on the ItemsSource...  SelectedValue is where to load/save the selected value and is typically a Binding to another datastucture -->
-                  <ComboBox ItemsSource="{Binding Source={x:Static local:SponsorModel.Ranks}}"
+                  <ComboBox ItemsSource="{Binding Source={x:Static Model:SponsorModel.Ranks}}"
                           DisplayMemberPath="Rank" 
                           SelectedValuePath="Rank" SelectedValue="{Binding Mode=TwoWay, Path=Rank, ValidatesOnDataErrors=True}" />
                 </StackPanel>
@@ -366,11 +367,11 @@
                   <TextBlock Text="Primary Personal Phone:" />
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="(+" />
-                    <TextBox Width="32" PreviewTextInput="NumericOnly_PreviewTextInput"
+                    <TextBox Width="32" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=HomePhoneCountry, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomePhoneCountry].MaxLength}" />
                     <TextBlock Text=")" />
-                    <TextBox Width="95" PreviewTextInput="NumericOnly_PreviewTextInput"
+                    <TextBox Width="95" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=HomePhone, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomePhone].MaxLength}" />
                   </StackPanel>
@@ -382,18 +383,18 @@
 
                 <WrapPanel Orientation="Vertical" Name="pnlOfficialMail">
 
-                  <global:ucTextBoxWatermarked Watermark="Line1: Not required, AG info, etc." Width="185"
+                  <View:UcTextBoxWatermarked Watermark="Line1: Not required, AG info, etc." Width="185"
                                              Text="{Binding Mode=TwoWay, Path=AddressLine1, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[AddressLine1].MaxLength}" />
                   <TextBox Style="{StaticResource ReadOnlyTextBox}" Text="{Binding Mode=OneWay, Path=AddressLine2}" 
                            Visibility="{Binding Converter={conv:NotEmptyToVisible}, Path=AddressLine2}" />
                   <WrapPanel Orientation="Horizontal" Margin="0,3,0,0" >
                     <TextBlock Text="CMR"  Margin="5,0,3,0"/>
-                    <TextBox Width="40" PreviewTextInput="NumericOnly_PreviewTextInput"
+                    <TextBox Width="40" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=OfficialMailCMR, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailCMR].MaxLength}" />
                     <TextBlock Text="BOX" Margin="3,0,3,0" />
-                    <TextBox Width="45" PreviewTextInput="NumericOnly_PreviewTextInput"
+                    <TextBox Width="45" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=OfficialMailBox, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailBox].MaxLength}"/>
                   </WrapPanel>
@@ -404,7 +405,7 @@
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailCity].MaxLength}" />
                     <TextBox Width="30" Text="{Binding Mode=TwoWay, Path=OfficialMailState, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailState].MaxLength}" />
-                    <TextBox Width="45" PreviewTextInput="NumericOnly_PreviewTextInput"
+                    <TextBox Width="45" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=OfficialMailZip, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[OfficialMailZip].MaxLength}" />
                   </WrapPanel>
@@ -476,7 +477,7 @@
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Button Content="+" ToolTip="Move Member"
-                            Click="MoveClient_Click" Tag="{Binding Mode=OneWay}"
+                            Click="MoveClientClick" Tag="{Binding Mode=OneWay}"
                             Padding="0,-4,0,0" Height="14" VerticalAlignment="Center"  />
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -486,7 +487,7 @@
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <TextBlock>
-                      <Hyperlink Command="{x:Static local:RoutedCommands.OpenSponsor}" CommandParameter="{Binding Mode=OneTime, Path=SponsorGUID}" > <!-- Hyperlink bound to a RoutedCommand vs event handler and global delegates, very slick -->
+                      <Hyperlink Command="{x:Static View:RoutedCommands.OpenSponsor}" CommandParameter="{Binding Mode=OneTime, Path=SponsorGUID}" > <!-- Hyperlink bound to a RoutedCommand vs event handler and global delegates, very slick -->
                         <Run Text="{Binding Mode=OneTime, Path=LName}"/>
                       </Hyperlink>
                     </TextBlock>
@@ -602,7 +603,7 @@
                 </Style>
               </WrapPanel.Resources>
 
-              <Button Click="btnNewNF1Package_Click" Name="btnNewNF1Package">
+              <Button Click="BtnNewNF1PackageClick" Name="btnNewNF1Package">
                 <Button.IsEnabled>
                   <MultiBinding Converter="{conv:AND}">
                     <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
@@ -611,7 +612,7 @@
                   </MultiBinding>
                 </Button.IsEnabled>
                 <Button.ToolTip>
-                  <MultiBinding Converter="{local:Class1SellButtonToolTipConverter}">
+                  <MultiBinding Converter="{View:Class1SellButtonToolTipConverter}">
                     <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
                     <Binding Mode="OneWay" Path="Class1TaxForms_CountRemainingToBuy" />
                   </MultiBinding>
@@ -623,7 +624,7 @@
                 </StackPanel>
               </Button>
 
-              <Button Name="btnNewNF2" Content="NF2" Click="btnNewNF2_Click" Margin="0 0 15 0" 
+              <Button Name="btnNewNF2" Content="NF2" Click="BtnNewNF2Click" Margin="0 0 15 0" 
                       Height="{Binding ElementName=btnNewNF1Package, Path=ActualHeight}" >
                 <Button.IsEnabled>
                   <MultiBinding Converter="{conv:AND}">
@@ -633,7 +634,7 @@
                   </MultiBinding>
                 </Button.IsEnabled>
                 <Button.ToolTip>
-                  <MultiBinding Converter="{local:Class2SellButtonToolTipConverter}">
+                  <MultiBinding Converter="{View:Class2SellButtonToolTipConverter}">
                     <Binding Mode="OneWay" Path="Fields[CanSellForms]" />
                     <Binding Mode="OneWay" Path="HasUnreturnedClass2" />
                   </MultiBinding>
@@ -654,13 +655,13 @@
                       </StackPanel>
 
                       <StackPanel Orientation="Horizontal" Margin="0 5 0 0"
-                                  Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" >
+                                  Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type View:TabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" >
                         <TextBlock Text="Number of New Forms: " VerticalAlignment="Center" />
                         <ComboBox Name="cbxNewFormsCount" />
                       </StackPanel>
 
                       <StackPanel Margin="0 5 0 0" Orientation="Vertical" Name="PanelDependentsPicklist"
-                                  Visibility="{Binding Mode=OneWay, Path=DependentsSelectionList, Converter={local:ShowDependentsSelectionList}}">
+                                  Visibility="{Binding Mode=OneWay, Path=DependentsSelectionList, Converter={View:ShowDependentsSelectionList}}">
                         <TextBlock Margin="0 5 0 0" HorizontalAlignment="Left">
                           Authorized Dependent (Printed on Forms):<LineBreak />(CTRL + Left Mouse Button to UN-select)
                         </TextBlock>
@@ -668,18 +669,18 @@
                                  HorizontalAlignment="Left" Padding="2 2 3 2" Margin="0 2" BorderThickness="0"
                                  ItemsSource="{Binding Mode=OneWay, Path=DependentsSelectionList}"
                                  DisplayMemberPath="FirstName" SelectedValuePath="RowGUID"
-                                 Loaded="lbxPrintDependents_Loaded"
+                                 Loaded="LbxPrintDependentsLoaded"
                                  SelectionMode="Single" />
                       </StackPanel>
 
                       <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
-                        <Button Name="btnReadyToPrint_Yes" Content="_Print Immediately" FontSize="14" IsDefault="True" Click="btnReadyToPrint_Click" Padding="5 3"
-                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" />
-                        <Button Content="  _OK  " FontSize="14" IsDefault="True" Margin="5" Click="btnNewNF2_OK_Click" Padding="5 3" 
-                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}}" />
-                        <Button Content="_Cancel" FontSize="14" IsCancel="True" Margin="5" Click="btnReadyToPrint_No_Click" Padding="5 3" />
-                        <Button Name="btnReadyToPrint_Cart" Content="_Add to Cart" FontSize="14" Click="btnReadyToPrint_Click" Padding="5 3" 
-                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type local:tabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" />
+                        <Button Name="btnReadyToPrint_Yes" Content="_Print Immediately" FontSize="14" IsDefault="True" Click="BtnReadyToPrintClick" Padding="5 3"
+                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type View:TabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" />
+                        <Button Content="  _OK  " FontSize="14" IsDefault="True" Margin="5" Click="BtnNewNF2OKClick" Padding="5 3" 
+                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type View:TabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}}" />
+                        <Button Content="_Cancel" FontSize="14" IsCancel="True" Margin="5" Click="BtnReadyToPrintNoClick" Padding="5 3" />
+                        <Button Name="btnReadyToPrint_Cart" Content="_Add to Cart" FontSize="14" Click="BtnReadyToPrintClick" Padding="5 3" 
+                                Visibility="{Binding Mode=OneWay, RelativeSource={RelativeSource AncestorType={x:Type View:TabSponsor}}, Path=IsClass2Popup, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}" />
                       </StackPanel>
 
                     </StackPanel>
@@ -752,7 +753,7 @@
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="UTAP" FontSize="16" />
               <CheckBox VerticalAlignment="Center" Margin="5,0,0,0" Content="Enrolled" IsThreeState="False"
-                        Checked="IsUTAPActive_Checked"
+                        Checked="IsUTAPActiveChecked"
                         IsChecked="{Binding Mode=TwoWay, Path=Fields[IsUTAPActive], ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
           </TabItem.Header>
@@ -773,7 +774,7 @@
                 <TextBox Width="110" Text="{Binding Mode=TwoWay, Path=HomeStreet, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomeStreet].MaxLength}" />
                 <TextBlock Text="Number:" Width="50" TextAlignment="Right" />
-                <TextBox Width="47" PreviewTextInput="NumericOnly_PreviewTextInput"
+                <TextBox Width="47" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=HomeStreetNumber, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}" 
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomeStreetNumber].MaxLength}" />
               </WrapPanel>
@@ -783,7 +784,7 @@
                 <TextBox Width="110" Text="{Binding Mode=TwoWay, Path=HomeCity, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomeCity].MaxLength}" />
                 <TextBlock Text="Postal:" Width="50" TextAlignment="Right" />
-                <TextBox Width="47" PreviewTextInput="NumericOnly_PreviewTextInput"
+                <TextBox Width="47" PreviewTextInput="NumericOnlyPreviewTextInput"
                              Text="{Binding Mode=TwoWay, Path=HomePostal, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                              MaxLength="{Binding Mode=OneTime, Path=Row.Table.Columns[HomePostal].MaxLength}" />
               </WrapPanel>
@@ -791,7 +792,7 @@
             </WrapPanel>
           </GroupBox>
 
-          <local:ucDetailsView Padding="0 20 0 0" ItemsSource="{Binding Mode=OneWay, Path=UTAPFields}" Orientation="Vertical" LabelOrientation="Horizontal"/>
+          <View:UcDetailsView Padding="0 20 0 0" ItemsSource="{Binding Mode=OneWay, Path=UTAPFields}" Orientation="Vertical" LabelOrientation="Horizontal"/>
           </StackPanel>
         </TabItem>
 
@@ -810,14 +811,14 @@
               <DockPanel Name="dockSuspension" HorizontalAlignment="Left" Margin="0,0,5,5">
                 <DockPanel.IsEnabled>
                   <MultiBinding Converter="{conv:OR}">
-                    <Binding Mode="OneWay" Source="{x:Static local:UserModel.Current}" Path="Access.IsAdmin" />
+                    <Binding Mode="OneWay" Source="{x:Static Model:UserModel.Current}" Path="Access.IsAdmin" />
                     <Binding Mode="OneWay" Path="Fields[SuspensionExpiry]" Converter="{conv:EmptyToTrue}" />
                     <Binding Mode="OneWay" Path="Fields[SuspensionTaxOfficeId]" ConverterParameter="'?' == '%myofficeid%'" Converter="{conv:BoolExpressionToBool}"  />
                     <!-- introducing a dynamic variable into ValueConverter -->
                   </MultiBinding>
                 </DockPanel.IsEnabled>
                 <ToggleButton DockPanel.Dock="Left" Name="btnSuspend" Margin="0" Padding="4 3 4 4" VerticalAlignment="Top" Content="Suspend"
-                              Checked="btnSuspend_Checked"
+                              Checked="BtnSuspendChecked"
                               IsChecked="{Binding Mode=OneWay, Path=Fields[SuspensionExpiry], Converter={conv:NotEmptyToTrue}}"
                               Style="{StaticResource DistractingToggleButton}">
                   <ToggleButton.ToolTip>
@@ -825,15 +826,15 @@
                              Visibility="{Binding Mode=OneWay, ElementName=dockSuspension, Path=IsEnabled, Converter={conv:BooleanToVisibilityConverter}, ConverterParameter=Inverse}"/>
                   </ToggleButton.ToolTip>
                 </ToggleButton>
-                <local:ReasonPopup x:Name="SuspensionReasonPopup" Result="SuspensionReasonPopup_Result" PlacementTarget="{Binding ElementName=dockSuspension}" />
+                <View:ReasonPopup x:Name="SuspensionReasonPopup" Result="SuspensionReasonPopupResult" PlacementTarget="{Binding ElementName=dockSuspension}" />
                 <WrapPanel Orientation="Vertical" Margin="5 0 0 0"
                            Visibility="{Binding Mode=OneWay, ElementName=btnSuspend, Path=IsChecked, Converter={conv:BooleanToVisibilityConverter}}">
                   <WrapPanel Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" Text="Until: " />
                     <DatePicker VerticalAlignment="Bottom" SelectedDate="{Binding Mode=TwoWay, Path=Fields[SuspensionExpiry]}" />
-                    <Button Content="1mo" Tag="OneMonth" Click="btnSuspendDuration_Click" />
-                    <Button Content="1yr" Tag="OneYear" Click="btnSuspendDuration_Click" />
-                    <Button Content="*" Tag="Forever" Click="btnSuspendDuration_Click" ToolTip="Forever" />
+                    <Button Content="1mo" Tag="OneMonth" Click="BtnSuspendDurationClick" />
+                    <Button Content="1yr" Tag="OneYear" Click="BtnSuspendDurationClick" />
+                    <Button Content="*" Tag="Forever" Click="BtnSuspendDurationClick" ToolTip="Forever" />
                   </WrapPanel>
                   <TextBlock VerticalAlignment="Center">
                     <TextBlock.Text>
@@ -873,7 +874,7 @@
                 </i:Interaction.Triggers>
 
               </Button>
-              <local:ReasonPopup x:Name="DiaryAddPopup" Result="DiaryAddPopup_Result"
+              <View:ReasonPopup x:Name="DiaryAddPopup" Result="DiaryAddPopupResult"
                                  Title="New Remark" ShowAlert="True" />
               <CheckBox Content="Show Deleted" VerticalAlignment="Center" Margin="10,0,0,0"
                         IsChecked="{Binding Mode=TwoWay, Path=ShowDeletedRemarks}"/>
@@ -881,22 +882,22 @@
           </GroupBox.Header>
           <DockPanel>
 
-            <local:ReasonPopup x:Name="RemoveRemarkReasonPopup" Result="RemoveRemarkReasonPopup_Result" 
+            <View:ReasonPopup x:Name="RemoveRemarkReasonPopup" Result="RemoveRemarkReasonPopupResult" 
                                            Title="Why delete remark?" />
 
-            <local:ReasonPopup x:Name="DisableRemarkAlertReasonPopup" Result="DisableRemarkAlertReasonPopup_Result" 
+            <View:ReasonPopup x:Name="DisableRemarkAlertReasonPopup" Result="DisableRemarkAlertReasonPopupResult" 
                                            Title="Why disable alert?" />
 
             <DataGrid Name="gridRemarks" Grid.Row="1" AutoGenerateColumns="True" ItemsSource="{Binding Mode=OneWay, Path=SponsorRemarks}" 
-                      BeginningEdit="gridRemarks_BeginningEdit"
-                      SelectionChanged="gridRemarks_SelectionChanged"
+                      BeginningEdit="GridRemarksBeginningEdit"
+                      SelectionChanged="GridRemarksSelectionChanged"
                       CanUserAddRows="False" CanUserDeleteRows="False">
               <DataGrid.Columns>
                 <DataGridTemplateColumn ToolTipService.ToolTip="Delete" >
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                       <Grid>
-                        <Button FontFamily="Marlett" Content="r" Click="btnRemoveRemark_Click" 
+                        <Button FontFamily="Marlett" Content="r" Click="BtnRemoveRemarkClick" 
                                 IsEnabled="{Binding Mode=OneWay, Path=CategoryId, Converter={conv:EmptyToTrue}}"
                                 Style="{StaticResource DimButton}"
                                 Padding="0" Opacity="0"
@@ -934,4 +935,4 @@
 
   </Grid>
 
-</local:tabBase>
+</View:TabBase>

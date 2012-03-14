@@ -1,20 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public class ucShowHideCheckBox : CheckBox
+  public class UcShowHideCheckBox : CheckBox
   {
 
     public FrameworkElement IsUnCheckedVisibleControl
@@ -23,7 +12,7 @@ namespace iTRAACv2
       set { SetValue(IsUnCheckedVisibleControlProperty, value); }
     }
     public static readonly DependencyProperty IsUnCheckedVisibleControlProperty =
-        DependencyProperty.Register("IsUnCheckedVisibleControl", typeof(FrameworkElement), typeof(ucShowHideCheckBox), new UIPropertyMetadata(null));
+        DependencyProperty.Register("IsUnCheckedVisibleControl", typeof(FrameworkElement), typeof(UcShowHideCheckBox), new UIPropertyMetadata(null));
 
     public FrameworkElement IsCheckedVisibleControl
     {
@@ -31,7 +20,7 @@ namespace iTRAACv2
       set { SetValue(IsCheckedVisibleControlProperty, value); }
     }
     public static readonly DependencyProperty IsCheckedVisibleControlProperty =
-        DependencyProperty.Register("IsCheckedVisibleControl", typeof(FrameworkElement), typeof(ucShowHideCheckBox), new UIPropertyMetadata(null));
+        DependencyProperty.Register("IsCheckedVisibleControl", typeof(FrameworkElement), typeof(UcShowHideCheckBox), new UIPropertyMetadata(null));
 
 
     /// <summary>
@@ -43,7 +32,7 @@ namespace iTRAACv2
       set { SetValue(DisableProperty, value); }
     }
     public static readonly DependencyProperty DisableProperty =
-        DependencyProperty.Register("Disable", typeof(bool), typeof(ucShowHideCheckBox), new UIPropertyMetadata(false));
+        DependencyProperty.Register("Disable", typeof(bool), typeof(UcShowHideCheckBox), new UIPropertyMetadata(false));
 
 
 

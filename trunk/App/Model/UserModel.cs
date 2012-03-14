@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Collections.Specialized;
-using System.Security.Principal;
 using System.Data;
-
 using System.ComponentModel;
+using System.Globalization;
 using System.Threading;
+using System.Windows;
 
-namespace iTRAACv2
+namespace iTRAACv2.Model
 {
   class UserModel
   {
-    static private UserModel _current = null; 
+    static private UserModel _current; 
     static public UserModel Current
     {
       get
@@ -18,15 +17,17 @@ namespace iTRAACv2
         if (_current == null && !WPFHelpers.DesignMode)
         {
           _current = new UserModel();
-          using (Proc User_Login = new Proc("User_Login"))
+// ReSharper disable InconsistentNaming
+          using (var User_Login = new Proc("User_Login"))
+// ReSharper restore InconsistentNaming
           {
             User_Login["@TaxOfficeId"] = SettingsModel.TaxOfficeId;
             User_Login["@LoginName"] = _current.LoginName;
             User_Login["@TaxOfficeId"] = SettingsModel.TaxOfficeId;
             if (User_Login.ExecuteDataSet().Row0 == null)
             {
-              System.Windows.MessageBox.Show(String.Format("Login '{0}' not registered in database", _current.LoginName));
-              App.Current.Shutdown();
+              MessageBox.Show(String.Format("Login '{0}' not registered in database", _current.LoginName));
+              Application.Current.Shutdown();
               return (null);
             }
 
@@ -43,7 +44,7 @@ namespace iTRAACv2
     private UserModel(){}
 
     public Guid GUID { get; private set; }
-    public string LoginName { get { return (SecurityHelpers.CurrentWindowsLoginName_SansDomain); } }
+    public string LoginName { get { return (SecurityHelpers.CurrentWindowsLoginNameSansDomain); } }
     public string Name { get; private set; }
 
     public UserAccess Access { get; private set; }
@@ -53,41 +54,47 @@ namespace iTRAACv2
       /// tie most (all?) properties to IsAdmin as an ultimate flag no matter what else is currently set
       /// </summary>
 
-      private bool _HasUnlockForm = false;
+      private bool _hasUnlockForm;
       public bool HasUnlockForm
       { 
         private set
         {
-          _HasUnlockForm = value;
+          _hasUnlockForm = value;
           OnPropertyChanged("HasUnlockForm");
         }
         get
         {
-          return (IsAdmin || _HasUnlockForm);
+          return (IsAdmin || _hasUnlockForm);
         }
       }
 
       #region Admin Override Logic
-      public bool IsAdmin { private set { _IsAdmin = value; OnPropertyChanged("IsAdmin"); OnPropertyChanged("HasUnlockForm"); } get { return (_IsAdmin); } } private bool _IsAdmin = false;
-      public DateTime AdminOverrideRemaining { private set { _AdminOverrideRemaining = value; OnPropertyChanged("AdminOverrideRemaining"); OnPropertyChanged("IsAdminOverride"); } get { return (_AdminOverrideRemaining); } } private DateTime _AdminOverrideRemaining = DateTime.Parse("00:00:00");
+      public bool IsAdmin { private set { _isAdmin = value; OnPropertyChanged("IsAdmin"); OnPropertyChanged("HasUnlockForm"); } get { return (_isAdmin); } } private bool _isAdmin;
+      public DateTime AdminOverrideRemaining { private set { _adminOverrideRemaining = value; OnPropertyChanged("AdminOverrideRemaining"); OnPropertyChanged("IsAdminOverride"); } get { return (_adminOverrideRemaining); } } private DateTime _adminOverrideRemaining = DateTime.Parse("00:00:00");
       public bool IsAdminOverride { get { return (AdminOverrideRemaining.Minute > 0 || AdminOverrideRemaining.Second > 0); } }
 
-      private const int _AdminOverrideTimerPeriod = 5000; //ticks every 5 seconds, rather than every 1 second just so we're not overly chatty to our listeners
-      private Timer _AdminOverrideTimer = null;
-      public bool AdminOverride(string AdminPassword, int RollbackMinutes)
+      private const int AdminOverrideTimerPeriod = 5000; //ticks every 5 seconds, rather than every 1 second just so we're not overly chatty to our listeners
+      private Timer _adminOverrideTimer;
+      public bool AdminOverride(string adminPassword, int rollbackMinutes)
       {
-        using (Proc User_AdminOverride = new Proc("User_AdminOverride"))
+        using (var userAdminOverride = new Proc("User_AdminOverride"))
         {
-          User_AdminOverride["@Password"] = AdminPassword;
-          IsAdmin = bool.Parse(User_AdminOverride.ExecuteNonQuery()["@Result"].ToString());
+          userAdminOverride["@Password"] = adminPassword;
+          IsAdmin = bool.Parse(userAdminOverride.ExecuteNonQuery()["@Result"].ToString());
         }
 
         if (IsAdmin)
         {
-          AdminOverrideRemaining = DateTime.Parse("00:" + RollbackMinutes.ToString() + ":00");
+          AdminOverrideRemaining = DateTime.Parse("00:" + rollbackMinutes.ToString(CultureInfo.InvariantCulture) + ":00");
 
-          if (_AdminOverrideTimer == null) _AdminOverrideTimer = new Timer(new TimerCallback(AdminOverrideTimerTick), state: null, dueTime: 0 /*start immediately*/, period: _AdminOverrideTimerPeriod);
-          else _AdminOverrideTimer.Change(dueTime: 0, period: _AdminOverrideTimerPeriod);
+          if (_adminOverrideTimer == null) _adminOverrideTimer =
+            // ReSharper disable RedundantArgumentName
+            new Timer(AdminOverrideTimerTick, 
+                      state: null, 
+                      dueTime: 0 /*start immediately*/,
+                      period: AdminOverrideTimerPeriod);
+          else _adminOverrideTimer.Change(dueTime: 0, period: AdminOverrideTimerPeriod);
+          // ReSharper restore RedundantArgumentName
         }
 
         return (IsAdmin);
@@ -103,14 +110,16 @@ namespace iTRAACv2
       //so i'm going to change the period to every 5 seconds for now and leave it be
       private void AdminOverrideTimerTick(object state)
       {
-        AdminOverrideRemaining = AdminOverrideRemaining.AddSeconds(-1 * _AdminOverrideTimerPeriod / 1000);
+        AdminOverrideRemaining = AdminOverrideRemaining.AddSeconds(-1 * AdminOverrideTimerPeriod / 1000);
         if (AdminOverrideRemaining.Minute == 0 && AdminOverrideRemaining.Second == 0)
           AdminOverrideCancel();
       }
 
       public void AdminOverrideCancel()
       {
-        if (_AdminOverrideTimer != null) _AdminOverrideTimer.Change(Timeout.Infinite, period: _AdminOverrideTimerPeriod); //stop the ticks
+        // ReSharper disable RedundantArgumentName
+        if (_adminOverrideTimer != null) _adminOverrideTimer.Change(Timeout.Infinite, period: AdminOverrideTimerPeriod); //stop the ticks
+        // ReSharper restore RedundantArgumentName
         AdminOverrideRemaining = DateTime.Parse("00:00:00");
         IsAdmin = false; //revert to non-admin status
       }
@@ -126,12 +135,11 @@ namespace iTRAACv2
 
       static public UserAccess LoadBO(DataRow r) 
       {
-        if (r == null) throw (new Exception("UserAccess.LoadBO - supplied DataRow is null")); 
+        if (r == null) throw (new Exception("UserAccess.LoadBO - supplied DataRow is null"));
 
-        UserAccess ua = new UserAccess();
+        var ua = new UserAccess
+                   {IsAdmin = Convert.ToBoolean(r["IsAdmin"]), HasUnlockForm = Convert.ToBoolean(r["HasUnlockForm"])};
 
-        ua.IsAdmin = Convert.ToBoolean(r["IsAdmin"]);
-        ua.HasUnlockForm = Convert.ToBoolean(r["HasUnlockForm"]);
 
         return (ua);
       }

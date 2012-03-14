@@ -5,58 +5,60 @@ using System.ComponentModel;
 using System.Windows.Threading;
 using System.Linq;
 
+// ReSharper disable CheckNamespace
 public class TrulyObservableCollection<T> : ObservableCollection<T> where T : INotifyPropertyChanged
+// ReSharper restore CheckNamespace
 {
-  public TrulyObservableCollection() : base()
+  public TrulyObservableCollection()
   {
-    CollectionChanged += new NotifyCollectionChangedEventHandler(TrulyObservableCollection_CollectionChanged);
+// ReSharper disable DoNotCallOverridableMethodsInConstructor
+    CollectionChanged += TrulyObservableCollectionCollectionChanged;
+// ReSharper restore DoNotCallOverridableMethodsInConstructor
   }
 
   public override event NotifyCollectionChangedEventHandler CollectionChanged;
   protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
   {
     var eh = CollectionChanged;
-    if (eh != null)
-    {
-      Dispatcher dispatcher = (from NotifyCollectionChangedEventHandler nh in eh.GetInvocationList()
-                               let dpo = nh.Target as DispatcherObject
-                               where dpo != null
-                               select dpo.Dispatcher).FirstOrDefault();
+    if (eh == null) return;
+    Dispatcher dispatcher = (from NotifyCollectionChangedEventHandler nh in eh.GetInvocationList()
+                             let dpo = nh.Target as DispatcherObject
+                             where dpo != null
+                             select dpo.Dispatcher).FirstOrDefault();
 
-      if (dispatcher != null && dispatcher.CheckAccess() == false)
-      {
-        dispatcher.Invoke(DispatcherPriority.DataBind, (Action)(() => OnCollectionChanged(e)));
-      }
-      else
-      {
-        foreach (NotifyCollectionChangedEventHandler nh in eh.GetInvocationList())
-          nh.Invoke(this, e);
-      }
+    if (dispatcher != null && dispatcher.CheckAccess() == false)
+    {
+      dispatcher.Invoke(DispatcherPriority.DataBind, (Action)(() => OnCollectionChanged(e)));
+    }
+    else
+    {
+      foreach (NotifyCollectionChangedEventHandler nh in eh.GetInvocationList())
+        nh.Invoke(this, e);
     }
   }
   
-  void TrulyObservableCollection_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+  void TrulyObservableCollectionCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
   {
     if (e.NewItems != null)
     {
-      foreach (Object item in e.NewItems)
+      foreach (var item in e.NewItems)
       {
-        (item as INotifyPropertyChanged).PropertyChanged += new PropertyChangedEventHandler(item_PropertyChanged);
+        ((INotifyPropertyChanged) item).PropertyChanged += ItemPropertyChanged;
       }
     }
     
     if (e.OldItems != null)
     {
-      foreach (Object item in e.OldItems)
+      foreach (var item in e.OldItems)
       {
-        (item as INotifyPropertyChanged).PropertyChanged -= new PropertyChangedEventHandler(item_PropertyChanged);
+        ((INotifyPropertyChanged) item).PropertyChanged -= ItemPropertyChanged;
       }
     }
   }
   
-  void item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+  void ItemPropertyChanged(object sender, PropertyChangedEventArgs e)
   {
-    NotifyCollectionChangedEventArgs a = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset); OnCollectionChanged(a);
+    var a = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset); OnCollectionChanged(a);
   }
 
 }

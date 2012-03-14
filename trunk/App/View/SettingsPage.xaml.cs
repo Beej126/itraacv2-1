@@ -1,23 +1,25 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Controls;
+using iTRAACv2.Model;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public partial class SettingsPage : ucBase
+  public partial class SettingsPage
   {
     public SettingsPage()
     {
       InitializeComponent();
 
-      LostFocus += new RoutedEventHandler(SettingsPage_LostFocus);
+      LostFocus += SettingsPageLostFocus;
 
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridTaxOffices);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridTaxOffices);
     }
 
-    private void SettingsPage_LostFocus(object sender, RoutedEventArgs e)
+    private void SettingsPageLostFocus(object sender, RoutedEventArgs e)
     {
       if (IsVisible) return; //nugget: focus is pretty complex in WPF, the LostFocus event will fire whenever any child control loses focus due to event "bubbling" ... by checking IsVisible of the UserControl, we only execute this save logic when the UserControl has truly been navigated away from
 
@@ -25,36 +27,35 @@ namespace iTRAACv2
       SettingsModel.SaveLocalSettings(true);
     }
 
-    private void gridTaxOffices_RowDetailsVisibilityChanged(object sender, System.Windows.Controls.DataGridRowDetailsEventArgs e)
+    private void GridTaxOfficesRowDetailsVisibilityChanged(object sender, DataGridRowDetailsEventArgs e)
     {
-      DataGrid gridUsers = (DataGrid)e.DetailsElement;
-      if (e.Row.Visibility == System.Windows.Visibility.Visible && gridUsers.ItemsSource == null)
-      {
-        iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridUsers);
-        //whack:gridUsers.MouseLeftButtonDown += new System.Windows.Input.MouseButtonEventHandler(gridUsers_MouseLeftButtonDown);
-        gridUsers.ItemsSource = TaxOfficeModel.OfficeUsers(e.Row.DataContext);
-      }
+      var gridUsers = (DataGrid)e.DetailsElement;
+      if (e.Row.Visibility != Visibility.Visible || gridUsers.ItemsSource != null) return;
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridUsers);
+      //whack:gridUsers.MouseLeftButtonDown += new System.Windows.Input.MouseButtonEventHandler(gridUsers_MouseLeftButtonDown);
+      gridUsers.ItemsSource = TaxOfficeModel.OfficeUsers(e.Row.DataContext);
     }
 
-    private void btnAddAgent_Click(object sender, RoutedEventArgs e)
+    private void BtnAddAgentClick(object sender, RoutedEventArgs e)
     {
       popAddAgent.IsOpen = true;
       lbxAddAgentExistingUsers.Focus();
     }
 
-    private void btnAddAgentCancel_Click(object sender, RoutedEventArgs e)
+    private void BtnAddAgentCancelClick(object sender, RoutedEventArgs e)
     {
       popAddAgent.IsOpen = false;
     }
 
-    private void popAddAgent_GotFocus(object sender, RoutedEventArgs e)
+    private void PopAddAgentGotFocus(object sender, RoutedEventArgs e)
     {
       if (sender == lbxAddAgentExistingUsers) rdoAddExistingAgent.IsChecked = true;
       else rdoAddNewAgent.IsChecked = true;
     }
 
-    private void btnAddAgentOK_Click(object sender, RoutedEventArgs e)
+    private void BtnAddAgentOKClick(object sender, RoutedEventArgs e)
     {
+      Debug.Assert(rdoAddExistingAgent.IsChecked != null, "rdoAddExistingAgent.IsChecked != null");
       if (rdoAddExistingAgent.IsChecked.Value)
         TaxOfficeModel.Current.ReActivateUser((Guid)lbxAddAgentExistingUsers.SelectedValue);
       else if (TaxOfficeModel.Current.AddNewUser(AddAgent_FirstName.Text, AddAgent_LastName.Text, AddAgent_Email.Text, AddAgent_DSN.Text))
@@ -68,9 +69,9 @@ namespace iTRAACv2
       popAddAgent.IsOpen = false;
     }
 
-    private void btnTestPrint_Click(object sender, RoutedEventArgs e)
+    private void BtnTestPrintClick(object sender, RoutedEventArgs e)
     {
-      string tag = ((Control)sender).Tag.ToString();
+      var tag = ((Control)sender).Tag.ToString();
       if (tag.Left(1) == "!") TaxFormModel.ResetPrinterSettings(tag.Left(-1).ToEnum<TaxFormModel.PackageComponent>());
       else TaxFormModel.PrintTest(tag.ToEnum<TaxFormModel.PackageComponent>());
     }
@@ -79,7 +80,9 @@ namespace iTRAACv2
 
   public class UserGridIsReadOnlyMulti : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public UserGridIsReadOnlyMulti() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public UserGridIsReadOnlyMulti() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {

@@ -1,12 +1,12 @@
-﻿<local:ucBase x:Class="iTRAACv2.ucToggleButton"
+﻿<View:UcBase x:Class="iTRAACv2.View.UcToggleButton"
   x:Name="thisToggleButton"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-  xmlns:local="clr-namespace:iTRAACv2"
-  ToolTipService.ShowOnDisabled="True">
+  xmlns:View="clr-namespace:iTRAACv2.View"
+  ToolTipService.ShowOnDisabled="True"
+>
 
-  <ToggleButton Name="btnToggle" Click="btnToggle_Click" >
+  <ToggleButton Name="btnToggle" Click="BtnToggleClick" >
     <WrapPanel x:Name="pnlStack" >
       <Image Name="imgGlyph"  /> <!-- may consider - RenderOptions.BitmapScalingMode="NearestNeighbor" to get 'crisper' image rendering  -->
       <!-- nugget: use "PNGOUT" to strip all the DPI info out of PNG's: http://www.hanselman.com/blog/BeAwareOfDPIWithImagePNGsInWPFImagesScaleWeirdOrAreBlurry.aspx -->
@@ -14,4 +14,4 @@
     </WrapPanel>
   </ToggleButton>
 
-</local:ucBase>
+</View:UcBase>

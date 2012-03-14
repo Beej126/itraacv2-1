@@ -2,9 +2,10 @@
 using System;
 using System.CodeDom.Compiler;
 using System.Reflection;
-using Microsoft.JScript;
 
+// ReSharper disable CheckNamespace
 public class StringEvaluator
+// ReSharper restore CheckNamespace
 {
   public static bool EvalToBool(string statement)
   {
@@ -15,29 +16,26 @@ public class StringEvaluator
   
   public static int EvalToInteger(string statement)
   {
-    string s = EvalToString(statement);
-    return int.Parse(s.ToString());
+    return int.Parse(EvalToString(statement));
   }
 
   public static double EvalToDouble(string statement)
   {
-    string s = EvalToString(statement);
-    return double.Parse(s);
+    return double.Parse(EvalToString(statement));
   }
 
   public static string EvalToString(string statement)
   {
-    object o = EvalToObject(statement);
-    return o.ToString();
+    return EvalToObject(statement).ToString();
   }
 
   public static object EvalToObject(string statement)
   {
-    return _evaluatorType.InvokeMember(
+    return EvaluatorType.InvokeMember(
                 "Eval",
                 BindingFlags.InvokeMethod,
                 null,
-                _evaluator,
+                Evaluator,
                 new object[] { statement }
               );
   }
@@ -45,33 +43,28 @@ public class StringEvaluator
   static StringEvaluator()
   {
     //deprecated: ICodeCompiler compiler = new JScriptCodeProvider().CreateCompiler();
-    CodeDomProvider compiler = CodeDomProvider.CreateProvider("jscript");
+    var compiler = CodeDomProvider.CreateProvider("jscript");
 
-    CompilerParameters parameters;
-    parameters = new CompilerParameters();
-    parameters.GenerateInMemory = true;
+    var parameters = new CompilerParameters {GenerateInMemory = true};
 
-    CompilerResults results;
-    results = compiler.CompileAssemblyFromSource(parameters, _jscriptSource);
+    var results = compiler.CompileAssemblyFromSource(parameters, JscriptSource);
 
-    Assembly assembly = results.CompiledAssembly;
-    _evaluatorType = assembly.GetType("Evaluator.Evaluator");
+    var assembly = results.CompiledAssembly;
+    EvaluatorType = assembly.GetType("Evaluator.Evaluator");
 
-    _evaluator = Activator.CreateInstance(_evaluatorType);
+    Evaluator = Activator.CreateInstance(EvaluatorType);
   }
 
-  private static object _evaluator = null;
-  private static Type _evaluatorType = null;
-  private static readonly string _jscriptSource =
-
-      @"package Evaluator
-          {
-              class Evaluator
-              {
-                public function Eval(expr : String) : String 
-                { 
-                    return eval(expr); 
-                }
-              }
-          }";
+  private static readonly object Evaluator;
+  private static readonly Type EvaluatorType;
+  private const string JscriptSource = @"package Evaluator
+  {
+      class Evaluator
+      {
+        public function Eval(expr : String) : String 
+        { 
+            return eval(expr); 
+        }
+      }
+  }";
 }

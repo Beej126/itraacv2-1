@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
@@ -22,7 +21,9 @@ using System.Windows.Media.Media3D;
    limitations under the License.
 */
 
+// ReSharper disable CheckNamespace
 static class DependencyObjExtensions
+// ReSharper restore CheckNamespace
 {
   /// <summary>
   /// Find the first child of the specified type (the child must exist)
@@ -52,7 +53,7 @@ static class DependencyObjExtensions
   public static T FindChild<T>(this DependencyObject parent, Func<T, bool> predicate)
       where T : DependencyObject
   {
-    return parent.FindChildren<T>(predicate).First();
+    return parent.FindChildren(predicate).First();
   }
 
   /// <summary>
@@ -65,7 +66,7 @@ static class DependencyObjExtensions
   public static bool TryFindChild<T>(this DependencyObject parent, out T foundChild)
       where T : DependencyObject
   {
-    return parent.TryFindChild<T>(child => true, out foundChild);
+    return parent.TryFindChild(child => true, out foundChild);
   }
 
   /// <summary>
@@ -79,13 +80,9 @@ static class DependencyObjExtensions
   public static bool TryFindChild<T>(this DependencyObject parent, Func<T, bool> predicate, out T foundChild)
       where T : DependencyObject
   {
-    foundChild = null;
-    var results = parent.FindChildren<T>(predicate);
-    if (results.Count() == 0)
-      return false;
-
+    var results = parent.FindChildren(predicate);
     foundChild = results.First();
-    return true;
+    return foundChild != null;
   }
 
   /// <summary>
@@ -121,7 +118,6 @@ static class DependencyObjExtensions
       foreach (var foundDescendant in FindChildren(child, predicate))
         yield return foundDescendant;
     }
-    yield break;
   }
 
   public static IEnumerable<T> FindChildren<T>(this DependencyObject parent)
@@ -151,16 +147,8 @@ static class DependencyObjExtensions
     if (parentObject == null) return null;
 
     //check if the parent matches the type we're looking for
-    T parent = parentObject as T;
-    if (parent != null)
-    {
-      return parent;
-    }
-    else
-    {
-      //use recursion to proceed with next level
-      return parentObject.FindParent<T>();
-    }
+    var parent = parentObject as T;
+    return parent ?? parentObject.FindParent<T>();
   }
 
   /// <summary>
@@ -175,14 +163,14 @@ static class DependencyObjExtensions
   public static DependencyObject GetParentObject(this DependencyObject child)
   {
     if (child == null) return null;
-    ContentElement contentElement = child as ContentElement;
+    var contentElement = child as ContentElement;
 
     if (contentElement != null)
     {
-      DependencyObject parent = ContentOperations.GetParent(contentElement);
+      var parent = ContentOperations.GetParent(contentElement);
       if (parent != null) return parent;
 
-      FrameworkContentElement fce = contentElement as FrameworkContentElement;
+      var fce = contentElement as FrameworkContentElement;
       return fce != null ? fce.Parent : null;
     }
 

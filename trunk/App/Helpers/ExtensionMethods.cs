@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,19 +11,21 @@ using System.Runtime.Remoting.Metadata.W3cXsd2001;
 //make sure to keep this clean of any particular UI assembly dependencies so that it can be
 //reused across ASP.Net, Windows.Forms and WPF projects
 
+// ReSharper disable CheckNamespace
 public static class Extensions
+// ReSharper restore CheckNamespace
 {
   public static T ToEnum<T>(this string value) //nugget: too bad C# doesn't support this constraint - where T : Enum
   {
     return((T)Enum.Parse(typeof(T), value));
   }
 
-  public static T SetFlags<T>(this System.Enum current, T setflags, bool onoff)
+  public static T SetFlags<T>(this Enum current, T setflags, bool onoff)
   {
     return (onoff ? (T)(object)(((int)(object)current | (int)(object)setflags)) : (T)(object)(((int)(object)current & ~(int)(object)setflags)));
   }
 
-  public static bool HasAnyFlags<T>(this System.Enum type, T value)
+  public static bool HasAnyFlags<T>(this Enum type, T value)
   {
     try
     {
@@ -112,8 +116,9 @@ public static class Extensions
     //apparently we can't have this simple return at the top of an iterator implementation (i.e. using "yield" syntax)
     //so i'm just wrappering it to get around that limitation
     //basically, avoid the work of looping through renaming things if there aren't any duplicates in the list
-    if (enumerable.Distinct().Count() == enumerable.Count()) return (enumerable);
-    else return (enumerable.UniquifyCore());
+// ReSharper disable PossibleMultipleEnumeration
+    return enumerable.Distinct().Count() == enumerable.Count() ? enumerable : enumerable.UniquifyCore();
+// ReSharper restore PossibleMultipleEnumeration
   }
 
   private static IEnumerable<string> UniquifyCore(this IEnumerable<string> enumerable)
@@ -123,17 +128,20 @@ public static class Extensions
     //  adding postfix to only those items which are duplicates - seems to imply the list must be prescanned (hence the Where clause)
     //  keeping the existing order items - implies a simple interation over each element
     //  incrementing the postfix - implies keeping track of the current count of each item as you go through (hence the Dictionary)
-    Dictionary<string, int> same_count = new Dictionary<string, int>();
-    foreach (string name in enumerable)
+    var sameCount = new Dictionary<string, int>();
+    Debug.Assert(enumerable != null, "enumerable != null");
+    // ReSharper disable PossibleMultipleEnumeration
+    foreach (var name in enumerable)
     {
-      if (enumerable.Where(n => n == name).Count() > 1)
+      if (enumerable.Count(n => n == name) > 1)
       {
-        same_count[name] = same_count.GetValueOrDefault(name) + 1;
-        yield return name + "." + same_count[name].ToString();
+        sameCount[name] = sameCount.GetValueOrDefault(name) + 1;
+        yield return name + "." + sameCount[name].ToString(CultureInfo.InvariantCulture);
       }
       else
         yield return name;
     }
+    // ReSharper restore PossibleMultipleEnumeration
   }
 
   /// <summary>
@@ -170,30 +178,30 @@ public static class Extensions
     return (SoapHexBinary.Parse(str).Value);
   }
 
-  static private Regex _PluralizeKeyword = new Regex("{(s|es)}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-  static public string Pluralize(string Text, int count, params object[] Parms)
+  static private readonly Regex PluralizeKeyword = new Regex("{(s|es)}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+  static public string Pluralize(string text, int count, params object[] parms)
   {
-    Match pluralkey = _PluralizeKeyword.Match(Text);
-    if (Text.Contains("{count}")) Text = Text.Replace("{count}", count.ToString());
+    var pluralkey = PluralizeKeyword.Match(text);
+    if (text.Contains("{count}")) text = text.Replace("{count}", count.ToString(CultureInfo.InvariantCulture));
 
     return (String.Format(
-        Text.Replace(pluralkey.Value, (count > 1) ? pluralkey.Groups[1].Value : ""), Parms));
+        text.Replace(pluralkey.Value, (count > 1) ? pluralkey.Groups[1].Value : ""), parms));
   }
 
-  static private readonly Type[] numericTypes = new Type[] { typeof(Byte), typeof(Decimal), typeof(Double),
+  static private readonly Type[] NumericTypes = new[] { typeof(Byte), typeof(Decimal), typeof(Double),
         typeof(Int16), typeof(Int32), typeof(Int64), typeof(SByte),
         typeof(Single), typeof(UInt16), typeof(UInt32), typeof(UInt64)};
 
   public static bool IsNumeric(this Type type)
   {
-    return (type == null) ? false : numericTypes.Contains(type);
+    return !(type == null) && NumericTypes.Contains(type);
   }
 
   //nugget: from here: http://underground.infovark.com/2008/09/02/converting-ienumerable-to-a-comma-delimited-string/
   public static string Join(this IEnumerable strings, string seperator)  //nugget: this is awesome
   {
-    IEnumerator en = strings.GetEnumerator();
-    StringBuilder sb = new StringBuilder();
+    var en = strings.GetEnumerator();
+    var sb = new StringBuilder();
     if (en.MoveNext())
     {
       // we have at least one item.
@@ -217,7 +225,7 @@ public static class Extensions
 
   public static DateTime MondayOfWeek(this DateTime dt)
   {
-    return (dt.AddDays(-1 * (dt.DayOfWeek - System.DayOfWeek.Monday)));
+    return (dt.AddDays(-1 * (dt.DayOfWeek - DayOfWeek.Monday)));
   }
 
 

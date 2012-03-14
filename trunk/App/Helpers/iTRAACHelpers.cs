@@ -1,18 +1,20 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Data;
-using System.Security.Principal;
-using System.Linq;
-using System.ComponentModel;
 using System.Windows.Data;
 using iTextSharp.text.pdf; //nugget: this thing makes PDF form filling absolutely trivial, love it, see PdfReaderand & PdfStamper usage below
-using System.IO;
-using System.Collections.Generic;
-using System.Threading;
-using System.Xml.Linq;
+using iTRAACv2.Model;
 
+// ReSharper disable CheckNamespace
 namespace iTRAACv2
+// ReSharper restore CheckNamespace
 {
   public class ReasonConfirmationArgs : EventArgs
   {
@@ -20,14 +22,16 @@ namespace iTRAACv2
     public bool Accept { get; set; }
   }
 
+// ReSharper disable InconsistentNaming
   public static class iTRAACHelpers
+// ReSharper restore InconsistentNaming
   {
     static public string FiscalYear2Chars
     {
       get
       {
         return ((DateTime.Now.Year +
-          ((DateTime.Now < DateTime.Parse("10/1/" + DateTime.Now.Year.ToString())) ? 0 : 1)).ToString().Right(2));
+          ((DateTime.Now < DateTime.Parse("10/1/" + DateTime.Now.Year.ToString(CultureInfo.InvariantCulture))) ? 0 : 1)).ToString(CultureInfo.InvariantCulture).Right(2));
       }
     }
 
@@ -41,48 +45,57 @@ namespace iTRAACv2
       );
     }
 
-    static public bool DataColumnVisible(string ColumnName)
+    static public bool DataColumnVisible(string columnName)
     {
-      return (ColumnName.Right(2).ToLower() != "id" /*&& ColumnName.Right(4).ToLower() != "code"*/); //hide columns with "ID" in the name
+      return (columnName.Right(2).ToLower() != "id" /*&& ColumnName.Right(4).ToLower() != "code"*/); //hide columns with "ID" in the name
     }
 
-    static public void WPFDataGrid_Standard_Behavior(DataGrid grid)
+    static public void WpfDataGridStandardBehavior(DataGrid grid)
     {
       grid.ContextMenu = Application.Current.FindResource("WPFDataGrid_CopyMenu") as ContextMenu;
-      grid.MouseRightButtonUp += new System.Windows.Input.MouseButtonEventHandler(WPFHelpers.WPFDataGrid_MouseRightButtonUp_SaveCell);
-      grid.AutoGeneratingColumn += new EventHandler<DataGridAutoGeneratingColumnEventArgs>(grid_AutoGeneratingColumn);
-      grid.LoadingRow += new EventHandler<DataGridRowEventArgs>(grid_LoadingRow);
+      grid.MouseRightButtonUp += WPFHelpers.WPFDataGridMouseRightButtonUpSaveCell;
+      grid.AutoGeneratingColumn += GridAutoGeneratingColumn;
+      grid.LoadingRow += GridLoadingRow;
     }
 
-    static void grid_LoadingRow(object sender, DataGridRowEventArgs e)
+    static void GridLoadingRow(object sender, DataGridRowEventArgs e)
     {
-      e.Row.Header = (e.Row.GetIndex() + 1).ToString(); //nugget: easy row numbers displayed in DataGrid.Row.Header (irrespective of the active sort) via grid.LoadingRow event
+      e.Row.Header = (e.Row.GetIndex() + 1).ToString(CultureInfo.InvariantCulture); //nugget: easy row numbers displayed in DataGrid.Row.Header (irrespective of the active sort) via grid.LoadingRow event
     }
 
-    static private void grid_AutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e) //nugget:
+    static private void GridAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e) //nugget:
     {
-      bool Hide = false;
+      bool hide = false;
+      var propertyDescriptor = e.PropertyDescriptor as PropertyDescriptor;
+      var dgrid = sender as DataGrid;
 
-      DataGrid dgrid = sender as DataGrid;
-      DataView dview = dgrid.ItemsSource as DataView;
-
-      //hide column if it's used in a grouping header... 
-      BindingListCollectionView bview = CollectionViewSource.GetDefaultView(dview) as BindingListCollectionView;
-      if (bview !=null && bview.GroupDescriptions.Count > 0)
+      if (dgrid != null)
       {
-        //this currently hard coded to simply look at the first Grouping specification to decide so that this isn't a long delay since this event gets fired for each column
-        PropertyGroupDescription pg = bview.GroupDescriptions[0] as PropertyGroupDescription;
-        if (pg != null && pg.PropertyName == e.PropertyName) Hide = true;
+        var dview = dgrid.ItemsSource as DataView;
+
+        //hide column if it's used in a grouping header... 
+        if (dview != null)
+        {
+          var bview = CollectionViewSource.GetDefaultView(dview) as BindingListCollectionView;
+          if (bview != null && bview.GroupDescriptions != null && bview.GroupDescriptions.Count > 0)
+          {
+            //this currently hard coded to simply look at the first Grouping specification to decide so that this isn't a long delay since this event gets fired for each column
+            var pg = bview.GroupDescriptions[0] as PropertyGroupDescription;
+            if (pg != null && pg.PropertyName == e.PropertyName) hide = true;
+          }
+        }
+
+        bool propertyIsBrowsable = propertyDescriptor != null && propertyDescriptor.IsBrowsable;
+        e.Column.Visibility = ( hide 
+                                || !propertyIsBrowsable //recognize the [Browsable(false)] attribute, nugget: too bad the DataGrid doesn't respect this natively!?!
+                                || ((dview == null) ? !DataColumnVisible(e.PropertyName) : !DataColumnVisible(dview.Table.Columns[e.PropertyName])) //hide any columns flagged specificlaly as hidden in the model layer
+                                || (dgrid.Columns.Any(c => c.SortMemberPath == e.PropertyName)) //hide any columns that are already present (handy for having a couple predefined columns (e.g. hyperlink template) on an autogenerated columns grid)
+                                    //(e.PropertyDescriptor.ToString() == "System.Data.DataRelationPropertyDescriptor") ) //hide autogenerated child view columns
+                              ) ? Visibility.Hidden : Visibility.Visible;
       }
 
-      e.Column.Visibility = (( Hide 
-        || !(e.PropertyDescriptor as PropertyDescriptor).IsBrowsable //recognize the [Browsable(false)] attribute, nugget: too bad the DataGrid doesn't respect this natively!?!
-        || ((dview == null) ? !DataColumnVisible(e.PropertyName) : !iTRAACHelpers.DataColumnVisible(dview.Table.Columns[e.PropertyName])) //hide any columns flagged specificlaly as hidden in the model layer
-        || (dgrid.Columns.Where(c => c.SortMemberPath == e.PropertyName).Count() > 0) //hide any columns that are already present (handy for having a couple predefined columns (e.g. hyperlink template) on an autogenerated columns grid)
-        //(e.PropertyDescriptor.ToString() == "System.Data.DataRelationPropertyDescriptor") ) //hide autogenerated child view columns
-        ) ? Visibility.Hidden : Visibility.Visible);
-
-      e.Column.Header = (e.PropertyDescriptor as PropertyDescriptor).DisplayName; //nugget: support the [DisplayName("xyz")] attribute on Object Model Classes, too bad the DataGrid doesn't respect this natively!?!
+      if (propertyDescriptor != null)
+        e.Column.Header = propertyDescriptor.DisplayName; //nugget: support the [DisplayName("xyz")] attribute on Object Model Classes, too bad the DataGrid doesn't respect this natively!?!
 
       if (e.Column.Header.ToString().ToLower().Contains("date")) e.Column.Width = 70;
     }
@@ -91,32 +104,32 @@ namespace iTRAACv2
 
   public class PDFFormFiller
   {
-    public PDFFormFiller(string PDFFileName, string UniqueId)
+    public PDFFormFiller(string pdfFileName, string uniqueId)
     {
       //nugget: where to store program data
       //nugget: http://blogs.msdn.com/b/cjacks/archive/2008/02/05/where-should-i-write-program-data-instead-of-program-files.aspx
 
       //currently under Win7, this path corresponds to "C:\Users\{username}\AppData\Local" 
-      FilledPDFPath = Path.Combine(
+      _filledPdfPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        Path.GetFileNameWithoutExtension(PDFFileName) + "_" + UniqueId + ".pdf");
+        Path.GetFileNameWithoutExtension(pdfFileName) + "_" + uniqueId + ".pdf");
 
-      using (Stream PDFStream = AssemblyHelper.GetEmbeddedResource(PDFFileName.Replace(@"\", ".")))
+      using (var pdfStream = AssemblyHelper.GetEmbeddedResource(pdfFileName.Replace(@"\", ".")))
       {
         //nugget: iTextSharp makes PDF form filling absolutely trivial, love it
-        PdfReader pdfReader = new PdfReader(PDFStream);
-        pdfStamper = new PdfStamper(pdfReader, new FileStream(FilledPDFPath, FileMode.Create));
-        FormFields = pdfStamper.AcroFields;
+        var pdfReader = new PdfReader(pdfStream);
+        _pdfStamper = new PdfStamper(pdfReader, new FileStream(_filledPdfPath, FileMode.Create));
+        _formFields = _pdfStamper.AcroFields;
       }
     }
 
-    private PdfStamper pdfStamper = null;
-    private string FilledPDFPath = null;
-    private AcroFields FormFields = null;
+    private readonly PdfStamper _pdfStamper;
+    private readonly string _filledPdfPath;
+    private readonly AcroFields _formFields;
 
-    public void SetField(string FormFieldName, object Value)
+    public void SetField(string formFieldName, object value)
     {
-      FormFields.SetField(FormFieldName, Value.ToString());
+      _formFields.SetField(formFieldName, value.ToString());
     }
 
     public void Display()
@@ -125,11 +138,12 @@ namespace iTRAACv2
       // set it to false to leave the form open to subsequent manual edits
       //pdfStamper.FormFlattening = false;
 
-      pdfStamper.Close();
-      pdfStamper.Dispose();
+      _pdfStamper.Close();
+      _pdfStamper.Dispose();
 
       //fire up the PDF viewer
-      System.Diagnostics.Process acroreader = System.Diagnostics.Process.Start(FilledPDFPath);
+      var acroreader = Process.Start(_filledPdfPath);
+      Debug.Assert(acroreader != null, "acroreader != null");
 
       //spawn a background thread to wait for the PDF Viewer (i.e. Acrobat Reader) to be closed so PDF file can be deleted... so these files don't pile up indefinitely
       //this obviously isn't foolproof... e.g. if the user closes iTRAACv2 prior to AcroReader... but it should be pretty good
@@ -142,18 +156,20 @@ namespace iTRAACv2
         }
         catch (Exception ex) //this exception handler must be included as part of this pattern wherever else it's implemented
         {
-          System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke((Action)delegate() { throw ex; }, null); //toss any exceptions over to the main UI thread, per MSDN direction: http://msdn.microsoft.com/en-us/library/system.windows.application.dispatcherunhandledexception.aspx
+          System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke((Action)delegate { throw ex; }, null); //toss any exceptions over to the main UI thread, per MSDN direction: http://msdn.microsoft.com/en-us/library/system.windows.application.dispatcherunhandledexception.aspx
         }
-      }).Start(FilledPDFPath);
+      }).Start(_filledPdfPath);
 
     }
 
   }
 
 
+// ReSharper disable InconsistentNaming
   public class iTRAACProc : Proc
+// ReSharper restore InconsistentNaming
   {
-    public iTRAACProc(string ProcName) : base(ProcName)
+    public iTRAACProc(string procName) : base(procName)
     {
       InitParms();
     }

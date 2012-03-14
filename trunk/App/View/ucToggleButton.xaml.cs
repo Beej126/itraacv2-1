@@ -1,25 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Controls.Primitives;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
 
-  public partial class ucToggleButton : ucBase
+  public partial class UcToggleButton
   {
-    public ImageSource UpImage { get { return(_UpImage) ;} set { _UpImage = value; SetImageSource(); } } //having this propertyName implemented (rather than auto) fires the image setter so that it shows up in design mode which provides a better visual for layout
-    private ImageSource _UpImage = null;
+    public ImageSource UpImage { get { return(_upImage) ;} set { _upImage = value; SetImageSource(); } } //having this propertyName implemented (rather than auto) fires the image setter so that it shows up in design mode which provides a better visual for layout
+    private ImageSource _upImage;
     //public ImageSource UpImage { get; set; }
 
     /// <summary>
@@ -37,9 +27,9 @@ namespace iTRAACv2
     }
 
     public static readonly DependencyProperty ToggleButtonStyleProperty =
-      DependencyProperty.Register("ToggleButtonStyle", typeof(Style), typeof(ucToggleButton),
-        new PropertyMetadata(propertyChangedCallback: (obj, args) =>
-          { (obj as ucToggleButton).btnToggle.Style = args.NewValue as Style; })); 
+      DependencyProperty.Register("ToggleButtonStyle", typeof(Style), typeof(UcToggleButton),
+        new PropertyMetadata((obj, args) =>
+          { ((UcToggleButton) obj).btnToggle.Style = args.NewValue as Style; })); 
 
 
     public bool IsChecked
@@ -48,9 +38,9 @@ namespace iTRAACv2
       set { SetValue(IsCheckedProperty, value); }
     }
     public static readonly DependencyProperty IsCheckedProperty = DependencyProperty.Register(
-      "IsChecked", typeof(bool), typeof(ucToggleButton),
-        new PropertyMetadata(defaultValue : false, propertyChangedCallback : (obj, args) => 
-          { (obj as ucToggleButton).CheckedChanged((bool)args.NewValue); }));
+      "IsChecked", typeof(bool), typeof(UcToggleButton),
+        new PropertyMetadata(false, (obj, args) => 
+          ((UcToggleButton) obj).CheckedChanged((bool)args.NewValue)));
 
     public event RoutedEventHandler IsCheckedChanged;
     private void CheckedChanged(bool newValue)
@@ -61,14 +51,15 @@ namespace iTRAACv2
     }
 
     public event RoutedEventHandler Click;
-    private void btnToggle_Click(object sender, RoutedEventArgs e)
+    private void BtnToggleClick(object sender, RoutedEventArgs e)
     {
       if (Click != null) Click(this, e);
     }
 
     private void SetImageSource()
     {
-      imgGlyph.Source = btnToggle.IsChecked.Value ? (DownImage == null) ? UpImage : DownImage : UpImage;
+      Debug.Assert(btnToggle.IsChecked != null, "btnToggle.IsChecked != null");
+      imgGlyph.Source = btnToggle.IsChecked.Value ? DownImage ?? UpImage : UpImage;
     }
 
     public string Text
@@ -77,16 +68,16 @@ namespace iTRAACv2
       set { SetValue(TextProperty, value); }
     }
     public static readonly DependencyProperty TextProperty = DependencyProperty.Register(
-      "Text", typeof(string), typeof(ucToggleButton),
-        new PropertyMetadata(propertyChangedCallback : (obj, args) =>
-        { (obj as ucToggleButton).TextChanged((string)args.NewValue); }));
+      "Text", typeof(string), typeof(UcToggleButton),
+        new PropertyMetadata((obj, args) => 
+          ((UcToggleButton) obj).TextChanged((string)args.NewValue)));
 
     private void TextChanged(string newValue)
     {
       lblText.Text = newValue;
       lblText.Visibility = (lblText.Text.Length > 0) ? Visibility.Visible : Visibility.Collapsed;
-      double left, top;
-      left = top = (UpImage != null) ? 3 : 0;
+      double top;
+      var left = top = (UpImage != null) ? 3 : 0;
       if (TextOrientation == Orientation.Horizontal) top = 0; else left = 0;
       lblText.Margin = new Thickness(left, top, 0, 0);
     }
@@ -113,11 +104,11 @@ namespace iTRAACv2
     //  set { btnToggle.HorizontalAlignment = value; }
     //}
 
-    public ucToggleButton()
+    public UcToggleButton()
     {
       InitializeComponent();
-      btnToggle.Checked += new RoutedEventHandler(btnToggle_Checked);
-      btnToggle.Unchecked += new RoutedEventHandler(btnToggle_Unchecked);
+      btnToggle.Checked += BtnToggleChecked;
+      btnToggle.Unchecked += BtnToggleUnchecked;
     }
 
     /// <summary>
@@ -135,17 +126,17 @@ namespace iTRAACv2
       set { btnToggle.Height = value; }
     }
 
-    private void btnToggle_Checked(object sender, RoutedEventArgs e)
+    private void BtnToggleChecked(object sender, RoutedEventArgs e)
     {
       IsChecked = true;
     }
 
-    private void btnToggle_Unchecked(object sender, RoutedEventArgs e)
+    private void BtnToggleUnchecked(object sender, RoutedEventArgs e)
     {
       IsChecked = false;
     }
 
-    protected override void UserControl_Loaded(object sender, RoutedEventArgs e)
+    protected override void UserControlLoaded(object sender, RoutedEventArgs e)
     {
       SetImageSource(); //couldn't figure out any other way to set the initial image... if the IsChecked boolean's default value is the same as the initial value the IsChecked setter doesn't fire on it's own
       TextChanged(Text);

@@ -2,7 +2,9 @@
 using System.Globalization;
 using System.Reflection;
 
+// ReSharper disable CheckNamespace
 internal static class UnboxT<T>
+// ReSharper restore CheckNamespace
 {
   internal static readonly Converter<object, T> Unbox = Create(typeof(T));
 
@@ -22,7 +24,9 @@ internal static class UnboxT<T>
     return ValueField;
   }
 
+// ReSharper disable UnusedMember.Local
   private static TElem? NullableField<TElem>(object value) where TElem : struct
+// ReSharper restore UnusedMember.Local
   {
     if (DBNull.Value == value)
     {

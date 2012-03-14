@@ -32,7 +32,8 @@ GO
 /* testing
 SELECT * INTO #TT FROM vw_NFx WHERE TaxFormID=@TaxFormID AND FormTypeID=@FormTypeID
 SELECT * FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 1
-select * from itraac.dbo.tbltaxforms where ordernumber = 'NF1-HD-08-08382'
+select top 5 * from itraac.dbo.tbltaxforms f join tblremarks r on r.rowid = f.taxformid where r.remtype IN (3,7,8,9, 17,16,13,12)
+ordernumber = 'NF1-HD-08-08382'
 TaxForm_print 'FD1C164A-24EF-4BC9-A209-E31ABF8A8382', 1
 TaxForm_print '00000000-0000-0000-0000-000000000000', 1 
 */
@@ -82,9 +83,12 @@ DECLARE
   --NF2 only fields
   @VendorAddress VARCHAR(100),
   @NF2Amount varchar(100),
+  @TotalCost VARCHAR(20),
   @Currency VARCHAR(20),
   @TransactionTypeID INT,
   @TransactionType VARCHAR(100)
+  
+DECLARE @TransactionTypeSpecialFields VARCHAR(MAX)
   
 SELECT 
   @FormTypeID = f.FormTypeID,
@@ -133,25 +137,16 @@ IF (@FormTypeID = 2)
 BEGIN
   SELECT @VendorName = VendorName FROM iTRAAC.dbo.tblVendors WHERE RowGUID = @VendorGUID
   SELECT @VendorAddress = [Address] FROM Vendor_Address_v WHERE RowGUID = @VendorGUID
-  SELECT @Currency = CASE CurrencyUsed WHEN 1 THEN 'U.S. DOLLARS' ELSE 'EURO' END FROM iTRAAC.dbo.tblPPOData WHERE TaxFormGUID = @TaxFormGUID
+  
+  SELECT
+    @TotalCost = SELECT CONVERT(VARCHAR, TotalCost),
+    @Currency = CASE CurrencyUsed WHEN 1 THEN 'U.S. DOLLARS' ELSE 'EURO' END 
+  FROM iTRAAC.dbo.tblPPOData WHERE TaxFormGUID = @TaxFormGUID
+  
   SELECT @TransactionType + ISNULL(' - ' + @Description, '') FROM iTRAAC.dbo.tblTransactionTypes WHERE TransTypeID = @TransactionTypeID
   
-  IF (@TransactionTypeID = 29) THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=17)
-  WHEN TF.TransTypeID = 31 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=3)
-  ELSE '' END AS F15,
-
-  WHEN TF.TransTypeID = 29 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=16)
-  WHEN TF.TransTypeID = 31 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=7)
-  ELSE '' END AS F16,
-
-  WHEN TF.TransTypeID = 29 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=13)
-  WHEN TF.TransTypeID = 31 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=8)
-  ELSE '' END AS F17,
-
-  WHEN TF.TransTypeID = 29 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=12)
-  WHEN TF.TransTypeID = 31 THEN (SELECT Title +': '+Remarks FROM tblRemarks WHERE RowID=TF.TaxFormID AND TableID=14 AND RemType=9)
-  ELSE '' END AS F18,
-
+  SELECT @TransactionTypeSpecialFields = master.dbo.CONCAT(Title +': ' + Remarks, CHAR(13))
+  FROM iTRAAC.dbo.tblRemarks WHERE FKRowGUID = @TaxFormGUID AND remtype IN (3,7,8,9, 17,16,13,12)
 END    
 
 
@@ -185,12 +180,13 @@ ELSE BEGIN
     -- F10 = NF1 amount field, blank for NF1 and XXX'd out for NF2
     UPDATE @t SET DATA = CASE WHEN (@FormTypeID = 2) then 'XXXXXXXXXXXXXXXXXXXX' END WHERE FieldName = 'F10'
     
+    -- F11 = NF2 amount field, crossed out for NF1's
     UPDATE @t SET DATA = 
       -- for NF2: simply print the total amount
-      CASE WHEN (@FormTypeID = 2) then (SELECT CONVERT(VARCHAR, TotalCost) FROM iTRAAC.dbo.tblPPOData WHERE TaxFormGUID = @TaxFormGUID)
+      CASE WHEN (@FormTypeID = 2) then @TotalCost
       -- for NF1: print "not valid for purchases of € 2,500.00 net or more!" to more prominently block out the NF2 amount field
-      ELSE 'ungültig für Einkäufe von Netto 2500,00 € oder höher!' END --CHAR(14) is a custom indicator to the client logic to send the ESC codes to go into German character set, char(15) turns it off
-    WHERE FieldName = 'F11' -- NF2 amount field, crossed out for NF1's
+      ELSE 'ungültig für Einkäufe von Netto 2500,00 € oder höher!' END
+    WHERE FieldName = 'F11' 
     
     UPDATE @t SET DATA = @SponsorName WHERE FieldName = 'F12'
     UPDATE @t SET DATA = @AuthorizedDependentName WHERE FieldName = 'F13'
@@ -222,7 +218,7 @@ ELSE BEGIN
     WHERE c.RowGUID = @SponsorClientGUID
   
     -- load the list of fields 
-    DECLARE @t TABLE(Data VARCHAR(500), FieldName VARCHAR(10), Row int, Col INT, MaxLength INT, MaxRows INT, UNIQUE CLUSTERED (FieldName))
+    DECLARE @t TABLE(Data VARCHAR(500), FieldName VARCHAR(10), [Page] INT, [Row] INT, Col INT, MaxLength INT, MaxRows INT, UNIQUE CLUSTERED (FieldName))
     INSERT @t SELECT NULL, RTRIM(FieldName), FLOOR(StartRow), StartCol, MaxLength, MaxRows FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 3
 
     -- set all the values
@@ -238,14 +234,27 @@ ELSE BEGIN
     UPDATE @t SET DATA = @AgencyLine1 WHERE FieldName = 'F7'
     UPDATE @t SET DATA = @AgencyLine2 WHERE FieldName = 'F8'
     UPDATE @t SET DATA = @AgencyLine3 WHERE FieldName = 'F9'
-    UPDATE @t SET DATA = @AgencyLine4 WHERE FieldName = 'F30'
+    UPDATE @t SET DATA = @AgencyLine4 WHERE FieldName = 'F25'
     
     UPDATE @t SET DATA = ISNULL(@AuthorizedDependentName + ' / ', '') + @SponsorName WHERE FieldName = 'F10'
     UPDATE @t SET DATA = @DutyLocation WHERE FieldName = 'F11'
 
-    UPDATE @t SET DATA = @Currency WHERE FieldName = 'F12'
-    UPDATE @t SET DATA = @TransactionType WHERE FieldName = 'F13'
-    
+    UPDATE @t SET DATA = @Sigblock WHERE FieldName = 'F24' 
+
+    IF (@FormTypeID = 2)
+      UPDATE @t SET DATA = @Currency WHERE FieldName = 'F12'
+      UPDATE @t SET DATA = @TransactionType WHERE FieldName = 'F13'
+      UPDATE @t SET DATA = @TotalCost WHERE FieldName = 'F14'
+      UPDATE @t SET DATA = @TransactionTypeSpecialFields WHERE FieldName = 'F15'
+      --F16 - not used in v2, since F15 has all data concat'ed with CR
+      --F17
+      --F18
+      UPDATE @t SET DATA = @Currency + ' ' + @TotalCost WHERE FieldName = 'F19'
+      UPDATE @t SET DATA = @Currency WHERE FieldName = 'F20'
+      UPDATE @t SET DATA = 'X' WHERE FieldName = 'F21'
+      UPDATE @t SET DATA = @PurchaseDate WHERE FieldName = 'F22'
+      UPDATE @t SET DATA = @PurchaseDate WHERE FieldName = 'F23'
+    END
   END
 
   UPDATE iTRAAC.dbo.tblTaxForms SET InitPrtAbw = GETDATE() WHERE RowGUID = @TaxFormGUID

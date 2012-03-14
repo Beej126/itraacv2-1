@@ -1,9 +1,9 @@
 ﻿using System; //Guid
-using System.Diagnostics; //Debug class
-using System.Windows.Interactivity; //Behavior
-using System.Windows.Input; //MouseButtonEventArgs
+using System.Linq;
 using System.Windows; //DependencyObject, UIElement
 using System.Windows.Controls; //TextBox
+using System.Windows.Input; //MouseButtonEventArgs
+using System.Windows.Interactivity; //Behavior
 using System.Windows.Media; //VisualTreeHelper
 
 //nugget: magic sauce that allows for a "Behavior" to be attached via XAML Style syntax
@@ -91,7 +91,7 @@ namespace LivingAgile.Common.WPF
         return;
       }
 
-      BehaviorCollection itemBehaviors = System.Windows.Interactivity.Interaction.GetBehaviors(uie);
+      BehaviorCollection itemBehaviors = Interaction.GetBehaviors(uie);
 
       var newBehaviors = e.NewValue as StylizedBehaviorCollection;
       var oldBehaviors = e.OldValue as StylizedBehaviorCollection;
@@ -114,22 +114,12 @@ namespace LivingAgile.Common.WPF
         }
       }
 
-      if (newBehaviors != null)
+      if (newBehaviors == null) return;
+      foreach (var clone in from behavior in newBehaviors let index = GetIndexOf(itemBehaviors, behavior) where index < 0 select (Behavior)behavior.Clone())
       {
-        foreach (var behavior in newBehaviors)
-        {
-          Guid behaviorId = GetBehaviorId(behavior);
+        if (GetBehaviorId(clone) == Guid.Empty) SetBehaviorId(clone, Guid.NewGuid());
 
-          int index = GetIndexOf(itemBehaviors, behavior);
-
-          if (index < 0)
-          {
-            var clone = (Behavior)behavior.Clone();
-            if (GetBehaviorId(clone) == Guid.Empty) SetBehaviorId(clone, Guid.NewGuid());
-
-            itemBehaviors.Add(clone);
-          }
-        }
+        itemBehaviors.Add(clone);
       }
     }
 
@@ -148,7 +138,7 @@ public sealed class SelectAllTextOnFocusBehavior : Behavior<TextBox>
   protected override void OnAttached()
   {
     base.OnAttached();
-    AssociatedObject.PreviewMouseLeftButtonDown += AssociatedObject_SelectivelyIgnoreMouseButton;
+    AssociatedObject.PreviewMouseLeftButtonDown += AssociatedObjectSelectivelyIgnoreMouseButton;
     AssociatedObject.GotKeyboardFocus += SelectAllText;
     AssociatedObject.MouseDoubleClick += SelectAllText;
   }
@@ -156,12 +146,12 @@ public sealed class SelectAllTextOnFocusBehavior : Behavior<TextBox>
   protected override void OnDetaching()
   {
     base.OnDetaching();
-    AssociatedObject.PreviewMouseLeftButtonDown -= AssociatedObject_SelectivelyIgnoreMouseButton;
+    AssociatedObject.PreviewMouseLeftButtonDown -= AssociatedObjectSelectivelyIgnoreMouseButton;
     AssociatedObject.GotKeyboardFocus -= SelectAllText;
     AssociatedObject.MouseDoubleClick -= SelectAllText;
   }
 
-  private void AssociatedObject_SelectivelyIgnoreMouseButton(object sender, MouseButtonEventArgs e)
+  private static void AssociatedObjectSelectivelyIgnoreMouseButton(object sender, MouseButtonEventArgs e)
   {
     // Find the TextBox
     DependencyObject parent = e.OriginalSource as UIElement;
