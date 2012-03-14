@@ -14,7 +14,10 @@
             <ColumnDefinition />
             <ColumnDefinition Width="auto" />
           </Grid.ColumnDefinitions>
-          
+
+          <!-- resize grip must come before buttons in the control hierarchy so we get the button click event bubbled up from the button first -->
+          <ResizeGrip Grid.ColumnSpan="2" IsTabStop="False" />
+
           <Grid>
             <Grid.RowDefinitions>
               <RowDefinition Height="auto" />
@@ -81,9 +84,6 @@
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
-
-            <!-- resize grip must come before buttons in the control hierarchy so we get the button click event bubbled up from the button first -->
-            <ResizeGrip Grid.Row="3" Grid.ColumnSpan="2" IsTabStop="False" />
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3" Grid.ColumnSpan="2" Margin="0 10" >
               <Button Content="Select" Width="100" Name="btnSelect" Click="BtnSelectClick" IsDefault="True" />

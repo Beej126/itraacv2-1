@@ -35,14 +35,16 @@ namespace iTRAACv2.View
     private class CustomerSearchArgs
     {
       public DataTable ResultTable;
-// ReSharper disable UnassignedReadonlyField
+      // ReSharper disable UnassignedReadonlyField
+#pragma warning disable 0649
       public readonly string Text; //put a text propertyName on this object so that the generic ExecuteDataset(label) method can populate it with any error
 // ReSharper restore UnassignedReadonlyField
 // ReSharper disable ConvertToConstant.Local - set via reflection
 // ReSharper disable FieldCanBeMadeReadOnly.Local
 // ReSharper disable UnassignedField.Local
       public bool Success;
-// ReSharper restore UnassignedField.Local
+#pragma warning restore 0649
+      // ReSharper restore UnassignedField.Local
 // ReSharper restore FieldCanBeMadeReadOnly.Local
 // ReSharper restore ConvertToConstant.Local
       public readonly object[] Values;
