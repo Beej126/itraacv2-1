@@ -1,43 +1,47 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System;
-using System.Text.RegularExpressions;
+using iTRAACv2.Model;
+using iTRAACv2.View;
 
 namespace iTRAACv2
 {
-  public partial class App : Application
+  public partial class App
   {
-    static public void ShowUserMessage(string Text)
+    static public void ShowUserMessage(string text)
     {
-      if (String.IsNullOrWhiteSpace(Text)) return;
-      if (!App.Current.Dispatcher.CheckAccess()) { App.Current.Dispatcher.Invoke((Action)delegate() { ShowUserMessage(Text); }); return; }
-      (App.Current.MainWindow as MainWindow).ShowUserMessage(Text);
+      if (String.IsNullOrWhiteSpace(text)) return;
+      if (!Current.Dispatcher.CheckAccess()) { Current.Dispatcher.Invoke((Action)(() => ShowUserMessage(text))); return; }
+      var mainWindow = Current.MainWindow as MainWindow;
+      if (mainWindow != null) mainWindow.ShowUserMessage(text);
     }
 
     static public void ShowWaitAnimation()
     {
-      (App.Current.MainWindow as MainWindow).popWaitAnimation.Show();
+      var mainWindow = Current.MainWindow as MainWindow;
+      if (mainWindow != null) mainWindow.popWaitAnimation.Show();
     }
 
     static public void StopWaitAnimation()
     {
-      if (App.Current != null && !App.Current.Dispatcher.CheckAccess()) { App.Current.Dispatcher.Invoke((Action)delegate() { StopWaitAnimation(); }); return; }
-      if (App.Current != null && App.Current.MainWindow != null && (App.Current.MainWindow as MainWindow).popWaitAnimation != null) 
-        (App.Current.MainWindow as MainWindow).popWaitAnimation.Hide();
+      if (Current != null && !Current.Dispatcher.CheckAccess()) { Current.Dispatcher.Invoke((Action)StopWaitAnimation); return; }
+      if (Current != null && Current.MainWindow != null && (Current.MainWindow as MainWindow) != null && (Current.MainWindow as MainWindow).popWaitAnimation != null) 
+        (Current.MainWindow as MainWindow).popWaitAnimation.Hide();
     }
 
     protected override void OnStartup(StartupEventArgs e)
     {
       //the App.DispatcherUnhandledException is the preferrable catcher because you can "Handle = true" it and prevent the app from crashing
-      DispatcherUnhandledException += new System.Windows.Threading.DispatcherUnhandledExceptionEventHandler(Current_DispatcherUnhandledException);
+      DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
       //AppDomain.UnhandledException is only good for last ditch capturing of the problematic state info... if an Exception bubbles up this far, the app is going down no way to prevent
-      System.AppDomain.CurrentDomain.UnhandledException += new System.UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+      AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
 
       //using (frmSplash splash = new frmSplash())
       {
-        if (!SecurityHelpers.IsUserInGroup(SecurityHelpers.CurrentWindowsLoginName_SansDomain, "iTRAAC_Users"))
+        if (!SecurityHelpers.IsUserInGroup(SecurityHelpers.CurrentWindowsLoginNameSansDomain, "iTRAAC_Users"))
         {
           MessageBox.Show("You must be a member of the local 'iTRAAC_Users' group to run this application.", "Not authorized", MessageBoxButton.OK, MessageBoxImage.Stop);
           Shutdown();
@@ -48,7 +52,7 @@ namespace iTRAACv2
 
         //nugget: Provide the datalayer with a callback to spin the wait cursor so we don't have to litter that code all over the points where the UI waits on the datalayer
         //since we implement the waitcursor logic with 'using' boxing syntax we're actually providing an object factory as the callback method
-        Proc.NewWaitObject = new Proc.WaitObjectConstructor(WaitCursorWrapper.WaitCursorWrapperFactory);
+        Proc.NewWaitObject = WaitCursorWrapper.WaitCursorWrapperFactory;
 
         try
         {
@@ -66,46 +70,51 @@ namespace iTRAACv2
             Shutdown();
             return;
           }
-          else throw (ex);
+          throw;
         }
 
         Proc.ConnectionString += iTRAACv2.Properties.Settings.Default.iTRAACv2ConnectionString;
         Proc.MessageCallback = ShowUserMessage;
 
-        SqlClientHelpers.SQLError_ObjectRemoveRegex = "(^dbo.|^tbl|^vw_|es$|s$)";
+        SqlClientHelpers.SqlErrorObjectRemoveRegex = "(^dbo.|^tbl|^vw_|es$|s$)";
 
-        new iTRAACv2.MainWindow().Show();
+        new MainWindow().Show();
 
-        ContextMenu CopyMenu = FindResource("WPFDataGrid_CopyMenu") as ContextMenu; //nugget: create a popup menu to be reused on grids which provides typical right-mouse, Copy functionality
-        (CopyMenu.Items[0] as MenuItem).Click += new RoutedEventHandler(WPFHelpers.WPFDataGrid_CopyCell_Click);
+        var copyMenu = FindResource("WPFDataGrid_CopyMenu") as ContextMenu; //nugget: create a popup menu to be reused on grids which provides typical right-mouse, Copy functionality
+        if (copyMenu != null)
+        {
+          var menuItem = copyMenu.Items[0] as MenuItem;
+          if (menuItem != null)
+            menuItem.Click += WPFHelpers.WPFDataGridCopyCellClick;
+        }
 
         ModelBase.SetUserMessageCallback(ShowUserMessage); //give the model layer a generic callback to be able to fire user messages
 
         //join TaxForm and Sponsor at the hip w/o burdening them with a static compile time dependency
         TaxFormModel.FormStatusChangeCallback += SponsorModel.TaxFormStatusChanged;
 
-        WPFValueConverters.BoolExpressionToBool.VariableReplacement = delegate(ref string Expression) //nugget: dynamic variable expansion in ValueConverter
+        WPFValueConverters.BoolExpressionToBool.VariableReplacement = delegate(ref string expression) //nugget: dynamic variable expansion in ValueConverter
         {
-          Expression = Expression.Replace("%myofficeid%", SettingsModel.TaxOfficeId.ToString());
-          Expression = Expression.Replace("%myofficecode%", SettingsModel.TaxOfficeCode.ToString());
+          expression = expression.Replace("%myofficeid%", SettingsModel.TaxOfficeId.ToString(CultureInfo.InvariantCulture));
+          expression = expression.Replace("%myofficecode%", SettingsModel.TaxOfficeCode.ToString(CultureInfo.InvariantCulture));
         };
 
-        ucDetailsView.IsColVisible = iTRAACHelpers.DataColumnVisible;
+        UcDetailsView.IsColVisible = iTRAACHelpers.DataColumnVisible;
 
         //nugget: set consisten date display format for <DatePicker>'s etc
-        System.Threading.Thread.CurrentThread.CurrentCulture = (System.Globalization.CultureInfo)System.Threading.Thread.CurrentThread.CurrentCulture.Clone();
+        System.Threading.Thread.CurrentThread.CurrentCulture = (CultureInfo)System.Threading.Thread.CurrentThread.CurrentCulture.Clone();
         System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat.ShortDatePattern = "dd MMM yyyy"; 
       }
 
     }
 
-    void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    void CurrentDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
     {
       e.Handled = true;
       DefaultExceptionHandler(e.Exception);
     }
 
-    void CurrentDomain_UnhandledException(object sender, System.UnhandledExceptionEventArgs e)
+    void CurrentDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
       DefaultExceptionHandler(e.ExceptionObject as Exception);
     }
@@ -116,7 +125,7 @@ namespace iTRAACv2
       StopWaitAnimation();
       while (ex.InnerException != null) ex = ex.InnerException; //drill down to root exception since this is 99.9% the most useful information
 
-      MessageBox.Show("[" + ex.GetType().ToString() + "]\r\n" +
+      MessageBox.Show("[" + ex.GetType() + "]\r\n" +
         ex.Message + ((ex is System.Data.SqlClient.SqlException) ? "" : "\r\n" + ex.StackTrace), "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
       //only totally bomb out of the app if we popped an exception before the mainwindow was visible... otherwise we should be able to sit where we are after an error most of the time
       if (MainWindow == null || !MainWindow.IsVisible) Shutdown(1); 

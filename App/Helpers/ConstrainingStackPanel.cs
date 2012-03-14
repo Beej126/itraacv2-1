@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Controls;
 using System.Windows;
-using System.Diagnostics;
+using System.Windows.Controls;
 
 /// <summary>
 /// This panel stacks children vertically and tries to constrain children so that
 /// the panel fits within the available size given by the parent. Only children 
 /// which have the attached property 'Constrain' set to true are constrained.
 /// </summary>
+// ReSharper disable CheckNamespace
 public class ConstrainingStackPanel : Panel
+// ReSharper restore CheckNamespace
 {
-    private List<UIElement> _constrainableChildren = new List<UIElement>();
+    private readonly List<UIElement> _constrainableChildren = new List<UIElement>();
 
     public static bool GetConstrain(DependencyObject obj)
     {

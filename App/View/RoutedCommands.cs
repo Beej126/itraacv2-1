@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
   class RoutedCommands
   {

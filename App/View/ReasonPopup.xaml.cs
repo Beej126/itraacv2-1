@@ -1,20 +1,11 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
   public class ReasonPopupResultEventArgs
   {
@@ -34,7 +25,7 @@ namespace iTRAACv2
     public object State { get; private set; }
   }
 
-  public partial class ReasonPopup : ucBase
+  public partial class ReasonPopup
   {
     public ReasonPopup()
     {
@@ -100,7 +91,7 @@ namespace iTRAACv2
         new UIPropertyMetadata(false, (o,e) => ((ReasonPopup)o).chkIsAlert.Visibility = ((bool)e.NewValue) ? Visibility.Visible : Visibility.Collapsed));
     
 
-    public object State = null;
+    public object State;
     public string Title { get { return (Convert.ToString(lblTitle.Content)); } set { lblTitle.Content = value; } }
     public bool IsOK;
     public string ReasonText { get { return (txtComments.Text); } }
@@ -116,33 +107,34 @@ namespace iTRAACv2
       popupThis.IsOpen = true;
 
       //save keyboard focus so we can return it when popup is closed
-      PrePopupFocusedElement = Keyboard.FocusedElement;
+      _prePopupFocusedElement = Keyboard.FocusedElement;
 
       txtComments.Focus();
     }
-    private IInputElement PrePopupFocusedElement;
+    private IInputElement _prePopupFocusedElement;
 
-    private void btnOKCancel_Click(object sender, RoutedEventArgs e)
+    private void BtnOKCancelClick(object sender, RoutedEventArgs e)
     {
       if (sender == btnOK)
       {
         txtComments.Focus(); //unfortunately this sillyness is necessary to remove the watermark text out of the txtComments.Text property to get at the real text if there is any
         if ((cbxReason.ItemsSource != null && cbxReason.SelectedIndex == -1) || txtComments.Text == "") return; //if OK was clicked, but nothing is filled out, that corresponds to a logical cancel as well
-        else IsOK = true;
+        IsOK = true;
       }
       
       popupThis.IsOpen = false;
     }
 
-    private void popupThis_Closed(object sender, EventArgs e)
+    private void PopupThisClosed(object sender, EventArgs e)
     {
       //the convention of always calling the callback even when user simply clicked away from the popup driving auto-close...
       //allows for the callback to serve as the "onclosed" event handler should the client require some logic at that point
+      Debug.Assert(chkIsAlert.IsChecked != null, "chkIsAlert.IsChecked != null");
       Result(new ReasonPopupResultEventArgs(
         IsOK, Convert.ToString(cbxReason.SelectedValue), chkIsAlert.IsChecked.Value, txtComments.Text, State));
 
       //lastly restore focus to what it was prior to poup for navigational consistency
-      Keyboard.Focus(PrePopupFocusedElement);
+      Keyboard.Focus(_prePopupFocusedElement);
     }
 
     /*

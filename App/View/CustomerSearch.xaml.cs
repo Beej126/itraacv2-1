@@ -2,64 +2,70 @@
 using System.Data;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Linq;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public partial class CustomerSearch : ucBase
+  public partial class CustomerSearch
   {
     public CustomerSearch()
     {
       InitializeComponent();
 
-      txtSSN1.PreviewTextInput += WPFHelpers.IntegerOnlyTextBox_PreviewTextInput;
-      txtSSN2.PreviewTextInput += WPFHelpers.IntegerOnlyTextBox_PreviewTextInput;
-      txtSSN3.PreviewTextInput += WPFHelpers.IntegerOnlyTextBox_PreviewTextInput;
+      txtSSN1.PreviewTextInput += WPFHelpers.IntegerOnlyTextBoxPreviewTextInput;
+      txtSSN2.PreviewTextInput += WPFHelpers.IntegerOnlyTextBoxPreviewTextInput;
+      txtSSN3.PreviewTextInput += WPFHelpers.IntegerOnlyTextBoxPreviewTextInput;
 
-      txtDoDId.PreviewTextInput += WPFHelpers.IntegerOnlyTextBox_PreviewTextInput;
+      txtDoDId.PreviewTextInput += WPFHelpers.IntegerOnlyTextBoxPreviewTextInput;
 
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridCustomerSearch);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridCustomerSearch);
     }
 
-    public delegate void OpenSponsorDelegate(string ClientGUID);
+    public delegate void OpenSponsorDelegate(string clientGUID);
 
-    private BackgroundWorkerEx<CustomerSearchArgs> CustomerSearchTypeAhead = new BackgroundWorkerEx<CustomerSearchArgs>(); 
+    private readonly BackgroundWorkerEx<CustomerSearchArgs> _customerSearchTypeAhead = new BackgroundWorkerEx<CustomerSearchArgs>(); 
 
-    protected override void UserControl_Loaded(object sender, RoutedEventArgs e)
+    protected override void UserControlLoaded(object sender, RoutedEventArgs e)
     {
       txtCCode.Focus();
-      CustomerSearchTypeAhead.OnExecute += new BackgroundWorkerEx<CustomerSearchArgs>.BackgroundWorkerExCallback(CustomerSearchOnExecute);
-      CustomerSearchTypeAhead.OnCompleted += new BackgroundWorkerEx<CustomerSearchArgs>.BackgroundWorkerExCallback(CustomerSearchOnCompleted);
+      _customerSearchTypeAhead.OnExecute += CustomerSearchOnExecute;
+      _customerSearchTypeAhead.OnCompleted += CustomerSearchOnCompleted;
     }
 
     private class CustomerSearchArgs
     {
-      public DataTable resultTable = null;
-      public string Text = null; //put a text propertyName on this object so that the generic ExecuteDataset(label) method can populate it with any error
-      public bool Success = false;
-      public object[] values = null;
+      public DataTable ResultTable;
+// ReSharper disable UnassignedReadonlyField
+      public readonly string Text; //put a text propertyName on this object so that the generic ExecuteDataset(label) method can populate it with any error
+// ReSharper restore UnassignedReadonlyField
+// ReSharper disable ConvertToConstant.Local - set via reflection
+// ReSharper disable FieldCanBeMadeReadOnly.Local
+// ReSharper disable UnassignedField.Local
+      public bool Success;
+// ReSharper restore UnassignedField.Local
+// ReSharper restore FieldCanBeMadeReadOnly.Local
+// ReSharper restore ConvertToConstant.Local
+      public readonly object[] Values;
 
-      public CustomerSearchArgs(params object[] Values)
+      public CustomerSearchArgs(params object[] values)
       {
-        values = Values;
+        Values = values;
       }
     }
 
-    private bool CustomerSearchCriteriaChangeInProgress = false;
+    private bool _customerSearchCriteriaChangeInProgress;
     private void CustomerSearchCriteriaChanged(object sender, object e)
     {
       if (lblCustomerSearchError == null) return; //comboboxes fire SelectionChanged before form has fully initialized itself
 
       //implement mutually exclusive text boxes... since their TextChanged event handlers all fire on eachother, this nixes the feedback loop
-      if (CustomerSearchCriteriaChangeInProgress) return;
-      CustomerSearchCriteriaChangeInProgress = true;
+      if (_customerSearchCriteriaChangeInProgress) return;
+      _customerSearchCriteriaChangeInProgress = true;
 
       try
       {
         //kill any pending search whenever the text is changed
-        CustomerSearchTypeAhead.Cancel();
+        _customerSearchTypeAhead.Cancel();
 
         //blank out any previously posted search errors
         lblCustomerSearchError.Text = "";
@@ -114,7 +120,7 @@ namespace iTRAACv2
         }
 
         //(re)initiate search with new criteria
-        CustomerSearchTypeAhead.Initiate(new CustomerSearchArgs(
+        _customerSearchTypeAhead.Initiate(new CustomerSearchArgs(
           "LastName", txtLastName.Text,
           "FirstName", txtFirstName.Text,
           "CCode", txtCCode.Text,
@@ -126,53 +132,53 @@ namespace iTRAACv2
       }
       finally
       {
-        CustomerSearchCriteriaChangeInProgress = false;
+        _customerSearchCriteriaChangeInProgress = false;
       }
     }
 
-    private string SmartFormat(string BlankFiller, string Delimiter, params object[] args)
+    private string SmartFormat(string blankFiller, string delimiter, params object[] args)
     {
-      string s = "";
-      foreach(object arg in args)
-      {
-        s += ((arg == null || arg.ToString() == "") ? ((s.Right(BlankFiller.Length) == BlankFiller) ? "" : BlankFiller) : arg + Delimiter);
-      }
-      return (s.Left(s.Length - Delimiter.Length));
+      var s = args.Aggregate("", (current, arg) => current + ((arg == null || arg.ToString() == "") ? ((current.Right(blankFiller.Length) == blankFiller) ? "" : blankFiller) : arg + delimiter));
+      return (s.Left(s.Length - delimiter.Length));
     }
 
     //this executes _off_ the UI thread
-    void CustomerSearchOnExecute(CustomerSearchArgs state)
+    static void CustomerSearchOnExecute(CustomerSearchArgs state)
     {
-      using (Proc Customer_Search = new Proc("Customer_Search"))
-        state.resultTable = Customer_Search.AssignValues(state.values).ExecuteDataSet(state).Tables[0];
+// ReSharper disable InconsistentNaming
+      using (var Customer_Search = new Proc("Customer_Search"))
+// ReSharper restore InconsistentNaming
+        state.ResultTable = Customer_Search.AssignValues(state.Values).ExecuteDataSet(state).Tables[0];
     }
 
     void CustomerSearchOnCompleted(CustomerSearchArgs state)
     {
       if (state.Success)
       {
-        gridCustomerSearch.ItemsSource = state.resultTable.DefaultView;
+        gridCustomerSearch.ItemsSource = state.ResultTable.DefaultView;
 
         //if (multiple) client search results correspond to the same sponsor, then automatically open that household tab
-        var SponsorGUIDs = state.resultTable.AsEnumerable().GroupBy(r => r["SponsorGUID"]).Select(g => g.Key.ToString());
-        if (SponsorGUIDs.Count() == 1) RoutedCommands.OpenSponsor.Execute(SponsorGUIDs.First(), null); //for user convenience, automatically fire up the sponsor page if we only got one hit
+        var sponsorGUIDs = state.ResultTable.AsEnumerable().GroupBy(r => r["SponsorGUID"]).Select(g => g.Key.ToString());
+// ReSharper disable PossibleMultipleEnumeration
+        if (sponsorGUIDs.Count() == 1) RoutedCommands.OpenSponsor.Execute(sponsorGUIDs.First(), null); //for user convenience, automatically fire up the sponsor page if we only got one hit
+// ReSharper restore PossibleMultipleEnumeration
       }
       else
         lblCustomerSearchError.Text = state.Text;
     }
 
-    private void txtSSN_TextChanged(object sender, TextChangedEventArgs e)
+    private void TxtSSNTextChanged(object sender, TextChangedEventArgs e)
     {
-      WPFHelpers.AutoTabTextBox_TextChanged(sender, e);
+      WPFHelpers.AutoTabTextBoxTextChanged(sender, e);
       CustomerSearchCriteriaChanged(sender, e);
     }
 
-    private void RegisterNewSponsor_Click(object sender, RoutedEventArgs e)
+    private void RegisterNewSponsorClick(object sender, RoutedEventArgs e)
     {
       RoutedCommands.OpenSponsor.Execute(Guid.Empty.ToString(), null);
     }
 
-    private void txtDoDId_TextChanged(object sender, TextChangedEventArgs e)
+    private void TxtDoDIdTextChanged(object sender, TextChangedEventArgs e)
     {
 
     }

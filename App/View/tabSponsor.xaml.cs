@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Data;
@@ -11,59 +12,60 @@ using System.Windows.Data;
 using System.ComponentModel;
 using System.Windows.Documents;
 using System.Text.RegularExpressions;
+using iTRAACv2.Model;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public partial class tabSponsor : tabBase
+  public partial class TabSponsor
   {
-    public SponsorModel sponsor { get { return (model as SponsorModel); } }
+    public SponsorModel Sponsor { get { return (Model as SponsorModel); } }
 
     /// <summary>
     /// </summary>
     /// <param name="tabControl">TabControl to place this new TabItem under</param>
-    /// <param name="SponsorGUID"></param>
-    static public void Open(TabControl tabControl, string SponsorGUID)
+    /// <param name="sponsorGUID"></param>
+    static public void Open(TabControl tabControl, string sponsorGUID)
     {
-      OpenTab<tabSponsor>(tabControl, ModelBase.Lookup<SponsorModel>(SponsorGUID));
+      OpenTab<TabSponsor>(tabControl, ModelBase.Lookup<SponsorModel>(sponsorGUID));
     }
 
-    public tabSponsor() 
+    public TabSponsor() 
     {
       InitializeComponent();
 
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridForms);
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridRemarks);
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridMatches);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridForms);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridRemarks);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridMatches);
 
-      btnSuspend.Click += btnSuspend_Click;
+      btnSuspend.Click += BtnSuspendClick;
     }
 
-    private System.Windows.Threading.DispatcherFrame DisableRemarkAlertReasonPopup_DispatcherFrame;
-    void sponsor_ReasonConfirmation(object sender, ReasonConfirmationArgs e)
+    private System.Windows.Threading.DispatcherFrame _disableRemarkAlertReasonPopupDispatcherFrame;
+    void SponsorReasonConfirmation(object sender, ReasonConfirmationArgs e)
     {
       DisableRemarkAlertReasonPopup.Show();
 
       //nugget: idea from here: http://www.deanchalk.me.uk/post/WPF-Modal-Controls-Via-Dispatcher (Army firewall blocks this site)
       //nugget: this is really cool because it maintains the synchronous nature of this call stack, returning the result to the model layer after the psuedo modal popup, even though the popup is actually acting on it's own asynch event handler!!
-      DisableRemarkAlertReasonPopup_DispatcherFrame = new System.Windows.Threading.DispatcherFrame(); //nugget:
-      System.Windows.Threading.Dispatcher.PushFrame(DisableRemarkAlertReasonPopup_DispatcherFrame); //nugget: blocks gui message pump & createst nested pump, making this a blocking call 
+      _disableRemarkAlertReasonPopupDispatcherFrame = new System.Windows.Threading.DispatcherFrame(); //nugget:
+      System.Windows.Threading.Dispatcher.PushFrame(_disableRemarkAlertReasonPopupDispatcherFrame); //nugget: blocks gui message pump & createst nested pump, making this a blocking call 
 
       e.Accept = DisableRemarkAlertReasonPopup.IsOK;
       e.Reason = DisableRemarkAlertReasonPopup.ReasonText;
     }
 
-    private void DisableRemarkAlertReasonPopup_Result(ReasonPopupResultEventArgs args)
+    private void DisableRemarkAlertReasonPopupResult(ReasonPopupResultEventArgs args)
     {
-      DisableRemarkAlertReasonPopup_DispatcherFrame.Continue = false; //nugget: cancels the nested pump which allows the code after the PushFrame above to continue
+      _disableRemarkAlertReasonPopupDispatcherFrame.Continue = false; //nugget: cancels the nested pump which allows the code after the PushFrame above to continue
     }
 
     protected override void OnClosed()
     {
-      sponsor.PropertyChanged -= sponsor_PropertyChanged;
-      btnSuspend.Click -= btnSuspend_Click;
+      Sponsor.PropertyChanged -= SponsorPropertyChanged;
+      btnSuspend.Click -= BtnSuspendClick;
     }
 
-    private void gridRemarks_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void GridRemarksSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
       //nugget: hyperlink any Form# matches in the Remarks - nice! 
       //nugget: unfortunately any kind of code driven or user driven sorting blows away custom DataGridColumn.GetCellContent() modifications like this
@@ -85,58 +87,57 @@ namespace iTRAACv2
       //match[0]: blah1 OrderNumber1
       //match[1]: blah2 OrderNumber2
 
-      TextBlock lblRemarks = remarksCol.GetCellContent(gridRemarks.CurrentItem) as TextBlock;  //this basically works but any kind of grid sorting must virtualize this info since it always returns null after that
+      var lblRemarks = remarksCol.GetCellContent(gridRemarks.CurrentItem) as TextBlock;  //this basically works but any kind of grid sorting must virtualize this info since it always returns null after that
+      if (lblRemarks == null) return;
 
       Hyperlink dummy;
-      if (lblRemarks.TryFindChild<Hyperlink>(out dummy)) return; //if this column is already hyperlinked, bail out
+      if (lblRemarks.TryFindChild(out dummy)) return; //if this column is already hyperlinked, bail out
 
-      string original = lblRemarks.Text;
-      MatchCollection matches = OrderNumberRegEx.Matches(original);
+      var original = lblRemarks.Text;
+      var matches = OrderNumberRegEx.Matches(original);
       if (matches.Count == 0) return;
 
       lblRemarks.Inlines.Clear();
-      string removestr = "";
+      var removestr = "";
       foreach(Match match in matches)
       {
-        Hyperlink link = new Hyperlink();
-        link.Command = RoutedCommands.OpenTaxForm;
-        link.CommandParameter = match.Groups[2].Value; //this is the OrderNumber... and then the magic of RoutedCommands makes it elegant to fire open the order tab
+        var link = new Hyperlink {Command = RoutedCommands.OpenTaxForm, CommandParameter = match.Groups[2].Value};
+        //this is the OrderNumber... and then the magic of RoutedCommands makes it elegant to fire open the order tab
         link.Inlines.Add(match.Groups[2].Value);
         lblRemarks.Inlines.Add(match.Groups[1].Value);
         lblRemarks.Inlines.Add(link);
         removestr += match.Value;
       }
       lblRemarks.Inlines.Add(original.Replace(removestr, "")); //tack on any text following the last OrderNumber match
-
     }
-    static private Regex OrderNumberRegEx = new Regex(SettingsModel.Global["OrderNumberRegEx"], RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    static private readonly Regex OrderNumberRegEx = new Regex(SettingsModel.Global["OrderNumberRegEx"], RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-    protected override void UserControl_Loaded(object sender, RoutedEventArgs e)
+    protected override void UserControlLoaded(object sender, RoutedEventArgs e)
     {
-      sponsor.ReasonConfirmation += new EventHandler<ReasonConfirmationArgs>(sponsor_ReasonConfirmation);
+      Sponsor.ReasonConfirmation += SponsorReasonConfirmation;
 
       InitializePotentialMatchesGridGrouping();
 
-      WPFHelpers.GridSort(gridForms, "Purchased", System.ComponentModel.ListSortDirection.Descending);
-      WPFHelpers.GridSort(gridRemarks, new string[] { "Alert", "LastUpdate" }, new ListSortDirection[] { ListSortDirection.Descending, ListSortDirection.Descending });
+      WPFHelpers.GridSort(gridForms, "Purchased", ListSortDirection.Descending);
+      WPFHelpers.GridSort(gridRemarks, new[] { "Alert", "LastUpdate" }, new[] { ListSortDirection.Descending, ListSortDirection.Descending });
 
-      sponsor.Transactions.CollectionChanged += (s, a) => { if (a.NewItems != null) TransactionsDataGrid.ScrollIntoView(a.NewItems[0]); }; //nugget: AutoScroll DataGrid
+      Sponsor.Transactions.CollectionChanged += (s, a) => { if (a.NewItems != null) TransactionsDataGrid.ScrollIntoView(a.NewItems[0]); }; //nugget: AutoScroll DataGrid
       rdoHideReturnedTaxForms.IsChecked = true;
 
-      if (sponsor.TaxForms_CountReturnedNotFiled > 0) 
+      if (Sponsor.TaxFormsCountReturnedNotFiled > 0) 
         ReturnedNotFiledLabel.Background = ReturnedNotFiledLabel.Background.BeginBrushColorAnimation(Colors.Red);
 
-      if (sponsor.Class1TaxForms_CountUnreturned > SettingsModel.MaxClass1FormsCount)
+      if (Sponsor.Class1TaxFormsCountUnreturned > SettingsModel.MaxClass1FormsCount)
         UnreturnedLabel.Background = UnreturnedLabel.Background.BeginBrushColorAnimation(Colors.Red);
 
-      sponsor.PropertyChanged += sponsor_PropertyChanged;
+      Sponsor.PropertyChanged += SponsorPropertyChanged;
 
       gridMembers.ItemContainerGenerator.ContainerFromIndex(0).FindChild<TextBox>(c => c.Name == "txtSSN1").Focus();
     }
 
     #region Potential Matches stuff
 
-    void sponsor_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    void SponsorPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
       if (e.PropertyName == "PotentialClientMatches") PotentialMatchesUpdated();
     }
@@ -153,11 +154,11 @@ namespace iTRAACv2
       //        i thought it was a recommended approach to fill the bound ItemsSource however (background or not) and expect the UI to auto refresh
 
       gridMatches.ItemsSource = null;
-      gridMatches.ItemsSource = sponsor.PotentialClientMatches;
+      gridMatches.ItemsSource = Sponsor.PotentialClientMatches;
 
       //if we weren't already popped open, do the bounce
-      if (sponsor.PotentialClientMatches.Count > 0)
-        WPFHelpers.GridSplitterOpeningBounce(MatchesColumn, true, 300);
+      if (Sponsor.PotentialClientMatches.Count > 0)
+        MatchesColumn.GridSplitterOpeningBounce(true, 300);
     }
 
     private void InitializePotentialMatchesGridGrouping()
@@ -173,7 +174,7 @@ namespace iTRAACv2
       // http://www.beacosta.com/blog/?p=24
       // http://vbcity.com/blogs/xtab/archive/2011/01/12/wpf-listbox-custom-sort-within-groups.aspx
 
-      if (gridMatches.Items.GroupDescriptions.Count == 0)
+      if (gridMatches.Items.GroupDescriptions != null && gridMatches.Items.GroupDescriptions.Count == 0)
         gridMatches.Items.GroupDescriptions.Add(new PropertyGroupDescription("MatchType"));
 
       //*** wound up simply moving this sort to the underlying  sponsor.PotentialClientMatches DataView.Sort
@@ -184,18 +185,19 @@ namespace iTRAACv2
 
     #endregion
 
-    private void btnCart_IsCheckedChanged(object sender, RoutedEventArgs e)
+    private void BtnCartIsCheckedChanged(object sender, RoutedEventArgs e)
     {
-      WPFHelpers.GridSplitterOpeningBounce(ShoppingCartColumn, btnCart.IsChecked, 275);
+      ShoppingCartColumn.GridSplitterOpeningBounce(btnCart.IsChecked, 275);
     }
 
-    private void btnNewNF1Package_Click(object sender, RoutedEventArgs e)
+    private void BtnNewNF1PackageClick(object sender, RoutedEventArgs e)
     {
-      imgNewFormsCount.BeginStoryboard((Storyboard)Application.Current.FindResource("PulsingOpacity"));
+      var anim = (Storyboard) Application.Current.FindResource("PulsingOpacity");
+      if (anim != null) imgNewFormsCount.BeginStoryboard(anim);
 
       //fill combo with values up to how many new forms are allowed max... this much UI code is probably asking to be in a ViewModel
       cbxNewFormsCount.Items.Clear();
-      for (int i = sponsor.Class1TaxForms_CountRemainingToBuy; i > 0; i--) cbxNewFormsCount.Items.Add(i);
+      for (int i = Sponsor.Class1TaxFormsCountRemainingToBuy; i > 0; i--) cbxNewFormsCount.Items.Add(i);
       cbxNewFormsCount.SelectedIndex = 0; //default to max remaining
       cbxNewFormsCount.IsDropDownOpen = (cbxNewFormsCount.Items.Count > 1); //be nice and auto-open the drop down if there is actually a choice to be made
 
@@ -205,7 +207,7 @@ namespace iTRAACv2
       cbxNewFormsCount.Focus();
     }
 
-    private void btnReadyToPrint_No_Click(object sender, RoutedEventArgs e)
+    private void BtnReadyToPrintNoClick(object sender, RoutedEventArgs e)
     {
       popPrintNF1s.IsOpen = false;
     }
@@ -216,15 +218,15 @@ namespace iTRAACv2
       set { SetValue(IsClass2PopupProperty, value); }
     }
     public static readonly DependencyProperty IsClass2PopupProperty =
-        DependencyProperty.Register("IsClass2Popup", typeof(bool), typeof(tabSponsor), new UIPropertyMetadata(false));
+        DependencyProperty.Register("IsClass2Popup", typeof(bool), typeof(TabSponsor), new UIPropertyMetadata(false));
 
-    private void btnReadyToPrint_Click(object sender, RoutedEventArgs e)
+    private void BtnReadyToPrintClick(object sender, RoutedEventArgs e)
     {
       //this is sort of embarrasingly old school validation...
       //these days the "proper" ViewModel way would be to putt an "IsSelected" property on a model collection and then binding that to an ItemsControl which generates the radio button group
       //(this would have to be implemented as an on-the-fly linq query wrapped around TaxForm.Type.UserSelectableClass1 which tacked on "IsSelected" as a new property via linq projection syntax)
       //then put validation logic on that collection enforcing that one item has to have IsSelected==true
-      if (!rdoEF1.IsChecked.Value && !rdoNF1.IsChecked.Value)
+      if (rdoNF1.IsChecked == null || rdoEF1.IsChecked == null || (!rdoEF1.IsChecked.Value && !rdoNF1.IsChecked.Value))
       {
         App.ShowUserMessage("Form Type Selection Required");
         rdoNF1.Focus();
@@ -249,39 +251,41 @@ namespace iTRAACv2
       //while we're still executing on the UI thread where UI property access is allowed,
       //pull all values from UI fields and assign them to a TaxFormPackage "DTO" (Data Transfer Object)
       //this facilitates doing the DB work on a background thread... see next block of code
-      TaxFormModel.TaxFormPackage pkg = new TaxFormModel.TaxFormPackage(
-        ParentTransactionList: sponsor.Transactions,
-        IsPending: sender == btnReadyToPrint_Cart,
-        SponsorGUID: sponsor.GUID, 
-        AuthorizedDependentClientGUID: (string)lbxPrintDependents.SelectedValue,
-        FormType: TaxFormModel.FormType.NF1,
-        Qty: Convert.ToInt32(cbxNewFormsCount.SelectedValue) );
+      new TaxFormModel.TaxFormPackage(
+        // ReSharper disable RedundantArgumentName
+        parentTransactionList: Sponsor.Transactions,
+        isPending: sender == btnReadyToPrint_Cart,
+        sponsorGUID: Sponsor.GUID, 
+        authorizedDependentClientGUID: (string)lbxPrintDependents.SelectedValue,
+        formType: TaxFormModel.FormType.NF1,
+        qty: Convert.ToInt32(cbxNewFormsCount.SelectedValue) );
+        // ReSharper restore RedundantArgumentName
 
       btnCart.IsChecked = true; //for user convenience, show cart to remind clerk to get money from customer
     }
 
-    private void btnNewNF2_Click(object sender, RoutedEventArgs e)
+    private void BtnNewNF2Click(object sender, RoutedEventArgs e)
     {
       //if spouse is the only choice, don't bother showing selection
-      if (PanelDependentsPicklist.Visibility == System.Windows.Visibility.Visible)
+      if (PanelDependentsPicklist.Visibility == Visibility.Visible)
       {
         IsClass2Popup = true;
         popPrintNF1s.IsOpen = true;
       }
       else
       {
-        btnNewNF2_OK_Click(null, null);
+        BtnNewNF2OKClick(null, null);
       }
     }
 
-    private void btnNewNF2_OK_Click(object sender, RoutedEventArgs e)
+    private void BtnNewNF2OKClick(object sender, RoutedEventArgs e)
     {
-      SponsorModel.DependentLight authdep = lbxPrintDependents.SelectedItem as SponsorModel.DependentLight;
+      var authdep = lbxPrintDependents.SelectedItem as SponsorModel.DependentLight;
 
       TaxFormModel newForm = TaxFormModel.NewNF2(
-        sponsor.Transactions,
-        sponsor.GUID,
-        string.Format("{0}, {1} ({2})", sponsor.HouseMembers[0]["LName"], sponsor.HouseMembers[0]["FName"], sponsor.HouseMembers[0]["CCode"]),
+        Sponsor.Transactions,
+        Sponsor.GUID,
+        string.Format("{0}, {1} ({2})", Sponsor.HouseMembers[0]["LName"], Sponsor.HouseMembers[0]["FName"], Sponsor.HouseMembers[0]["CCode"]),
         (string)lbxPrintDependents.SelectedValue,
         (authdep != null)?authdep.FirstName:null);
 
@@ -291,9 +295,9 @@ namespace iTRAACv2
     }
 
     //set spouse as default authorized dependent because they are guaranteed privileges
-    private void lbxPrintDependents_Loaded(object sender, RoutedEventArgs e)
+    private void LbxPrintDependentsLoaded(object sender, RoutedEventArgs e)
     {
-      for(int i=0; i < lbxPrintDependents.Items.Count; i++)
+      for(var i=0; i < lbxPrintDependents.Items.Count; i++)
         if (((SponsorModel.DependentLight)lbxPrintDependents.Items[i]).IsSpouse)
         {
           lbxPrintDependents.SelectedIndex = i;
@@ -301,36 +305,36 @@ namespace iTRAACv2
         }
     }
 
-    private void EndBackgroundAnimation(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void EndBackgroundAnimation(object sender, MouseButtonEventArgs e)
     {
-      (sender as Border).Background.EndBrushColorAnimation();
+      ((Border) sender).Background.EndBrushColorAnimation();
     }
 
-    private void btnSave_Click(object sender, RoutedEventArgs e)
+    private void BtnSaveClick(object sender, RoutedEventArgs e)
     {
-      sponsor.Save();
+      Sponsor.Save();
     }
 
-    private void btnSaveClose_Click(object sender, RoutedEventArgs e)
+    private void BtnSaveCloseClick(object sender, RoutedEventArgs e)
     {
-      if (sponsor.SaveUnload()) Close();
+      if (Sponsor.SaveUnload()) Close();
     }
 
-    private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    private void NumericOnlyPreviewTextInput(object sender, TextCompositionEventArgs e)
     {
       //can't assign *static* event handlers in XAML so make that little hop here
-      WPFHelpers.IntegerOnlyTextBox_PreviewTextInput(sender, e);
+      WPFHelpers.IntegerOnlyTextBoxPreviewTextInput(sender, e);
     }
 
-    private void SetSpouse_Click(object sender, RoutedEventArgs e)
+    private void SetSpouseClick(object sender, RoutedEventArgs e)
     {
-      string NewSpouseClientGUID = Convert.ToString((sender as Control).Tag);
-      if (NewSpouseClientGUID == "" || !sponsor.HouseMembers.Cast<DataRowView>().Any(r => r.Field<bool>("IsSpouse"))
+      var newSpouseClientGUID = Convert.ToString(((Control) sender).Tag);
+      if (newSpouseClientGUID == "" || !Sponsor.HouseMembers.Cast<DataRowView>().Any(r => r.Field<bool>("IsSpouse"))
         || MessageBox.Show("Spouse already defined.  Are you sure you want to override?", "Set Spouse", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-        sponsor.SetSpouse(NewSpouseClientGUID);
+        Sponsor.SetSpouse(newSpouseClientGUID);
     }
 
-    private void Divorce_Click(object sender, RoutedEventArgs e)
+    private void DivorceClick(object sender, RoutedEventArgs e)
     {
       if (MessageBox.Show("Has Sponsor provided FINALIZED DIVORCE paperwork?\n\n" +
         "Note: Legal \"Separation\" is NOT sufficient.",
@@ -340,35 +344,36 @@ namespace iTRAACv2
       //   "Note: Tax Relief privileges must be confirmed *before* hitting Yes.\nOfficial Orders are the best way.",
       //   "Spouse Self Sponsor:", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes : false;
 
-      sponsor.SetSpouse("", IsDivorce: true);
+      Sponsor.SetSpouse("", isDivorce: true);
       chkShowDeactiveMembers.IsChecked = true;
     }
 
-    private void AddMember_Click(object sender, RoutedEventArgs e)
+    private void AddMemberClick(object sender, RoutedEventArgs e)
     {
-      sponsor.AddMember();
-      WPFHelpers.GridSplitterOpeningBounce(MatchesColumn, true, 300); //open the existing customers sidebar so the following message makes sense
+      Sponsor.AddMember();
+      MatchesColumn.GridSplitterOpeningBounce(true, 300); //open the existing customers sidebar so the following message makes sense
       App.ShowUserMessage("Fill in SSN & Name first.\n" +
         "Use the \"Existing Customers\" list on the right to move existing members into this household.\n"+
         "Then use the \"Set Spouse\" button in the Members grid where applicable.");
     }
 
-    private void MoveClient_Click(object sender, RoutedEventArgs e)
+    private void MoveClientClick(object sender, RoutedEventArgs e)
     {
-      DataRowView MoveClientRow = ((Control)sender).Tag as DataRowView;
-      if (!MoveClientRow.Field<bool>("Is Sponsor") ||
+      var moveClientRow = ((Control)sender).Tag as DataRowView;
+      if (moveClientRow == null) return;
+      if (!moveClientRow.Field<bool>("Is Sponsor") ||
         MessageBox.Show("Merging Sponsors into one household is a significant event.\n\n"+
         "Are you sure??", "Merge * Sponsor *", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
       {
-        sponsor.MoveClient(MoveClientRow["ClientGUID"].ToString());
+        Sponsor.MoveClient(moveClientRow["ClientGUID"].ToString());
       }
     }
 
-    private void SetSponsor_Click(object sender, RoutedEventArgs e)
+    private void SetSponsorClick(object sender, RoutedEventArgs e)
     {
-      MessageBoxResult result = MessageBoxResult.Yes;
+      var result = MessageBoxResult.Yes;
 
-      if (sponsor.HasSponsor)
+      if (Sponsor.HasSponsor)
       {
         result = MessageBox.Show("YES = Leave existing forms assigned to old sponsor (*RECOMMENDED*)\n\n" +
           "NO = Reassign ALL EXISTING FORMS to new Sponsor (BE CAREFUL)\n     " +
@@ -379,120 +384,123 @@ namespace iTRAACv2
         if (result == MessageBoxResult.Cancel) return;
       }
 
-      sponsor.SetSponsor((sender as Control).Tag.ToString(), FixExistingPackageLinks: result == MessageBoxResult.No);
+// ReSharper disable RedundantArgumentName
+      Sponsor.SetSponsor(((Control) sender).Tag.ToString(), fixExistingPackageLinks: result == MessageBoxResult.No);
+// ReSharper restore RedundantArgumentName
     }
 
-    void btnSuspend_Click(object sender, RoutedEventArgs e)
+    void BtnSuspendClick(object sender, RoutedEventArgs e)
     {
       SuspensionReasonPopup.Show(); //we require a comment for either suspending or un-suspending
     }
 
-    private void SuspensionReasonPopup_Result(ReasonPopupResultEventArgs args)
+    private void SuspensionReasonPopupResult(ReasonPopupResultEventArgs args)
     {
-      if (args.OK) sponsor.Suspend(btnSuspend.IsChecked.Value ? SponsorModel.SuspendDuration.Forever : SponsorModel.SuspendDuration.Remove, args.Comments);
+      if (args.OK) Sponsor.Suspend(btnSuspend.IsChecked != null && btnSuspend.IsChecked.Value ? SponsorModel.SuspendDuration.Forever : SponsorModel.SuspendDuration.Remove, args.Comments);
       else btnSuspend.IsChecked = !btnSuspend.IsChecked; //otherwise this leaves the button where it was before the user clicked it.
     }
 
-    void btnSuspend_Checked(object sender, RoutedEventArgs e)
+    void BtnSuspendChecked(object sender, RoutedEventArgs e)
     {
       if (DiaryColumn.Width.Value < 350) DiaryColumn.Width = new GridLength(350); //nudge things out to where the suspension duration buttons all line up in a nice looking horizontal row
       btnSuspend.Content = "Suspended"; //for some reason changing Content property doesn't work via the same Style Trigger on this button where several other properties are successfully changed when IsChecked=true
     }
 
-    private void btnSuspendDuration_Click(object sender, RoutedEventArgs e)
+    private void BtnSuspendDurationClick(object sender, RoutedEventArgs e)
     {
-      sponsor.Suspend((string)((Button)sender).Tag);
+      Sponsor.Suspend((string)((Button)sender).Tag);
     }
 
-    private void btnRemoveRemark_Click(object sender, RoutedEventArgs e)
+    private void BtnRemoveRemarkClick(object sender, RoutedEventArgs e)
     {
       RemoveRemarkReasonPopup.State = gridRemarks.CurrentItem as DataRowView;
       RemoveRemarkReasonPopup.Show();
     }
 
-    private void RemoveRemarkReasonPopup_Result(ReasonPopupResultEventArgs args)
+    private void RemoveRemarkReasonPopupResult(ReasonPopupResultEventArgs args)
     {
-      if (args.OK) sponsor.RemoveRemark(args.State as DataRowView, args.Comments);
+      if (args.OK) Sponsor.RemoveRemark(args.State as DataRowView, args.Comments);
     }
 
 
-    private void CCodeSame_Click(object sender, RoutedEventArgs e)
+    private void CCodeSameClick(object sender, RoutedEventArgs e)
     {
-      sponsor.SetCCodesSame();
+      Sponsor.SetCCodesSame();
     }
 
-    private void ClientActive_Click(object sender, RoutedEventArgs e)
+    private void ClientActiveClick(object sender, RoutedEventArgs e)
     {
-      CheckBox chkClientActive = sender as CheckBox;
-      string Message;
-      bool ReasonRequired;
+      var chkClientActive = sender as CheckBox;
+      Debug.Assert(chkClientActive != null && chkClientActive.IsChecked != null, "chkClientActive != null");
+
+      string message;
+      bool reasonRequired;
+
 
       //yeah, kind of a crazy two-phase commit going on here to maintain separation of concerns between UI and model 
       //seems pretty well contained i guess... got any better ideas?
-      if (!sponsor.CheckClientActiveRules(chkClientActive.Tag as DataRowView,
-              chkClientActive.IsChecked.Value, out Message, out ReasonRequired))
-      {
-        if (ReasonRequired)
-        {
-          ReasonPopup reason = new ReasonPopup();
-          reason.Title = Message;
-          reason.State = chkClientActive;
-          reason.PlacementTarget = chkClientActive;
-          reason.Result += ActiveChange_Reason_Result;
-          reason.Show();
-        }
-        else App.ShowUserMessage(Message);
+      if (Sponsor.CheckClientActiveRules(chkClientActive.Tag as DataRowView,
+                                         chkClientActive.IsChecked.Value, out message,
+                                         out reasonRequired))
+        return;
 
-        chkClientActive.IsChecked = !chkClientActive.IsChecked.Value;
+      if (reasonRequired)
+      {
+        var reason = new ReasonPopup {Title = message, State = chkClientActive, PlacementTarget = chkClientActive};
+        reason.Result += ActiveChangeReasonResult;
+        reason.Show();
       }
+      else App.ShowUserMessage(message);
+
+      chkClientActive.IsChecked = !chkClientActive.IsChecked.Value;
     }
 
-    void ActiveChange_Reason_Result(ReasonPopupResultEventArgs args)
+    void ActiveChangeReasonResult(ReasonPopupResultEventArgs args)
     {
-      CheckBox chkClientActive = args.State as CheckBox;
-      string Message;
-      bool ReasonRequired;
+      var chkClientActive = args.State as CheckBox;
+      Debug.Assert(chkClientActive != null && chkClientActive.IsChecked != null, "chkClientActive != null");
 
-      if (args.OK)
-      {
-        if (sponsor.CheckClientActiveRules(chkClientActive.Tag as DataRowView, 
-              !chkClientActive.IsChecked.Value, //gotta flip the IsChecked bool because we nixed the flip prior to coming here (in case the user wound up aborting the reason input prior to coming here)
-              out Message, out ReasonRequired, args.Comments))
-          chkClientActive.IsChecked = !chkClientActive.IsChecked.Value; 
-      }
+      if (!args.OK) return;
+      string message;
+      bool reasonRequired;
+      if (Sponsor.CheckClientActiveRules(chkClientActive.Tag as DataRowView, 
+                                         !chkClientActive.IsChecked.Value, //gotta flip the IsChecked bool because we nixed the flip prior to coming here (in case the user wound up aborting the reason input prior to coming here)
+                                         out message, out reasonRequired, args.Comments))
+        chkClientActive.IsChecked = !chkClientActive.IsChecked.Value;
     }
 
-    private void gridRemarks_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+    private void GridRemarksBeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
       string msg;
       e.Cancel = RemarkModel.DenyEdit(e.Row.Item as DataRowView, e.Column.SortMemberPath, out msg);
       e.Row.ToolTip = msg;
     }
 
-    private void IsUTAPActive_Checked(object sender, RoutedEventArgs e)
+    private void IsUTAPActiveChecked(object sender, RoutedEventArgs e)
     {
       tabsSubsystems.SelectedItem = tabUTAP;
     }
 
-    private void DiaryAddPopup_Result(ReasonPopupResultEventArgs args)
+    private void DiaryAddPopupResult(ReasonPopupResultEventArgs args)
     {
       if (args.OK)
-        RemarkModel.AddNew(sponsor, sponsor.SponsorRemarks, 0, args.Comments, null, args.IsAlert);
+        RemarkModel.AddNew(Sponsor, Sponsor.SponsorRemarks, 0, args.Comments, null, args.IsAlert);
     }
 
   }
 
   public class Class1SellButtonToolTipConverter : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public Class1SellButtonToolTipConverter() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public Class1SellButtonToolTipConverter() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
       if (WPFHelpers.DesignMode) return (null);
 
       if (!(bool)values[0]) return("Deactive Sponsor, no new forms can be sold.");
-      else if ((int)values[1] < 1) return(String.Format("The maximum {0} NF1 forms have already been issued", SettingsModel.MaxClass1FormsCount));
-      else return("Sell New < 2500€ VAT Forms (NF1)");
+      return (int)values[1] < 1 ? (String.Format("The maximum {0} NF1 forms have already been issued", SettingsModel.MaxClass1FormsCount)) : ("Sell New < 2500€ VAT Forms (NF1)");
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
@@ -504,15 +512,17 @@ namespace iTRAACv2
 
   public class Class2SellButtonToolTipConverter : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public Class2SellButtonToolTipConverter() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public Class2SellButtonToolTipConverter() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
       if (WPFHelpers.DesignMode) return (null);
 
       if (!(bool)values[0]) return ("Deactive Sponsor, no new forms can be sold.");
-      else if ((bool)values[1]) return (String.Format("There is already an NF2 outstanding.", SettingsModel.MaxClass1FormsCount));
-      else return ("Sell New > 2500€ VAT Form (NF2)");
+      if ((bool)values[1]) return ("There is already an NF2 outstanding.");
+      return ("Sell New > 2500€ VAT Form (NF2)");
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
@@ -524,13 +534,15 @@ namespace iTRAACv2
 
   public class ShowDependentsSelectionList : WPFValueConverters.MarkupExtensionConverter, IValueConverter
   {
-    public ShowDependentsSelectionList() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public ShowDependentsSelectionList() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
-      IEnumerable<SponsorModel.DependentLight> DependentsList = (value as IEnumerable<SponsorModel.DependentLight>);
-      if (DependentsList == null) return(DependencyProperty.UnsetValue);
-      List<SponsorModel.DependentLight> list = DependentsList.ToList();
+      var dependentsList = (value as IEnumerable<SponsorModel.DependentLight>);
+      if (dependentsList == null) return(DependencyProperty.UnsetValue);
+      var list = dependentsList.ToList();
 
       return ( (list.Count == 1 && !list[0].IsSpouse) || list.Count > 1 ? 
         Visibility.Visible : Visibility.Collapsed);
@@ -544,19 +556,22 @@ namespace iTRAACv2
 
   public class ShowSetSponsor : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public ShowSetSponsor() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public ShowSetSponsor() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
-      bool IsAdmin = System.Convert.ToBoolean(values[0]);
+      var isAdmin = System.Convert.ToBoolean(values[0]);
 
-      DataRowView row = values[1] as DataRowView;
-      string SponsorGUID = row["SponsorGUID"].ToString();
+      var row = values[1] as DataRowView;
+      Debug.Assert(row != null, "row != null");
+      var sponsorGUID = row["SponsorGUID"].ToString();
 
-      bool IsSponsor = System.Convert.ToBoolean(values[2]);
+      var isSponsor = System.Convert.ToBoolean(values[2]);
 
-      return ( !IsSponsor && (IsAdmin || 
-        !row.Row.Table.Rows.Cast<DataRow>().Any(r => r["SponsorGUID"].ToString() == SponsorGUID && r.Field<bool>("IsSponsor"))) ) 
+      return ( !isSponsor && (isAdmin || 
+        !row.Row.Table.Rows.Cast<DataRow>().Any(r => r["SponsorGUID"].ToString() == sponsorGUID && r.Field<bool>("IsSponsor"))) ) 
         ? Visibility.Visible : Visibility.Collapsed;
     }
 

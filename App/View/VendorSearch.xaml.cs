@@ -1,39 +1,26 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Data;
+using System.Linq;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public delegate void VendorSearchCallback(object VendorID, object VendorName);
+  public delegate void VendorSearchCallback(object vendorID, object vendorName);
 
-  public partial class VendorSearch : ucBase
+  public partial class VendorSearch
   {
-    public object VendorGUID { get { return (_VendorGUID); } }
-    public object VendorName { get { return (_VendorName); } }
-
-    private object _VendorGUID = DBNull.Value;
-    private object _VendorName = DBNull.Value;
-
     public void Open(VendorSearchCallback callback)
     {
       if (popVendorSearch.IsOpen) return; //because we want to pop this open via both keyboard focus and click, it could be double fired
       popVendorSearch.IsOpen = true;
 
       //save keyboard focus so we can restore when closing
-      PrePopupFocusedElement = Keyboard.FocusedElement;
+      _prePopupFocusedElement = Keyboard.FocusedElement;
 
-      cb = callback;
+      _cb = callback;
 
       if (lbxVendorList.Items.Count == 0) //only force focus to input box if we haven't been here already this session
         txtVendorName.Focus();
@@ -41,19 +28,21 @@ namespace iTRAACv2
         ((ListBoxItem)lbxVendorList.ItemContainerGenerator.ContainerFromIndex(lbxVendorList.SelectedIndex)).Focus();
       else lbxVendorList.Focus();
     }
-    private IInputElement PrePopupFocusedElement;
-    private VendorSearchCallback cb = null;
-    private Proc Vendor_New = new iTRAACProc("Vendor_New");
+    private IInputElement _prePopupFocusedElement;
+    private VendorSearchCallback _cb;
+// ReSharper disable InconsistentNaming
+    private readonly Proc Vendor_New = new iTRAACProc("Vendor_New");
+// ReSharper restore InconsistentNaming
 
-    private void btnSelect_Click(object sender, object e)
+    private void BtnSelectClick(object sender, object e)
     {
-      DataRowView row = lbxVendorList.SelectedItem as DataRowView;
+      var row = lbxVendorList.SelectedItem as DataRowView;
       if (row == null) return; //i.e. if they hit select button w/o selecting a row in the grid
       CommonCloseLogic();
-      cb(row["RowGUID"], row["ShortDescription"]);
+      _cb(row["RowGUID"], row["ShortDescription"]);
     }
 
-    private void btnCancel_Click(object sender, RoutedEventArgs e)
+    private void BtnCancelClick(object sender, RoutedEventArgs e)
     {
       CommonCloseLogic();
     }
@@ -61,7 +50,7 @@ namespace iTRAACv2
     private void CommonCloseLogic()
     {
       popVendorSearch.IsOpen = false;
-      Keyboard.Focus(PrePopupFocusedElement);
+      Keyboard.Focus(_prePopupFocusedElement);
     }
 
     //datagrid approach:
@@ -86,32 +75,42 @@ namespace iTRAACv2
     }
     public static readonly DependencyProperty PlacementTargetProperty = DependencyProperty.Register(
       "PlacementTarget", typeof(UIElement), typeof(VendorSearch),
-        new PropertyMetadata(propertyChangedCallback : (obj, args) =>
-        { (obj as VendorSearch).popVendorSearch.PlacementTarget = args.NewValue as UIElement; })); 
+        new PropertyMetadata((obj, args) =>
+        { ((VendorSearch) obj).popVendorSearch.PlacementTarget = args.NewValue as UIElement; })); 
 
     #endregion
 
     #region Type ahead search logic
-    private BackgroundWorkerEx<VendorSearchArgs> VendorSearchTypeAhead = new BackgroundWorkerEx<VendorSearchArgs>();
+    private readonly BackgroundWorkerEx<VendorSearchArgs> _vendorSearchTypeAhead = new BackgroundWorkerEx<VendorSearchArgs>();
 
-    protected override void UserControl_Loaded(object sender, RoutedEventArgs e)
+    protected override void UserControlLoaded(object sender, RoutedEventArgs e)
     {
       txtVendorName.Focus();
 
-      VendorSearchTypeAhead.OnExecute += new BackgroundWorkerEx<VendorSearchArgs>.BackgroundWorkerExCallback(VendorSearchOnExecute);
-      VendorSearchTypeAhead.OnCompleted += new BackgroundWorkerEx<VendorSearchArgs>.BackgroundWorkerExCallback(VendorSearchOnCompleted);
+      _vendorSearchTypeAhead.OnExecute += VendorSearchOnExecute;
+      _vendorSearchTypeAhead.OnCompleted += VendorSearchOnCompleted;
     }
 
     private class VendorSearchArgs
     {
-      public System.Data.DataTable resultTable = null;
-      public string Text = null; //put a text propertyName on this object so that the generic ExecuteDataset(label) method can populate it with any error
-      public bool Success = false;
-      public string[] values = null;
+      public DataTable ResultTable;
+// ReSharper disable FieldCanBeMadeReadOnly.Local - Text & Success can be set by reflection via Proc.ExecuteDataset()
+// ReSharper disable UnassignedField.Local
+      public string Text; //put a text propertyName on this object so that the generic ExecuteDataset(label) method can populate it with any error
+// ReSharper restore UnassignedField.Local
+// ReSharper restore FieldCanBeMadeReadOnly.Local
+// ReSharper disable ConvertToConstant.Local
+// ReSharper disable FieldCanBeMadeReadOnly.Local
+// ReSharper disable UnassignedField.Local
+      public bool Success;
+// ReSharper restore UnassignedField.Local
+// ReSharper restore FieldCanBeMadeReadOnly.Local
+// ReSharper restore ConvertToConstant.Local
+      public readonly string[] Values;
 
-      public VendorSearchArgs(params string[] Values)
+      public VendorSearchArgs(params string[] values)
       {
-        values = Values;
+        Values = values;
       }
     }
 
@@ -122,7 +121,7 @@ namespace iTRAACv2
 
       //implement mutually exclusive text boxes... since their TextChanged event handlers all fire on eachother, this nixes the feedback loop
       //kill any pending search whenever the text is changed
-      VendorSearchTypeAhead.Cancel();
+      _vendorSearchTypeAhead.Cancel();
 
       //blank out any previously posted search errors
       lblVendorSearchError.Text = "";
@@ -138,36 +137,40 @@ namespace iTRAACv2
       }
 
       //(re)initiate search with new criteria
-     VendorSearchTypeAhead.Initiate(new VendorSearchArgs(
+      Debug.Assert(cbxVendorNameSearchType != null, "cbxVendorNameSearchType != null");
+      _vendorSearchTypeAhead.Initiate(new VendorSearchArgs(
         "VendorName", txtVendorName.Text,
-        "VendorName_SearchType", (cbxVendorNameSearchType.SelectedItem as ComboBoxItem).Content.ToString(),
+        "VendorName_SearchType", ((ComboBoxItem) cbxVendorNameSearchType.SelectedItem).Content.ToString(),
         "VendorCity", txtVendorCity.Text,
-        "VendorCity_SearchType", (cbxVendorCitySearchType.SelectedItem as ComboBoxItem).Content.ToString()
+        "VendorCity_SearchType", ((ComboBoxItem) cbxVendorCitySearchType.SelectedItem).Content.ToString()
       ));
     }
 
     //this happens off the UI thread
-    void VendorSearchOnExecute(VendorSearchArgs state)
+    static void VendorSearchOnExecute(VendorSearchArgs state)
     {
-      using (Proc Vendor_Search = new Proc("Vendor_Search"))
-        state.resultTable = Vendor_Search.AssignValues(state.values).ExecuteDataSet(state).Tables[0];
+// ReSharper disable InconsistentNaming
+      using (var Vendor_Search = new Proc("Vendor_Search"))
+// ReSharper restore InconsistentNaming
+        state.ResultTable = Vendor_Search.AssignValues(state.Values.ToArray<Object>()).ExecuteDataSet(state).Tables[0];
     }
 
     void VendorSearchOnCompleted(VendorSearchArgs state)
     {
       if (state.Success)
       {
-        lbxVendorList.ItemsSource = state.resultTable.DefaultView;
+        lbxVendorList.ItemsSource = state.ResultTable.DefaultView;
         //lbxVendorList.Columns[lbxVendorList.Columns.Count - 1].Visibility = Visibility.Hidden; //hide ShortDescription
         //lbxVendorList.Columns[lbxVendorList.Columns.Count - 2].Visibility = Visibility.Hidden; //hide VendorID
 
         if (lbxVendorList.Items.Count > 0)
         {
-          Dispatcher.BeginInvoke((Action)delegate() 
+          Dispatcher.BeginInvoke((Action)(() =>
           {
-           ((ListBoxItem)lbxVendorList.ItemContainerGenerator.ContainerFromIndex(0)).Focus();
-           lbxVendorList.SelectedIndex = 0;
-          }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+            ((ListBoxItem) lbxVendorList.ItemContainerGenerator.ContainerFromIndex(0))
+              .Focus();
+            lbxVendorList.SelectedIndex = 0;
+          }), System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
       }
       else
@@ -175,14 +178,14 @@ namespace iTRAACv2
     }
     #endregion
 
-    private void AddVendor_Click(object sender, RoutedEventArgs e)
+    private void AddVendorClick(object sender, RoutedEventArgs e)
     {
       Vendor_New.ExecuteNonQuery();
       CommonCloseLogic();
-      cb(Vendor_New["@VendorGUID"], Vendor_New["@VendorName"]);
+      _cb(Vendor_New["@VendorGUID"], Vendor_New["@VendorName"]);
     }
 
-    private void ClearVendor_Click(object sender, RoutedEventArgs e)
+    private void ClearVendorClick(object sender, RoutedEventArgs e)
     {
       Vendor_New.ClearParms();
       DataContext = null; DataContext = Vendor_New; //since Proc class is a POCO we have to manually refresh the UI bindings, NBD in this case.

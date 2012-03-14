@@ -1,24 +1,27 @@
-﻿using System.Collections;
-using System.DirectoryServices;
-using System.Security.Principal;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System;
+using System.Collections;
 using System.Configuration;
-using System;
+using System.Diagnostics;
+using System.DirectoryServices;
 using System.Linq;
+using System.Security.Principal;
 
+// ReSharper disable CheckNamespace
 class SecurityHelpers
+// ReSharper restore CheckNamespace
 {
-  static public string CurrentWindowsLoginName_SansDomain
+  static public string CurrentWindowsLoginNameSansDomain
   {
     get
     {
-      string[] login = WindowsIdentity.GetCurrent().Name.Split('\\');
+      var windowsIdentity = WindowsIdentity.GetCurrent();
+      if (windowsIdentity == null) return (null);
+      var login = windowsIdentity.Name.Split('\\');
       return (login[login.Length - 1]);
     }
   }
 
-  static public bool IsUserInGroup(string UserName, string GroupName)
+  static public bool IsUserInGroup(string userName, string groupName)
   {
     //nugget: unfortunately, adding the current Windows User to a new Group via the Windows CompMgmt.msc GUI does not register in the WindowsIdentity data structures until after a logout/login cycle
     //nugget: what i read was that the WindowsIdentity info is based on security tokens and the tokens are cached _ONLY_ at login time and is absolutely *not*refreshable* in any way other than logging out and back in
@@ -37,11 +40,12 @@ class SecurityHelpers
     {
       step = "1";
       //best to go after the local group and then check members so that we can handle a domain user being in our local group
-      DirectoryEntry group = new DirectoryEntry("WinNT://./" + GroupName + ",group"); //nugget: 
+      var group = new DirectoryEntry("WinNT://./" + groupName + ",group"); //nugget: 
       step = "2";
-      IEnumerable members = group.Invoke("members") as IEnumerable;
+      var members = group.Invoke("members") as IEnumerable;
       step = "3";
-      return (members.Cast<object>().Any(g => new DirectoryEntry(g).Name == UserName));
+      Debug.Assert(members != null, "members != null");
+      return (members.Cast<object>().Any(g => new DirectoryEntry(g).Name == userName));
 
       //foreach (object group in groups) Console.WriteLine(new DirectoryEntry(group).Name);
       //DirectoryEntry iTRAAC_Users = new DirectoryEntry("WinNT://./" + GroupName + ",group"); //nugget: 
@@ -49,14 +53,14 @@ class SecurityHelpers
       //string CurrentUserName = WindowsLoginNameSansDomain;
       //foreach (object member in members) if (new DirectoryEntry(member).Name == CurrentUserName) return (true);
     }
-    catch (/*System.Runtime.InteropServices.COMException*/ System.Exception ex)
+    catch (/*System.Runtime.InteropServices.COMException*/ Exception ex)
     {
       //nugget: on my dev Win7 box, when the iTRAAC_Users group was not yet created, i'd get a nice COMException with coherent message text
       //nugget: but on field Vista boxes i just get a "Uknown error (0x800708ac)" which seems to be correspond to the same thing given the Google hits
       if (ex.Message.Contains("The group name could not be found")
         || ex.Message.Contains("0x800708ac")) return (false);
-      else throw (new Exception(String.Format("Error occurred attempting to access local user/group info @step {0}\r\n\r\n{1}\r\n{2}", 
-        step, ex.GetType(), ex.Message)));
+      throw (new Exception(String.Format("Error occurred attempting to access local user/group info @step {0}\r\n\r\n{1}\r\n{2}", 
+                                         step, ex.GetType(), ex.Message)));
     }
   }
 
@@ -70,10 +74,11 @@ class SecurityHelpers
 
     // Open the configuration file and retrieve the connectionStrings section.
     // WARNING: System.AppDomain.CurrentDomain.FriendlyName supposedly doesn't return what you'd expect under click-once deployment ("DefaultDomain" or something like that)
-    Configuration config = ConfigurationManager.OpenExeConfiguration(System.AppDomain.CurrentDomain.FriendlyName);
+    var config = ConfigurationManager.OpenExeConfiguration(AppDomain.CurrentDomain.FriendlyName);
 
-    ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
+    var section = config.GetSection("connectionStrings") as ConnectionStringsSection;
 
+    Debug.Assert(section != null, "section != null");
     if (section.SectionInformation.IsProtected)
     {
       section.SectionInformation.UnprotectSection();

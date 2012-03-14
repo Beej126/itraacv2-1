@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Reflection;
@@ -15,7 +16,9 @@ using System.ComponentModel;
 /// Basically a wrapper around SqlCommand.
 /// One benefit is .Parameters is pre-populated and conveniently exposed as Proc[string] indexer.
 /// </summary>
+// ReSharper disable CheckNamespace
 public class Proc : IDisposable
+// ReSharper restore CheckNamespace
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {
   #region Wait Cursor stuff
@@ -28,78 +31,84 @@ public class Proc : IDisposable
   private class DummyDisposable : IDisposable { public void Dispose() { } };
   #endregion
 
-  public delegate void ExecuteMessageCallback(string Message);
-  static public ExecuteMessageCallback MessageCallback = null;
+  public delegate void ExecuteMessageCallback(string message);
+  static public ExecuteMessageCallback MessageCallback;
 
-  private void DoMessageCallback(string Message, string Prefix = null)
+  private void DoMessageCallback(string message, string prefix = null)
   {
-    if (Message == null) return;
+    if (message == null) return;
 
-    if (MessageCallback != null) MessageCallback(Prefix + SqlClientHelpers.SqlErrorTextCleaner(Message));
-    else throw (new Exception(Message));
+    if (MessageCallback != null) MessageCallback(prefix + SqlClientHelpers.SqlErrorTextCleaner(message));
+    else throw (new Exception(message));
   }
 
-  private void DoMessageCallback(Exception ex, string Prefix = null)
+  private void DoMessageCallback(Exception ex, string prefix = null)
   {
     if (ex == null) return;
 
-    if (MessageCallback != null) DoMessageCallback(ex.Message, Prefix);
-    else throw (Prefix == null ? ex : new Exception(Prefix + ex.Message)); //the context info provided by Prefix seems important enough to toss all the other exception info in the balance... we could probably get a little more fancy here if that info becomes crucial
+    if (MessageCallback != null) DoMessageCallback(ex.Message, prefix);
+    else throw (prefix == null ? ex : new Exception(prefix + ex.Message)); //the context info provided by Prefix seems important enough to toss all the other exception info in the balance... we could probably get a little more fancy here if that info becomes crucial
   }
 
   public string PrintOutput { get; private set; }
 
-  static public string ConnectionString = null;
+  static public string ConnectionString;
   public bool TrimAndNull = true;
-  private SqlCommand _cmd = null;
-  private string _ProcName = null;
-  private string _UserName = null;
-  private DataSet _ds = null;
+  private SqlCommand _cmd;
+  private readonly string _procName;
+  private readonly string _userName;
+  private DataSet _ds;
 
-  private bool ProcOwnsDataSet = true;
-  public DataSet dataSet { get { return (_ds); } set { _ds = value; ProcOwnsDataSet = false; } }
+  private bool _procOwnsDataSet = true;
+  public DataSet DataSet { get { return (_ds); } set { _ds = value; _procOwnsDataSet = false; } }
 
-  public Proc(string ProcName) : this(ProcName, null) { }
+  public Proc(string procName) : this(procName, null) { }
 
-  public bool IsDevMode { get { return (System.Diagnostics.Process.GetCurrentProcess().ProcessName == "devenv"); } }
+  public bool IsDevMode { get { return (Process.GetCurrentProcess().ProcessName == "devenv"); } }
 
   /// <summary>
   /// 
   /// </summary>
-  /// <param name="ProcName"></param>
-  /// <param name="UserName">pass this in to set "Workstation ID" which can be obtained via T-SQL's HOST_NAME() function... as a handy layup for a simple table audit framework :)</param>
+  /// <param name="procName"></param>
+  /// <param name="userName">pass this in to set "Workstation ID" which can be obtained via T-SQL's HOST_NAME() function... as a handy layup for a simple table audit framework :)</param>
   // I'm not entirely convinced this is the most elegant way to support this versus something more "automatic" in the background
   // the main challenge is maintaining a generically reusable Proc class that doesn't know whether it's running under ASP.Net or WPF
   // so rather than implementing a bunch of dynamic "drilling" to identify where you are and who the current username is
   // i'm thinking this is a nice "good enough" for now to simply pass it in from the outercontext
-  public Proc(string ProcName, string UserName)
+  public Proc(string procName, string userName)
   {
 
-    _ProcName = ProcName;
-    _UserName = UserName;
+    _procName = procName;
+    _userName = userName;
     //scratch that idea... see "NOOP" comment further down: if (_ProcName == "NOOP") return; //this supports doing nothing if we're chaining AssignValues(DataRowView).ExecuteNonQuery() and the DataRowView.Row.RowState == UnChanged
 
     if (IsDevMode) return;
 
-    Assert.Check(ConnectionString != null, "'Proc.ConnectionString' must be assigned prior to creating Proc instances, System.ComponentModel.LicenseManager.UsageMode: " + System.ComponentModel.LicenseManager.UsageMode.ToString() + ", System.Diagnostics.Process.GetCurrentProcess().ProcessName: " + System.Diagnostics.Process.GetCurrentProcess().ProcessName);
+    Assert.Check(ConnectionString != null, 
+      "'Proc.ConnectionString' must be assigned prior to creating Proc instances, System.ComponentModel.LicenseManager.UsageMode: " + 
+      LicenseManager.UsageMode.ToString() + ", System.Diagnostics.Process.GetCurrentProcess().ProcessName: " + 
+      Process.GetCurrentProcess().ProcessName);
 
-    if (_ProcName.Left(4).ToLower() != "dbo.") _ProcName = "dbo." + _ProcName;
+    if (_procName.Left(4).ToLower() != "dbo.") _procName = "dbo." + _procName;
 
     PopulateParameterCollection();
   }
-  static private Regex UDTParamTypeNameFix = new Regex(@"(.*?)\.(.*?)\.(.*)", RegexOptions.Compiled);
-  static private Dictionary<string, SqlCommand> _parmcache = new Dictionary<string, SqlCommand>(StringComparer.OrdinalIgnoreCase); 
+  static private readonly Regex UDTParamTypeNameFix = new Regex(@"(.*?)\.(.*?)\.(.*)", RegexOptions.Compiled);
+  static private readonly Dictionary<string, SqlCommand> Parmcache = new Dictionary<string, SqlCommand>(StringComparer.OrdinalIgnoreCase); 
 
   public SqlParameterCollection Parameters { get { return (_cmd.Parameters); } }
 
   public string[] TableNames { 
-    get { Assert.Check(dataSet != null, "{}.TableNames pulled prior to populating its dataset", _ProcName); 
-    return (dataSet.Tables.Cast<DataTable>().Select(t => t.TableName).ToArray()); } }
+    get { 
+      Debug.Assert(DataSet != null, String.Format("Proc.TableNames pulled prior to populating dataset (procname: {0})", _procName));
+      return (DataSet.Tables.Cast<DataTable>().Select(t => t.TableName).ToArray());
+    }
+  }
 
-  public string[] MatchingTableNames(params string[] BaseTableNames)
+  public string[] MatchingTableNames(params string[] baseTableNames)
   {
-    if (BaseTableNames.Length == 0) return (TableNames); //if no table name filter specified, then we want all of them
-    return(TableNames.Where(have => BaseTableNames.Any(want => //nugget: compare two lists with linq and take the intersection, 
+    if (baseTableNames.Length == 0) return (TableNames); //if no table name filter specified, then we want all of them
+    return(TableNames.Where(have => baseTableNames.Any(want => //nugget: compare two lists with linq and take the intersection, 
       Regex.IsMatch(have, want + @"(\.[0-9]+)?$", RegexOptions.IgnoreCase))).ToArray()); //nugget: with a Regex for the comparison <nice>
 
     /* this was a fun learning exercise, but there's too much ambiguity involved with IEqualityComparer's dependence on having a rational GetHashCode() available
@@ -111,26 +120,21 @@ public class Proc : IDisposable
           Regex.IsMatch(have, want + @"(\.[0-9]+)?$", RegexOptions.IgnoreCase))).ToArray(); //around a comparison lambda */
   }
 
-  private void PopulateParameterCollection(bool RefreshCache = false)
+  private void PopulateParameterCollection(bool refreshCache = false)
   {
     //pull cached parms if available
-    string logicalConnectionString = ConnectionString + ((_UserName != null) ? ";Workstation ID=" + _UserName : "");
-    string parmcachekey = logicalConnectionString + "~" + _ProcName;
+    var logicalConnectionString = ConnectionString + ((_userName != null) ? ";Workstation ID=" + _userName : "");
+    var parmcachekey = logicalConnectionString + "~" + _procName;
 
     //this is used to facilitate an automatic parm load retry when we run into a "parameter missing" exception
-    if (RefreshCache) { _parmcache.Remove(parmcachekey); return; }
+    if (refreshCache) { Parmcache.Remove(parmcachekey); return; }
         
-    bool HasCachedParms = _parmcache.TryGetValue(parmcachekey, out _cmd);
-    if (HasCachedParms) _cmd = _cmd.Clone();
-    else
-    {
-      _cmd = new SqlCommand(_ProcName);
-      _cmd.CommandType = CommandType.StoredProcedure;
-    }
+    var hasCachedParms = Parmcache.TryGetValue(parmcachekey, out _cmd);
+    _cmd = hasCachedParms ? _cmd.Clone() : new SqlCommand(_procName) {CommandType = CommandType.StoredProcedure};
     _cmd.Connection = new SqlConnection(logicalConnectionString);
     if (_cmd.Connection.State != ConnectionState.Open) _cmd.Connection.Open();
 
-    if (!HasCachedParms)
+    if (!hasCachedParms)
     {
       //i love this little gem, 
       //this allows us to skip all that noisy boiler plate proc parm definition code in the calling context, and simply assign parm names to values 
@@ -145,7 +149,7 @@ public class Proc : IDisposable
           if (m.Success) p.TypeName = m.Groups[2] + "." + m.Groups[3];
         }
 
-      _parmcache.Add(parmcachekey, _cmd.Clone()); //nugget: cache SqlCommand objects to avoid unnecessary SqlCommandBuilder.DeriveParameters() calls
+      Parmcache.Add(parmcachekey, _cmd.Clone()); //nugget: cache SqlCommand objects to avoid unnecessary SqlCommandBuilder.DeriveParameters() calls
     }
   }
 
@@ -196,14 +200,14 @@ public class Proc : IDisposable
   {
     if (_cmd != null)
     {
-      _cmd.Connection.InfoMessage -= Connection_InfoMessage;
+      _cmd.Connection.InfoMessage -= ConnectionInfoMessage;
       _cmd.Connection.Dispose();
       _cmd.Connection = null;
       _cmd.Dispose();
       _cmd = null;
     }
 
-    if (_ds !=null && ProcOwnsDataSet) _ds.Dispose();
+    if (_ds !=null && _procOwnsDataSet) _ds.Dispose();
     _ds = null;
   }
 
@@ -212,13 +216,13 @@ public class Proc : IDisposable
     if (IsDevMode) return (this); 
     //this doesn't work like it should: if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime) return(null);
 
-    using (IDisposable obj = NewWaitObject())
-    using (SqlDataAdapter da = new SqlDataAdapter(_cmd))
+    using (NewWaitObject())
+    using (var da = new SqlDataAdapter(_cmd))
     {
       if (_ds == null) _ds = new DataSet();
       _ds.EnforceConstraints = false;
       if (_cmd.Connection.State != ConnectionState.Open) _cmd.Connection.Open();
-      _cmd.Connection.InfoMessage += Connection_InfoMessage; //nugget: capture print/raiserror<11 output
+      _cmd.Connection.InfoMessage += ConnectionInfoMessage; //nugget: capture print/raiserror<11 output
       da.MissingSchemaAction = MissingSchemaAction.AddWithKey; //this magical line tells ADO.Net to go to the trouble of bringing back the schema info like DataColumn.MaxLength (which would otherwise always be -1!!)
       //da.FillSchema(_ds, SchemaType.Source);
       try
@@ -254,7 +258,7 @@ public class Proc : IDisposable
 
       Assert.Check(tableNames.Length == _ds.Tables.Count,
         String.Format("{0}[@TableNames] specifies {1} table(s), but proc returned {2} resultsets.",
-        _ProcName, tableNames.Length, _ds.Tables.Count));
+        _procName, tableNames.Length, _ds.Tables.Count));
 
       //at this point it's just a matter of renaming the DataSet.Tables by ordinal mapping to our unique list of tablenames...
       for(int i=0; i<tableNames.Length; i++) _ds.Tables[i].TableName = tableNames[i];
@@ -265,7 +269,7 @@ public class Proc : IDisposable
     }
   }
 
-  void Connection_InfoMessage(object sender, SqlInfoMessageEventArgs e)
+  void ConnectionInfoMessage(object sender, SqlInfoMessageEventArgs e)
   {
     PrintOutput = e.Message;
   }
@@ -276,7 +280,7 @@ public class Proc : IDisposable
 
     try
     {
-      return(ExecuteDataSet().dataSet);
+      return(ExecuteDataSet().DataSet);
     }
     catch(Exception ex) {
       ReflectionHelpers.PropertySetter(label, "Success", false);
@@ -284,32 +288,31 @@ public class Proc : IDisposable
       //if the caller has provided a way to display the error then do so
       if (ReflectionHelpers.PropertySetter(label, "Text", SqlClientHelpers.SqlErrorTextCleaner(ex.Message)))
         return (null);
-      //otherwise rethrow so that we can see the bug that caused the exception and fix it
-      else 
-        throw (ex);
+      //otherwise rethrow so that we can see the buggy that caused the exception and fix it
+      throw;
     }
   }
 
-  public bool ExecuteDataSet(String ExecuteMessagePrefix, bool DisplaySuccess = false)
+  public bool ExecuteDataSet(String executeMessagePrefix, bool displaySuccess = false)
   {
     try
     {
       ExecuteDataSet();
-      if (DisplaySuccess) DoMessageCallback(ExecuteMessagePrefix == null ? "Saved Successfully" : ExecuteMessagePrefix + "successful");
+      if (displaySuccess) DoMessageCallback(executeMessagePrefix == null ? "Saved Successfully" : executeMessagePrefix + "successful");
       return (true);
     }
     catch (Exception ex)
     {
-      DoMessageCallback(ex, ExecuteMessagePrefix);
+      DoMessageCallback(ex, executeMessagePrefix);
       return (false);
     }
   }
 
-  public Proc ExecuteNonQuery(bool RetryContext = false)
+  public Proc ExecuteNonQuery(bool retryContext = false)
   {
     if (_cmd == null) return (this);
 
-    using (IDisposable obj = NewWaitObject())
+    using (NewWaitObject())
     {
       try
       {
@@ -318,63 +321,63 @@ public class Proc : IDisposable
       catch (Exception ex)
       {
         //nugget: automatic reload of the proc parms in case we're actively patching procs while running... it was easy to implement here, still need to investigate feasibility of implementing ExecuteDataSet() with this approach
-        if (!RetryContext && ex.Message.Contains("expects parameter")) //nugget:
+        if (!retryContext && ex.Message.Contains("expects parameter")) //nugget:
         {
-          PopulateParameterCollection(RefreshCache: true); //nugget:
+          PopulateParameterCollection(refreshCache: true); //nugget:
           ExecuteNonQuery(true); //nugget: retry 
         }
-        else throw (ex); 
+        else throw; 
       }
       return (this);
     }
   }
 
-  public bool ExecuteNonQuery(object label, bool DisplaySuccess)
+  public bool ExecuteNonQuery(object label, bool displaySuccess)
   {
     try
     {
       ExecuteNonQuery();
-      if (DisplaySuccess) ReflectionHelpers.PropertySetter(label, "Text", "Saved Successfully");
+      if (displaySuccess) ReflectionHelpers.PropertySetter(label, "Text", "Saved Successfully");
       return (true);
     }
     catch (Exception ex)
     {
       if (!ReflectionHelpers.PropertySetter(label, "Text", SqlClientHelpers.SqlErrorTextCleaner(ex.Message)))
-        throw (ex);
+        throw;
       return (false);
     }
   }
 
-  public void ExecuteNonQueryBackground(String ExecuteMessagePrefix, bool DisplaySuccess = false)
+  public void ExecuteNonQueryBackground(String executeMessagePrefix, bool displaySuccess = false)
   {
     (new System.Threading.Thread(delegate()
     {
       try
       {
-        ExecuteNonQuery(ExecuteMessagePrefix, DisplaySuccess, false);
+        ExecuteNonQuery(executeMessagePrefix, displaySuccess);
       }
       catch (Exception ex) //this exception handler should be included as part of this threading pattern wherever else it's implemented so that we don't lose errors behind the scenes
       {
-        DoMessageCallback(ex, ExecuteMessagePrefix);
+        DoMessageCallback(ex, executeMessagePrefix);
       }
     })).Start();
   }
 
-  public bool ExecuteNonQuery(String ExecuteMessagePrefix, bool DisplaySuccess = false, bool BackgroundThreadContext = false)
+  public bool ExecuteNonQuery(String executeMessagePrefix, bool displaySuccess = false, bool backgroundThreadContext = false)
   {
     Assert.Check(MessageCallback != null, "SqlClientHelpers.cs : Proc.MessageCallback should not be null when calling this overload");
 
     try
     {
       ExecuteNonQuery();
-      if (DisplaySuccess) DoMessageCallback(ExecuteMessagePrefix + "Saved Successfully");
-      if (BackgroundThreadContext) Dispose();
+      if (displaySuccess) DoMessageCallback(executeMessagePrefix + "Saved Successfully");
+      if (backgroundThreadContext) Dispose();
       return (true);
     }
     catch (Exception ex)
     {
-      if (BackgroundThreadContext) throw (ex);
-      DoMessageCallback(ex, ExecuteMessagePrefix);
+      if (backgroundThreadContext) throw;
+      DoMessageCallback(ex, executeMessagePrefix);
       return (false);
     }
   }
@@ -383,7 +386,7 @@ public class Proc : IDisposable
   {
     get
     {
-      Assert.Check(_ds != null, "must execute proc prior to retrieving tables");
+      Debug.Assert(_ds != null, "must execute proc prior to retrieving tables");
       return (_ds.Tables);
     }
   }
@@ -395,7 +398,7 @@ public class Proc : IDisposable
       if (IsDevMode) return(new DataTable());
 
       if (_ds == null) ExecuteDataSet();
-      //Assert.Check(_ds != null, "must execute proc prior to retrieving tables");
+      Debug.Assert(_ds != null, "_ds != null");
       return (_ds.Tables.Count > 0 ? _ds.Tables[0] : null);
     }
   }
@@ -477,17 +480,17 @@ public static class SqlClientHelpers
     return (vals);
   }
 
-  static public string BuildRowFilter(params string[] Filters)
+  static public string BuildRowFilter(params string[] filters)
   {
-    return (String.Join(" AND ", Filters.Where(s => !String.IsNullOrWhiteSpace(s))));
+    return (String.Join(" AND ", filters.Where(s => !String.IsNullOrWhiteSpace(s))));
   }
 
-  static public void SetReadonlyField(this DataRow row, string ColName, object Data)
+  static public void SetReadonlyField(this DataRow row, string colName, object data)
   {
-    bool current = row.Table.Columns[ColName].ReadOnly;
-    row.Table.Columns[ColName].ReadOnly = false;
-    row[ColName] = Data;
-    row.Table.Columns[ColName].ReadOnly = current;
+    bool current = row.Table.Columns[colName].ReadOnly;
+    row.Table.Columns[colName].ReadOnly = false;
+    row[colName] = data;
+    row.Table.Columns[colName].ReadOnly = current;
   }
 
 
@@ -502,60 +505,63 @@ public static class SqlClientHelpers
   //  if (OnListChanged != null) OnListChanged(v, new ListChangedEventArgs(ListChangedType.Reset, 0));
   //}
 
-  static public T Field<T>(this DataRowView drv, string FieldName)
+  static public T Field<T>(this DataRowView drv, string fieldName)
   {
-    return ((drv == null || drv[FieldName] is DBNull || drv.Row.RowState == DataRowState.Detached) ? default(T) : drv.Row.Field<T>(FieldName));
+    return ((drv == null || drv[fieldName] is DBNull || drv.Row.RowState == DataRowState.Detached) ? default(T) : drv.Row.Field<T>(fieldName));
   }
 
 
-  static public bool IsFieldsModified(this DataRow row, params string[] FieldNames)
+  static public bool IsFieldsModified(this DataRow row, params string[] fieldNames)
   {
-    foreach (string FieldName in FieldNames)
-      if (row[FieldName, DataRowVersion.Original].ToString() != row[FieldName, DataRowVersion.Current].ToString())
-        return (true);
-    return (false);
+    return fieldNames.Any(fieldName => row[fieldName, DataRowVersion.Original].ToString() != row[fieldName, DataRowVersion.Current].ToString());
   }
 
-  static public void SetAllNonDBNullColumnsToEmptyString(this DataRow r, string EmptyPlaceholder = "")
+  static public void SetAllNonDBNullColumnsToEmptyString(this DataRow r, string emptyPlaceholder = "")
   {
     if (r == null) return;
-    foreach (DataColumn c in r.Table.Columns) if (!c.AllowDBNull && r[c.ColumnName] == DBNull.Value) r[c.ColumnName] = EmptyPlaceholder;
+    foreach (DataColumn c in from DataColumn c in r.Table.Columns where !c.AllowDBNull && r[c.ColumnName] == DBNull.Value select c)
+      r[c.ColumnName] = emptyPlaceholder;
   }
 
   /// <summary>
   /// This is the 'undo' of SetAllNonDBNullColumnsToEmptyString()
   /// </summary>
   /// <param name="r"></param>
-  /// <param name="EmptyPlaceholder"></param>
-  static public void RemoveEmptyPlaceholder(this DataRow r, string EmptyPlaceholder)
+  /// <param name="emptyPlaceholder"></param>
+  static public void RemoveEmptyPlaceholder(this DataRow r, string emptyPlaceholder)
   {
     if (r == null) return;
-    foreach (DataColumn c in r.Table.Columns) if (!c.AllowDBNull && r[c.ColumnName].ToString() == EmptyPlaceholder) r[c.ColumnName] = DBNull.Value;
+    foreach (DataColumn c in from DataColumn c in r.Table.Columns where !c.AllowDBNull && r[c.ColumnName].ToString() == emptyPlaceholder select c)
+      r[c.ColumnName] = DBNull.Value;
   }
 
 
-  static private FieldInfo DataRowView_OnPropertyChanged = typeof(DataRowView).GetField("onPropertyChanged", BindingFlags.NonPublic | BindingFlags.Instance);
-  static public void SetColumnError(this DataRowView drv, string FieldName, string Message)
+  static private readonly FieldInfo DataRowViewOnPropertyChanged = typeof(DataRowView).GetField("onPropertyChanged", BindingFlags.NonPublic | BindingFlags.Instance);
+  static public void SetColumnError(this DataRowView drv, string fieldName, string message)
   {
-    drv.Row.SetColumnError(FieldName, Message);
-    (DataRowView_OnPropertyChanged.GetValue(drv) as PropertyChangedEventHandler)(drv, new PropertyChangedEventArgs(FieldName));
+    drv.Row.SetColumnError(fieldName, message);
+    var propertyChangedEventHandler = DataRowViewOnPropertyChanged.GetValue(drv) as PropertyChangedEventHandler;
+    if (propertyChangedEventHandler != null)
+      propertyChangedEventHandler(drv, new PropertyChangedEventArgs(fieldName));
   }
 
-  static public void ClearColumnError(this DataRowView drv, string FieldName)
+  static public void ClearColumnError(this DataRowView drv, string fieldName)
   {
     //if no current error, clear previous one (if there was one) and notify UI
     //... trying to minimize notifications as much as possible, rather than just firing notify either way
-    if (drv.Row.GetColumnError(FieldName) != "")
+    if (drv.Row.GetColumnError(fieldName) != "")
     {
-      drv.Row.SetColumnError(FieldName, "");
-      (DataRowView_OnPropertyChanged.GetValue(drv) as PropertyChangedEventHandler)(drv, new PropertyChangedEventArgs(FieldName));
+      drv.Row.SetColumnError(fieldName, "");
+      var propertyChangedEventHandler = DataRowViewOnPropertyChanged.GetValue(drv) as PropertyChangedEventHandler;
+      if (propertyChangedEventHandler != null)
+        propertyChangedEventHandler(drv, new PropertyChangedEventArgs(fieldName));
     }
   }
 
   
-  public static bool ColumnsContain(this DataRowView drv, string ColumnName)
+  public static bool ColumnsContain(this DataRowView drv, string columnName)
   {
-    return(drv.Row.Table.Columns.Contains(ColumnName));
+    return(drv.Row.Table.Columns.Contains(columnName));
   }
 
   public static void AcceptChanges(this DataRowView drv)
@@ -570,20 +576,20 @@ public static class SqlClientHelpers
 
   public static bool IsDirty(this DataRowView drv)
   {
-    return (drv == null ? false : !(drv.Row.RowState == DataRowState.Unchanged || drv.Row.RowState == DataRowState.Detached));
+    return (drv != null && !(drv.Row.RowState == DataRowState.Unchanged || drv.Row.RowState == DataRowState.Detached));
   }
 
   /// <summary>
   /// 
   /// </summary>
   /// <param name="v"></param>
-  /// <param name="RespectRowFilter">If true, does NOT clear RowFilter prior to dirty check.</param>
+  /// <param name="respectRowFilter">If true, does NOT clear RowFilter prior to dirty check.</param>
   /// <returns></returns>
-  public static bool IsDirty(this DataView v, bool RespectRowFilter = true)
+  public static bool IsDirty(this DataView v, bool respectRowFilter = true)
   {
     if (v == null) return (false);
 
-    //nugget: this approach of clearing the rowfilter, and then restoring it created a bug.
+    //nugget: this approach of clearing the rowfilter, and then restoring it created a buggy.
     //        TextBox bound to this view would lose it's focus as you were entering text, not gonna work.
     //        the entry would fire the PropertyChanged -> IsModified -> IsDirty()
     //
@@ -597,7 +603,7 @@ public static class SqlClientHelpers
     string saveFilter = "";
     try
     {
-      if (!RespectRowFilter & v.RowFilter != "")
+      if (!respectRowFilter & v.RowFilter != "")
       {
         saveFilter = v.RowFilter;
         v.RowFilter = "";
@@ -610,10 +616,10 @@ public static class SqlClientHelpers
     }
   }
 
-  static public void DetachRowsAndDispose(this DataView v, bool PreserveRowFilter = false)
+  static public void DetachRowsAndDispose(this DataView v, bool preserveRowFilter = false)
   {
     if (v == null) return;
-    if (!PreserveRowFilter) v.RowFilter = "";
+    if (!preserveRowFilter) v.RowFilter = "";
     foreach (DataRowView r in v) r.DetachRow();
     v.Dispose();
   }
@@ -631,18 +637,18 @@ public static class SqlClientHelpers
   }
 
 
-  static public void AddRelation(this DataSet ds, string Name, DataColumn Parent, DataColumn Child, bool EnforceConstraints = true)
+  static public void AddRelation(this DataSet ds, string name, DataColumn parent, DataColumn child, bool enforceConstraints = true)
   {
-    if (!ds.Relations.Contains(Name))
+    if (!ds.Relations.Contains(name))
     {
-      ds.Relations.Add(Name, Parent, Child, EnforceConstraints);
+      ds.Relations.Add(name, parent, child, enforceConstraints);
     }
   }
 
-  static public void AddColumn(this DataTable Table, string ColName, Type type, string Expression)
+  static public void AddColumn(this DataTable table, string colName, Type type, string expression)
   {
-    if (!Table.Columns.Contains(ColName))
-      Table.Columns.Add(ColName, type, Expression);
+    if (!table.Columns.Contains(colName))
+      table.Columns.Add(colName, type, expression);
   }
 
   static public IEnumerable<Dictionary<string, object>> ToSimpleTable(this DataTable t)
@@ -659,7 +665,7 @@ public static class SqlClientHelpers
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  private static string[] _SQLErrorTranslations = new string[]
+  private static readonly string[] SqlErrorTranslations = new[]
   {
     //Cannot insert the value NULL into column 'CreateDate', table 'iTRAACv2.dbo.ClientPreviousSponsor'; column does not allow nulls. INSERT fails.
     @"Cannot insert the value NULL into column '(.+?)', table '(.+?)'",
@@ -676,22 +682,22 @@ public static class SqlClientHelpers
   /// Regular expression string for patterns to be deleted from designated SQL object name
   /// e.g. "(^tbl|^vw_|^dbo.)"
   /// </summary>
-  public static string SQLError_ObjectRemoveRegex //
+  public static string SqlErrorObjectRemoveRegex //
   {
     get
     {
-      return (_SQLError_ObjectRemoveRegex.ToString());
+      return (_sqlErrorObjectRemoveRegex.ToString());
     }
     set
     {
-      _SQLError_ObjectRemoveRegex = new Regex(value, RegexOptions.Compiled);
+      _sqlErrorObjectRemoveRegex = new Regex(value, RegexOptions.Compiled);
     }
   }
-  private static Regex _SQLError_ObjectRemoveRegex = null;
+  private static Regex _sqlErrorObjectRemoveRegex;
 
   static SqlClientHelpers()
   {
-    SQLError_ObjectRemoveRegex = @"^dbo\.";
+    SqlErrorObjectRemoveRegex = @"^dbo\.";
   }
 
   /// <summary>
@@ -704,26 +710,26 @@ public static class SqlClientHelpers
   /// <returns></returns>
   public static string SqlErrorTextCleaner(string message)
   {
-    for (int i = 0; i < _SQLErrorTranslations.Length-1; i += 2)
+    for (int i = 0; i < SqlErrorTranslations.Length-1; i += 2)
     {
-      Regex regex = new Regex(_SQLErrorTranslations[i]);
-      Match m = regex.Match(message);
+      var regex = new Regex(SqlErrorTranslations[i]);
+      var m = regex.Match(message);
       if (m.Success)
       {
         if (m.Groups["object"].Success)
         {
           string objectname = m.Groups["object"].Value;
 
-          if (_SQLError_ObjectRemoveRegex != null)
+          if (_sqlErrorObjectRemoveRegex != null)
           {
-            objectname = _SQLError_ObjectRemoveRegex.Replace(objectname, ""); //for example, first time removes "^dbo." 
-            objectname = _SQLError_ObjectRemoveRegex.Replace(objectname, ""); //and then second time removes "^tbl"
+            objectname = _sqlErrorObjectRemoveRegex.Replace(objectname, ""); //for example, first time removes "^dbo." 
+            objectname = _sqlErrorObjectRemoveRegex.Replace(objectname, ""); //and then second time removes "^tbl"
             //this two step allows the replacement patterns to be prefix targeted rather than openly replacing the pattern found anywhere in the string
           }
 
           m = regex.Match(message.Replace(m.Groups["object"].Value, objectname)); //repopulate the groups with the updated <object>
         }
-        return (String.Format(_SQLErrorTranslations[i + 1], m.Groups[0], m.Groups[1], m.Groups[2], m.Groups[3], m.Groups[4], m.Groups[5]));
+        return (String.Format(SqlErrorTranslations[i + 1], m.Groups[0], m.Groups[1], m.Groups[2], m.Groups[3], m.Groups[4], m.Groups[5]));
       }
     }
     return (message);
@@ -732,23 +738,21 @@ public static class SqlClientHelpers
   public static void AddInitialEmptyRows(DataSet ds, StringCollection rootTables)
   {
     //if root table is totally empty, create an initial row so that the grids show up and are ready to add the first entry
-    foreach (string r in rootTables)
+    foreach (var r in rootTables)
     {
-      DataTable t = ds.Tables[r];
+      var t = ds.Tables[r];
       if (t.Rows.Count == 0) AddNewRowWithPK(t);
     }
 
     //now walk the relationships and create initial CHILD rows where necessary
     foreach (DataRelation rel in ds.Relations)
     {
-      foreach (DataRow ParentRow in rel.ParentTable.Rows)
+      foreach (DataRow parentRow in rel.ParentTable.Rows)
       {
-        if (ParentRow.GetChildRows(rel).Length == 0)
-        {
-          DataRow ChildRow = AddNewRowWithPK(rel.ChildTable);
-          //fill out the foreign-key
-          ChildRow[rel.ChildKeyConstraint.Columns[0].ColumnName] = ParentRow[rel.ChildKeyConstraint.RelatedColumns[0].ColumnName];
-        }
+        if (parentRow.GetChildRows(rel).Length != 0) continue;
+        var childRow = AddNewRowWithPK(rel.ChildTable);
+        //fill out the foreign-key
+        childRow[rel.ChildKeyConstraint.Columns[0].ColumnName] = parentRow[rel.ChildKeyConstraint.RelatedColumns[0].ColumnName];
       }
     }
 
@@ -757,7 +761,7 @@ public static class SqlClientHelpers
   public static DataRow AddNewRowWithPK(DataTable t)
   {
     DataRow r = t.NewRow();
-    r[t.PrimaryKey[0].ColumnName] = System.Guid.NewGuid();
+    r[t.PrimaryKey[0].ColumnName] = Guid.NewGuid();
     t.Rows.Add(r);
     return (r);
   }
@@ -765,20 +769,19 @@ public static class SqlClientHelpers
   public static DataRow AddNewNestedRow(DataTable t)
   {
     //create new row, assign PK
-    DataRow r = AddNewRowWithPK(t);
+    var r = AddNewRowWithPK(t);
 
     //fill this new row's foreign keys to its parents
-    foreach (DataRelation rel in t.ParentRelations)
+    foreach (var col in from DataRelation rel in t.ParentRelations select rel.ChildColumns[0].ColumnName)
     {
-      string col = rel.ChildColumns[0].ColumnName;
       r[col] = t.Rows[0][col];
     }
 
     //create new empty child rows with their FK's pointing to this new row so any related sub grids display
     foreach (DataRelation rel in t.ChildRelations)
     {
-      string col = rel.ParentColumns[0].ColumnName;
-      DataRow childrow = AddNewRowWithPK(rel.ChildTable);
+      var col = rel.ParentColumns[0].ColumnName;
+      var childrow = AddNewRowWithPK(rel.ChildTable);
       childrow[col] = r[col];
     }
 

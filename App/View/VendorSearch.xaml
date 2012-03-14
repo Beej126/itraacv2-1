@@ -1,10 +1,9 @@
-﻿<local:ucBase x:Class="iTRAACv2.VendorSearch"
-              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-              xmlns:global="clr-namespace:;assembly="
-              xmlns:local="clr-namespace:iTRAACv2"
-              xmlns:kb="http://kent.boogaart/controls"
- >
+﻿<View:UcBase x:Class="iTRAACv2.View.VendorSearch"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:kb="http://kent.boogaart/controls"
+  xmlns:View="clr-namespace:iTRAACv2.View"
+>
 
   <Popup StaysOpen="False" Name="popVendorSearch" Placement="Center" PopupAnimation="Slide">
     <!-- Placement="Bottom" VerticalOffset="2" -->
@@ -69,7 +68,7 @@
             <ListBox Name="lbxVendorList" Grid.Row="2" Grid.ColumnSpan="2" Margin="5 0 5 5">
               <ListBox.ItemContainerStyle>
                 <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-                  <EventSetter Event="MouseDoubleClick" Handler="btnSelect_Click"/>
+                  <EventSetter Event="MouseDoubleClick" Handler="BtnSelectClick"/>
                 </Style>
               </ListBox.ItemContainerStyle>
               <ListBox.ItemTemplate>
@@ -87,8 +86,8 @@
             <ResizeGrip Grid.Row="3" Grid.ColumnSpan="2" IsTabStop="False" />
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3" Grid.ColumnSpan="2" Margin="0 10" >
-              <Button Content="Select" Width="100" Name="btnSelect" Click="btnSelect_Click" IsDefault="True" />
-              <Button Content="Cancel" Width="100" Margin="10 0 0 0" Name="btnCancel" IsCancel="True" Click="btnCancel_Click" />
+              <Button Content="Select" Width="100" Name="btnSelect" Click="BtnSelectClick" IsDefault="True" />
+              <Button Content="Cancel" Width="100" Margin="10 0 0 0" Name="btnCancel" IsCancel="True" Click="BtnCancelClick" />
             </StackPanel>
 
           </Grid>
@@ -137,8 +136,8 @@
               <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Mode=TwoWay, Path=[@PLZ], UpdateSourceTrigger=PropertyChanged}" />
               <TextBox Grid.Column="1" Grid.Row="5" Text="{Binding Mode=TwoWay, Path=[@Phone], UpdateSourceTrigger=PropertyChanged}" />
               <StackPanel HorizontalAlignment="Center" Grid.Row="6" Grid.ColumnSpan="2" >
-                <Button Margin="5" Padding="10,5" Content="Add" FontSize="13" Click="AddVendor_Click" />
-                <Button Margin="5" Padding="10,5" Content="Clear" FontSize="13" Click="ClearVendor_Click" />
+                <Button Margin="5" Padding="10,5" Content="Add" FontSize="13" Click="AddVendorClick" />
+                <Button Margin="5" Padding="10,5" Content="Clear" FontSize="13" Click="ClearVendorClick" />
               </StackPanel>
             </Grid>
           </GroupBox>
@@ -148,4 +147,4 @@
     </kb:Resizer>
   </Popup>
 
-</local:ucBase>
+</View:UcBase>

@@ -1,34 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Data;
+using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Data;
+using iTRAACv2.Model;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public partial class Returns : UserControl
+  public partial class Returns
   {
     public Returns()
     {
       InitializeComponent();
 
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridReturns);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridReturns);
     }
 
-    private void btnSearch_Click(object sender, RoutedEventArgs e)
+    private void BtnSearchClick(object sender, RoutedEventArgs e)
     {
       txtSequenceNumber.SelectAll();
       gridReturns.ItemsSource = null; //for visual consistency, blank out the existing list before we go off and search
-      using (Proc TaxForm_Returns_Search = new Proc("TaxForm_Returns_Search"))
+// ReSharper disable InconsistentNaming
+      using (var TaxForm_Returns_Search = new Proc("TaxForm_Returns_Search"))
+// ReSharper restore InconsistentNaming
       {
         TaxForm_Returns_Search["@SequenceNumber"] = txtSequenceNumber.Text;
         gridReturns.ItemsSource = TaxForm_Returns_Search.ExecuteDataSet().Table0.DefaultView;
@@ -40,7 +33,7 @@ namespace iTRAACv2
       else if (gridReturns.Items.Count > 1) gridReturns.GetCell(0, 0).Focus();
     }
 
-    private void gridReturns_KeyDown(object sender, KeyEventArgs e)
+    private void GridReturnsKeyDown(object sender, KeyEventArgs e)
     {
       if (e.Key == Key.Return)
       {
@@ -61,7 +54,7 @@ namespace iTRAACv2
     }
     public static readonly DependencyProperty FilterReturnedProperty =
       DependencyProperty.Register("FilterReturned", typeof(bool), typeof(Returns),
-        new UIPropertyMetadata(true, (obj, args) => { (obj as Returns).FilterChanged(); }));
+        new UIPropertyMetadata(true, (obj, args) => ((Returns) obj).FilterChanged()));
 
     public bool FilterFiled
     {
@@ -70,7 +63,7 @@ namespace iTRAACv2
     }
     public static readonly DependencyProperty FilterFiledProperty =
       DependencyProperty.Register("FilterFiled", typeof(bool), typeof(Returns),
-        new UIPropertyMetadata(false, (obj, args) => { (obj as Returns).FilterChanged(); }));
+        new UIPropertyMetadata(false, (obj, args) => ((Returns) obj).FilterChanged()));
 
     public bool FilterLocalOffice
     {
@@ -79,17 +72,17 @@ namespace iTRAACv2
     }
     public static readonly DependencyProperty FilterLocalOfficeProperty =
       DependencyProperty.Register("FilterLocalOffice", typeof(bool), typeof(Returns),
-        new UIPropertyMetadata(true, (obj, args) => { (obj as Returns).FilterChanged(); }));
+        new UIPropertyMetadata(true, (obj, args) => ((Returns) obj).FilterChanged()));
 
     
     protected void FilterChanged()
     {
-      DataView dv = (gridReturns.ItemsSource as DataView);
+      var dv = (gridReturns.ItemsSource as DataView);
       if (dv == null) return;
       dv.RowFilter = SqlClientHelpers.BuildRowFilter(
         FilterReturned ? "Status = 'UnReturned'" : null,
         FilterFiled ? "Status <> 'Filed'" : null, 
-        FilterLocalOffice ? "TaxOfficeId = " + SettingsModel.TaxOfficeId.ToString() : null
+        FilterLocalOffice ? "TaxOfficeId = " + SettingsModel.TaxOfficeId.ToString(CultureInfo.InvariantCulture) : null
       );
     }
 

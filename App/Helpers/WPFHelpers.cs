@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,72 +15,69 @@ using System.Threading;
 using System.Reflection;
 
 //http://stackoverflow.com/questions/5655073/wpf-datagrid-and-the-tab-key
+// ReSharper disable CheckNamespace
 public class TabOutDataGrid : DataGrid
+// ReSharper restore CheckNamespace
 {
   public TabOutDataGrid()
   {
     Style = new Style(GetType(), FindResource(typeof(DataGrid)) as Style); //nugget: inherit whatever Style base class already has
   }
 
-  void TablessDataGrid_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-  {
-    throw new NotImplementedException();
-  }
-  
   protected override void OnKeyDown(KeyEventArgs e)
   {
     //let enter key bubble up... so it hits a default button on this form or something
-    if (e.Key == Key.Return) e.Handled = false;
-    else if (e.Key == Key.Tab) //make Shift/Tab pop out of the datagrid rather than navigating amongst cells
+    switch (e.Key)
     {
-      if (Keyboard.Modifiers == ModifierKeys.Shift)
-        MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous)); //somehow this works just fine, but the "Next" version goes into the cell navigation
-      else
-        this.Parent.FocusNext(this); //the grid typically has a sub element with keyboard focus, so next from there represents somewhere else inside the grid
-                                     //therefore we need to specificy "next" relative to the grid itself by passing that in to override the default behavior
-
-      e.Handled = true;
+      case Key.Return:
+        e.Handled = false;
+        break;
+      case Key.Tab:
+        if (Keyboard.Modifiers == ModifierKeys.Shift)
+          MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous)); //somehow this works just fine, but the "Next" version goes into the cell navigation
+        else
+          Parent.FocusNext(this); //the grid typically has a sub element with keyboard focus, so next from there represents somewhere else inside the grid
+        e.Handled = true;
+        break;
+      default:
+        base.OnKeyDown(e);
+        break;
     }
-    else base.OnKeyDown(e);
   }
 
   protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
   {
-    if (!(e.OldFocus is DataGridCell)) //only reset focus if we're coming from outside the datagrid, otherwise you get into a recursive loop of setting focus
-      //&& (lastDataGridFocus != null))
-    {
-      Keyboard.Focus(lastDataGridFocus);
-      if (SelectedIndex == -1 && Items.Count > 0) SelectedIndex = 0;
-      e.Handled = true;
-      return;
-    }
+    if ((e.OldFocus is DataGridCell)) return;
+    Keyboard.Focus(_lastDataGridFocus);
+    if (SelectedIndex == -1 && Items.Count > 0) SelectedIndex = 0;
+    e.Handled = true;
   }
 
-  private IInputElement lastDataGridFocus = null;
+  private IInputElement _lastDataGridFocus;
   protected override void OnPreviewLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
   {
     base.OnPreviewLostKeyboardFocus(e);
-    lastDataGridFocus = Keyboard.FocusedElement;
+    _lastDataGridFocus = Keyboard.FocusedElement;
   }
 
 }
 
 public static class WPFHelpers
 {
-  static private MethodInfo GetNextTab;
-  static private object KeyboredNavigation;
-  public static void FocusNext(this DependencyObject Container, IInputElement RelativeElement = null)
+  static private MethodInfo _getNextTab;
+  static private object _keyboredNavigation;
+  public static void FocusNext(this DependencyObject container, IInputElement relativeElement = null)
   {
     //FocusNavigationDirection.Next just doesn't work: MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); 
     //it tabs around the DataGrid cells by default
     //so had to do the following hack... fortunately there is a hidden method KeyboardNavigation.GetNextTab() that we can use (for now, until MS tweaks the framework :(
-    if (GetNextTab == null)
+    if (_getNextTab == null)
     {
-      GetNextTab = typeof(KeyboardNavigation).GetMethod("GetNextTab", BindingFlags.NonPublic | BindingFlags.Instance);
-      KeyboredNavigation = typeof(FrameworkElement).GetProperty("KeyboardNavigation", BindingFlags.NonPublic | BindingFlags.Static).GetValue(Keyboard.FocusedElement, null);
+      _getNextTab = typeof(KeyboardNavigation).GetMethod("GetNextTab", BindingFlags.NonPublic | BindingFlags.Instance);
+      _keyboredNavigation = typeof(FrameworkElement).GetProperty("KeyboardNavigation", BindingFlags.NonPublic | BindingFlags.Static).GetValue(Keyboard.FocusedElement, null);
     }
-    object NextControl = GetNextTab.Invoke(KeyboredNavigation, new object[] { RelativeElement ?? Keyboard.FocusedElement, Container, false }); //pretty cool this works exactly how what we need, get the next tab sibling given me and my parent
-    Keyboard.Focus(NextControl as IInputElement);
+    var nextControl = _getNextTab.Invoke(_keyboredNavigation, new object[] { relativeElement ?? Keyboard.FocusedElement, container, false }); //pretty cool this works exactly how what we need, get the next tab sibling given me and my parent
+    Keyboard.Focus(nextControl as IInputElement);
   }
 
   //public static void UIThreadSafe(Delegate method)
@@ -90,21 +88,21 @@ public static class WPFHelpers
   //    method.DynamicInvoke(null);
   //}
 
-  static public Thread LightBackGroundWorker(Action work, int SleepMillisecs = 0)
+  static public Thread LightBackGroundWorker(Action work, int sleepMillisecs = 0)
   {
-    Thread t = new System.Threading.Thread(delegate()
+    var t = new Thread(delegate()
     {
       try
       {
         if (work != null)
         {
-          Thread.Sleep(SleepMillisecs);
+          Thread.Sleep(sleepMillisecs);
           work();
         }
       }
       catch (Exception ex) //this exception handler must be included as part of this pattern wherever else it's implemented
       {
-        Application.Current.Dispatcher.Invoke((Action)delegate() { throw ex; }, null); //toss any exceptions over to the main UI thread, per MSDN direction: http://msdn.microsoft.com/en-us/library/system.windows.application.dispatcherunhandledexception.aspx
+        Application.Current.Dispatcher.Invoke((Action)delegate { throw ex; }, null); //toss any exceptions over to the main UI thread, per MSDN direction: http://msdn.microsoft.com/en-us/library/system.windows.application.dispatcherunhandledexception.aspx
       }
     });
 
@@ -122,18 +120,18 @@ public static class WPFHelpers
     return !Validation.GetHasError(obj) &&
         LogicalTreeHelper.GetChildren(obj)
         .OfType<DependencyObject>()
-        .All(child => IsValid(child));
+        .All(IsValid);
   }
 
 
   static public DataGridCell GetCell(this DataGrid dgGrid, int nRow, int nCol)
   {
-    DataGridRow dgRow = dgGrid.GetRow(nRow);
+    var dgRow = dgGrid.GetRow(nRow);
 
     if (dgRow == null) return(null);
 
-    DataGridCellsPresenter presenter = dgRow.FindChild<DataGridCellsPresenter>();
-    DataGridCell dgCell = presenter.ItemContainerGenerator.ContainerFromIndex(nCol) as DataGridCell;
+    var presenter = dgRow.FindChild<DataGridCellsPresenter>();
+    var dgCell = presenter.ItemContainerGenerator.ContainerFromIndex(nCol) as DataGridCell;
     if (dgCell == null)
     {
       dgGrid.ScrollIntoView(dgRow, dgGrid.Columns[nCol]);
@@ -145,10 +143,9 @@ public static class WPFHelpers
 
   static public DataGridRow GetRow(this DataGrid grid, int index)
   {
-    DataGridRow gridrow = ((DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(index));
     grid.UpdateLayout(); //nugget: for DataGrid.ItemContainerGenerator.ContainerFromIndex() to work, sometimes you have to bring a "virtualized" DataGridRow into view
     grid.ScrollIntoView(grid.Items[index]);
-    gridrow = ((DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(index));
+    var gridrow = ((DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(index));
     return (gridrow);
   }
 
@@ -156,20 +153,18 @@ public static class WPFHelpers
   //nugget: this the most generic way recordindex could figure this so far...still not satisfied... but there are absolutely *zero* *XAML* based examples for setting the default ElementStyle for *AutoGenerated* columns
   static public void DataGridRightAlignAutoGeneratedNumericColumns(object sender, DataGridAutoGeneratingColumnEventArgs e)
   {
-    DataGridTextColumn c = (e.Column as DataGridTextColumn);
-    if (c != null && e.PropertyType.IsNumeric())
-    {
-      if (c.ElementStyle.IsSealed) c.ElementStyle = new Style(c.ElementStyle.TargetType, c.ElementStyle.BasedOn);
-      c.ElementStyle.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Right));
-      c.ElementStyle.Seal();
-      c.Binding.StringFormat = "{0:#,0}";
-    }
+    var c = (e.Column as DataGridTextColumn);
+    if (c == null || !e.PropertyType.IsNumeric()) return;
+    if (c.ElementStyle.IsSealed) c.ElementStyle = new Style(c.ElementStyle.TargetType, c.ElementStyle.BasedOn);
+    c.ElementStyle.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Right));
+    c.ElementStyle.Seal();
+    c.Binding.StringFormat = "{0:#,0}";
   }
 
 
   public static Brush BeginBrushColorAnimation(this Brush brush, Color color, int seconds = 1)
   {
-    Brush br = (brush as SolidColorBrush == null) ? new SolidColorBrush() : brush.Clone(); //otherwise the default brush is "frozen" and can't be animated
+    var br = (brush as SolidColorBrush == null) ? new SolidColorBrush() : brush.Clone(); //otherwise the default brush is "frozen" and can't be animated
     br.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(color, TimeSpan.FromSeconds(seconds)) { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
     return (br);
   }
@@ -180,34 +175,32 @@ public static class WPFHelpers
   }
 
   //dictionary the storyboards per each usage
-  private static System.Collections.Generic.Dictionary<DefinitionBase, Storyboard> GridSplitterPositions = new System.Collections.Generic.Dictionary<DefinitionBase, Storyboard>();
-  public static void GridSplitterOpeningBounce(this DefinitionBase RowColDefinition, bool Opening = false, int OpenToSize = 0, Action<bool> AfterCompleted = null)
+  private static readonly System.Collections.Generic.Dictionary<DefinitionBase, Storyboard> GridSplitterPositions = new System.Collections.Generic.Dictionary<DefinitionBase, Storyboard>();
+  public static void GridSplitterOpeningBounce(this DefinitionBase rowColDefinition, bool opening = false, int openToSize = 0, Action<bool> afterCompleted = null)
   {
-    if (RowColDefinition == null) return; //for when events fire before everything is initialized
+    if (rowColDefinition == null) return; //for when events fire before everything is initialized
 
-    bool IsRow = (RowColDefinition.GetType() == typeof(RowDefinition));
+    var isRow = (rowColDefinition.GetType() == typeof(RowDefinition));
 
     Storyboard story;
-    if (!GridSplitterPositions.TryGetValue(RowColDefinition, out story))
+    if (!GridSplitterPositions.TryGetValue(rowColDefinition, out story))
     {
-      GridLengthAnimation animation = new GridLengthAnimation();
-      animation.To = new GridLength(OpenToSize);
-      animation.Duration = new TimeSpan(0,0,1);
+      var animation = new GridLengthAnimation {To = new GridLength(openToSize), Duration = new TimeSpan(0, 0, 1)};
 
-      Storyboard.SetTarget(animation, RowColDefinition);
-      Storyboard.SetTargetProperty(animation, new PropertyPath(IsRow ? "Height" : "Width"));
+      Storyboard.SetTarget(animation, rowColDefinition);
+      Storyboard.SetTargetProperty(animation, new PropertyPath(isRow ? "Height" : "Width"));
 
-      GridSplitterPositions[RowColDefinition] = story = new Storyboard();
+      GridSplitterPositions[rowColDefinition] = story = new Storyboard();
       story.Children.Add(animation);
-      if (AfterCompleted != null) story.Completed += (s,e) => AfterCompleted(Opening);
+      if (afterCompleted != null) story.Completed += (s,e) => afterCompleted(opening);
     }
 
-    DependencyProperty CurrentPositionProperty = IsRow ? RowDefinition.HeightProperty : ColumnDefinition.WidthProperty;
+    var currentPositionProperty = isRow ? RowDefinition.HeightProperty : ColumnDefinition.WidthProperty;
 
-    if (Opening)
+    if (opening)
     {
       //only bugger with popping open if not already opened by user
-      if (((GridLength)RowColDefinition.GetValue(CurrentPositionProperty)).Value == 0)
+      if (((GridLength)rowColDefinition.GetValue(currentPositionProperty)).Value <= 0.0)
         story.Begin();
     }
     else
@@ -215,10 +208,10 @@ public static class WPFHelpers
       story.Stop();
 
       //save the current position in the animation's "To" property so it opens back to where it was before we closed it
-      GridLength current = (GridLength)RowColDefinition.GetValue(CurrentPositionProperty);
-      if (current.GridUnitType != GridUnitType.Star && current.Value > 0) (story.Children[0] as GridLengthAnimation).To = current;
+      var current = (GridLength)rowColDefinition.GetValue(currentPositionProperty);
+      if (current.GridUnitType != GridUnitType.Star && current.Value > 0) ((GridLengthAnimation) story.Children[0]).To = current;
 
-      RowColDefinition.SetValue(CurrentPositionProperty, new GridLength(0, GridUnitType.Pixel));
+      rowColDefinition.SetValue(currentPositionProperty, new GridLength(0, GridUnitType.Pixel));
     }
   }
 
@@ -232,40 +225,41 @@ public static class WPFHelpers
   }
   private delegate void VoidHandler();
 
-  static public void AutoTabTextBox_TextChanged(object sender, TextChangedEventArgs e)
+  static public void AutoTabTextBoxTextChanged(object sender, TextChangedEventArgs e)
   {
-    TextBox txt = sender as TextBox;
+    var txt = sender as TextBox;
+    Debug.Assert(txt != null, "txt != null");
     if (txt.Text.Length == txt.MaxLength)
     {
       //implement "auto-tab" effect
-      (e.OriginalSource as UIElement).MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+      ((UIElement) e.OriginalSource).MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
     }
   }
 
-  static public void IntegerOnlyTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+  static public void IntegerOnlyTextBoxPreviewTextInput(object sender, TextCompositionEventArgs e)
   {
-    int dummy = 0;
+    int dummy;
     e.Handled = !(int.TryParse(e.Text, out dummy));
   }
 
 
-  static public bool DesignMode { get { return (System.Diagnostics.Process.GetCurrentProcess().ProcessName == "devenv"); } }
+  static public bool DesignMode { get { return (Process.GetCurrentProcess().ProcessName == "devenv"); } }
 
-  static public void ComboBoxDataTable(ComboBox cbx, DataTable t, string TextColumnsName, string ValueColumnName, string DefaultText, string DefaultValue)
+  static public void ComboBoxDataTable(ComboBox cbx, DataTable t, string textColumnsName, string valueColumnName, string defaultText, string defaultValue)
   {
-    if (DefaultText != null)
-      cbx.Items.Add(new ComboBoxItem() { Content = DefaultText, Tag = DefaultValue });
+    if (defaultText != null)
+      cbx.Items.Add(new ComboBoxItem { Content = defaultText, Tag = defaultValue });
 
     foreach (DataRowView r in t.DefaultView)
     {
-      cbx.Items.Add(new ComboBoxItem() { Content = r[TextColumnsName].ToString(), Tag = r[ValueColumnName].ToString() });
+      cbx.Items.Add(new ComboBoxItem { Content = r[textColumnsName].ToString(), Tag = r[valueColumnName].ToString() });
     }
   }
 
-  static private DependencyObject _lastCell = null;
-  static public void WPFDataGrid_MouseRightButtonUp_SaveCell(object sender, System.Windows.Input.MouseButtonEventArgs e)
+  static private DependencyObject _lastCell;
+  static public void WPFDataGridMouseRightButtonUpSaveCell(object sender, MouseButtonEventArgs e)
   {
-    DependencyObject dep = (DependencyObject)e.OriginalSource;
+    var dep = (DependencyObject)e.OriginalSource;
 
     // iteratively traverse the visual tree
     while ((dep != null) &&
@@ -285,73 +279,78 @@ public static class WPFHelpers
     if (dep is DataGridCell) _lastCell = dep;
   }
 
-  static public void WPFDataGrid_CopyCell_Click(object sender, System.Windows.RoutedEventArgs e)
+  static public void WPFDataGridCopyCellClick(object sender, RoutedEventArgs e)
   {
     if (_lastCell == null) return;
 
-    DataGridRow row = _lastCell.FindParent<DataGridRow>();
+    var row = _lastCell.FindParent<DataGridRow>();
 
     // find the column that this cell belongs to
-    DataGridBoundColumn col = (_lastCell as DataGridCell).Column as DataGridBoundColumn;
+    var col = ((DataGridCell) _lastCell).Column as DataGridBoundColumn;
 
     // find the propertyName that this column is bound to
-    Binding binding = col.Binding as Binding;
-    string boundPropertyName = binding.Path.Path;
+    Debug.Assert(col != null, "col != null");
+    var binding = col.Binding as Binding;
+    if (binding == null) return;
+    var boundPropertyName = binding.Path.Path;
 
     // find the object that is related to this row
-    object data = row.Item;
+    var data = row.Item;
 
     // extract the propertyName value
-    PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(data);
+    var properties = TypeDescriptor.GetProperties(data);
 
-    PropertyDescriptor property = properties[boundPropertyName];
-    object value = property.GetValue(data).ToString();
+    var property = properties[boundPropertyName];
+    var o = property.GetValue(data);
+    if (o == null) return;
 
-    Clipboard.SetText(value.ToString());
+    Clipboard.SetText(o.ToString());
   }
 
-  static public void GridSort(DataGrid Grid, string ColumnName, ListSortDirection Direction)
+  static public void GridSort(DataGrid grid, string columnName, ListSortDirection direction)
   {
-    DataGridColumn col = Grid.Columns.FirstOrDefault(c => c.SortMemberPath == ColumnName);
-    if (col != null)
-    {
-      Grid.Items.SortDescriptions.Add(new SortDescription(ColumnName, Direction)); 
-      col.SortDirection = Direction;
-    }
+    var col = grid.Columns.FirstOrDefault(c => c.SortMemberPath == columnName);
+    if (col == null) return;
+    grid.Items.SortDescriptions.Add(new SortDescription(columnName, direction)); 
+    col.SortDirection = direction;
   }
 
-  static public void GridSort(DataGrid Grid, string[] ColumnNames, ListSortDirection[] Directions)
+  static public void GridSort(DataGrid grid, string[] columnNames, ListSortDirection[] directions)
   {
-    for (int i = 0; i < ColumnNames.Length; i++) GridSort(Grid, ColumnNames[i], Directions[i]);
+    for (var i = 0; i < columnNames.Length; i++) GridSort(grid, columnNames[i], directions[i]);
   }
 
 }
 
 public class IsEnabledWrapper : IDisposable
 {
-  private Control _ctrl = null;
-  private WaitCursorWrapper _wc = null;
-
-  public IsEnabledWrapper(Control ctrl) : this(ctrl, false) { }
+// ReSharper disable FieldCanBeMadeReadOnly.Local
+  private Control _ctrl;
+// ReSharper restore FieldCanBeMadeReadOnly.Local
+  private WaitCursorWrapper _wc;
 
   /// <summary>
   /// Utilize via a "using(new IsEnabledWrapper(btnReload, true)) {...}" around a block of code to disable/enable a control while background work is executing
   /// </summary>
   /// <param name="ctrl"></param>
-  /// <param name="ShowWaitCursor"></param>
-  public IsEnabledWrapper(Control ctrl, bool ShowWaitCursor)
+  /// <param name="showWaitCursor"></param>
+  public IsEnabledWrapper(Control ctrl, bool showWaitCursor = false)
   {
     _ctrl = ctrl;
     _ctrl.IsEnabled = false;
-    _wc = new WaitCursorWrapper();
+    if (showWaitCursor) _wc = new WaitCursorWrapper();
   }
 
   // IDisposable Members
   public void Dispose()
   {
     _ctrl.IsEnabled = true;
+
+    if (_wc == null) return;
     _wc.Dispose();
+    _wc = null;
   }
+  
 }
 
 /// <summary>
@@ -372,13 +371,13 @@ public class WaitCursorWrapper : IDisposable
     //nugget: Mouse.OverrideCursor is much more effective than Application.Current.MainWindow.Cursor: http://stackoverflow.com/questions/307004/changing-the-cursor-in-wpf-sometimes-works-sometimes-doesnt
     if (Application.Current == null) return;
     if (Application.Current.Dispatcher.CheckAccess()) Mouse.OverrideCursor = Cursors.Wait; //if we're on the UI thread, make it a solid wait cursor
-    else Application.Current.Dispatcher.Invoke((Action)delegate() { Mouse.OverrideCursor = Cursors.AppStarting; }); //otherwise make it a wait circle with an active pointer to let user know they can still do stuff
+    else Application.Current.Dispatcher.Invoke((Action)delegate { Mouse.OverrideCursor = Cursors.AppStarting; }); //otherwise make it a wait circle with an active pointer to let user know they can still do stuff
   }
 
   public void Dispose()
   {
     if (Application.Current != null)
-      Application.Current.Dispatcher.Invoke((Action)delegate() { Mouse.OverrideCursor = null; });
+      Application.Current.Dispatcher.Invoke((Action)delegate { Mouse.OverrideCursor = null; });
   }
 
   /// <summary>

@@ -1,140 +1,145 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Data; //needed for IMultiValueConverter
+using System.Windows.Data;
 using System.Data;
 using System.Windows.Controls;
-using System.IO;
-using iTextSharp.text.pdf;
+using iTRAACv2.Model;
 
-using System.Threading;
-
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public partial class tabTaxForm : tabBase
+  public partial class TabTaxForm
   {
-    public TaxFormModel taxform { get { return (model as TaxFormModel); } }
+    public TaxFormModel Taxform { get { return (Model as TaxFormModel); } }
 
-    static public void Open(System.Windows.Controls.TabControl tabControl, string TaxFormGUID)
+    static public void Open(TabControl tabControl, string taxFormGUID)
     {
-      OpenTab<tabTaxForm>(tabControl, ModelBase.Lookup<TaxFormModel>(TaxFormGUID));
+      OpenTab<TabTaxForm>(tabControl, ModelBase.Lookup<TaxFormModel>(taxFormGUID));
     }
 
-    public tabTaxForm()
+    public TabTaxForm()
     {
       InitializeComponent();
 
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridRemarks);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridRemarks);
     }
 
-    protected override void UserControl_Loaded(object sender, RoutedEventArgs e)
+    protected override void UserControlLoaded(object sender, RoutedEventArgs e)
     {
-      WPFHelpers.GridSort(gridRemarks, new string[] { "Alert", "LastUpdate" }, new ListSortDirection[] { ListSortDirection.Descending, ListSortDirection.Descending });
+      WPFHelpers.GridSort(gridRemarks, new[] { "Alert", "LastUpdate" }, new[] { ListSortDirection.Descending, ListSortDirection.Descending });
       UsedDate.Focus();
     }
 
     protected override void OnClosed(){} //nothing necessary here yet
 
-    private void btnVendor_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
+    //private void BtnVendorGotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
+    //{
+    //  if (string.IsNullOrWhiteSpace(Taxform.Fields["VendorGUID"].ToString()))
+    //    btnVendor_Click();
+    //}
+
+    private void BtnVendorClick(object sender = null, RoutedEventArgs e = null)
     {
-      if (string.IsNullOrWhiteSpace(taxform.Fields["VendorGUID"].ToString()))
-        btnVendor_Click();
+      popVendorSearch.Open(VendorSelected);
     }
 
-    private void btnVendor_Click(object sender = null, RoutedEventArgs e = null)
+    private void VendorSelected(object vendorGUID, object vendorName)
     {
-      popVendorSearch.Open(new VendorSearchCallback(VendorSelected));
-    }
+      Taxform.Fields["VendorGUID"] = vendorGUID;
+      Taxform.Fields["Vendor"] = vendorName;
 
-    private void VendorSelected(object VendorGUID, object VendorName)
-    {
-      taxform.Fields["VendorGUID"] = VendorGUID;
-      taxform.Fields["Vendor"] = VendorName;
-
-      if (!String.IsNullOrWhiteSpace(VendorGUID.ToString()))
+      if (!String.IsNullOrWhiteSpace(vendorGUID.ToString()))
         KeyboardFocusContainer.FocusNext();
     }
 
-    private void btnGoodService_Click(object sender, RoutedEventArgs e)
+    //private void BtnGoodServiceClick(object sender, RoutedEventArgs e)
+    //{
+    //  popGoodsAndServicesSearch.Open(new GoodsAndServicesSearchCallback(GoodServiceSelected));
+    //}
+
+    //private void GoodServiceSelected(object goodServiceGUID, object goodServiceDescription)
+    //{
+    //  Taxform.Fields["GoodServiceGUID"] = goodServiceGUID;
+    //  Taxform.Fields["GoodsServiceName"] = goodServiceDescription;
+    //}
+
+    private void BtnReturnClick(object sender, RoutedEventArgs e)
     {
-      //popGoodsAndServicesSearch.Open(new GoodsAndServicesSearchCallback(GoodServiceSelected));
+      var isClosing = (sender == btnReturnClose);
+      if (!Taxform.ReturnForm(isClosing)) return;
+      if (isClosing) BtnSaveCloseClick(null, null);
     }
 
-    private void GoodServiceSelected(object GoodServiceGUID, object GoodServiceDescription)
+    private void BtnFileClick(object sender, RoutedEventArgs e)
     {
-      taxform.Fields["GoodServiceGUID"] = GoodServiceGUID;
-      taxform.Fields["GoodsServiceName"] = GoodServiceDescription;
+      var isClosing = (sender == btnFileClose);
+      if (!Taxform.FileForm(isClosing)) return; //taxform.FileForm() is essentially taxform.Save() with Return as well as File logic
+      if (isClosing) Close();
     }
 
-    private void btnReturn_Click(object sender, RoutedEventArgs e)
-    {
-      bool IsClosing = (sender == btnReturnClose);
-      if (!taxform.ReturnForm(IsClosing)) return;
-      if (IsClosing) btnSaveClose_Click(null, null);
-    }
-
-    private void btnFile_Click(object sender, RoutedEventArgs e)
-    {
-      bool IsClosing = (sender == btnFileClose);
-      if (!taxform.FileForm(IsClosing)) return; //taxform.FileForm() is essentially taxform.Save() with Return as well as File logic
-      if (IsClosing) Close();
-    }
-
-    private void btnReload_Click(object sender, RoutedEventArgs e)
+    private void BtnReloadClick(object sender, RoutedEventArgs e)
     {
       using(new IsEnabledWrapper(btnReload, true)) //nugget: i think this is pretty cool, saves a lot of syntax
       {
-        if (model.IsModified)
+        if (!Model.IsModified) return;
+        var mb = MessageBox.Show("Keep your unsaved changes?", "Reload", MessageBoxButton.YesNo);
+        switch (mb)
         {
-          MessageBoxResult mb = MessageBox.Show("Keep your unsaved changes?", "Reload", System.Windows.MessageBoxButton.YesNo);
-          if (mb == MessageBoxResult.Yes) return;
-          else if (mb == MessageBoxResult.No) model.ReLoad();
+          case MessageBoxResult.Yes:
+            return;
+          case MessageBoxResult.No:
+            Model.ReLoad();
+            break;
         }
       }
     }
 
-    private void btnSave_Click(object sender, RoutedEventArgs e)
+    private void BtnSaveClick(object sender, RoutedEventArgs e)
     {
-      taxform.Save();
+      Taxform.Save();
     }
 
-    private void btnSaveClose_Click(object sender, RoutedEventArgs e)
+    private void BtnSaveCloseClick(object sender, RoutedEventArgs e)
     {
-      if (taxform.SaveUnload()) Close();
+      if (Taxform.SaveUnload()) Close();
     }
 
-    private int? lastTransactionTypeId;
-    private void cbxTransactionType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private int? _lastTransactionTypeId;
+    private void CbxTransactionTypeSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-      DataRowView r = e.AddedItems[0] as DataRowView;
+      var r = e.AddedItems[0] as DataRowView;
+      Debug.Assert(r != null, "r != null");
       App.ShowUserMessage(r["ConfirmationText"].ToString());
 
       //if current selection is not active...
       if (!r.Field<bool>("Active"))
       {
         // and we've already set an initial default from loading the page,
-        if (lastTransactionTypeId != null)
+        if (_lastTransactionTypeId != null)
         {
           //then deny this change by setting it back to the last one
-          cbxTransactionType.SelectedValue = lastTransactionTypeId.Value;
+          cbxTransactionType.SelectedValue = _lastTransactionTypeId.Value;
           return;
         }
       }
-      lastTransactionTypeId = r.Field<int>("TransactionTypeId");
+      _lastTransactionTypeId = r.Field<int>("TransactionTypeId");
 
       //extended fields (e.g weapon, vehicle)
-      string ExtendedFieldsCode = r["ExtendedFieldsCode"].ToString();
-      if (ExtendedFieldsCode != "")
-      {
-        ExtendedFieldsCode = "TaxForm_" + ExtendedFieldsCode;
-      }
+      //TODO: 
+      //var extendedFieldsCode = r["ExtendedFieldsCode"].ToString();
+      //if (extendedFieldsCode != "")
+      //{
+      //  extendedFieldsCode = "TaxForm_" + extendedFieldsCode;
+      //}
     }
 
-    private void btnLostVoid_Click(object sender, RoutedEventArgs e)
+    private void BtnLostVoidClick(object sender, RoutedEventArgs e)
     {
-      ReasonPopup rp = (ReasonPopup)FindName("FormStatusReasonPopup");
-      ucToggleButton btn = sender as ucToggleButton;
+      var rp = (ReasonPopup)FindName("FormStatusReasonPopup");
+      Debug.Assert(rp != null, "rp != null");
+      var btn = sender as UcToggleButton;
+      Debug.Assert(btn != null, "btn != null");
 
       //sender.Tag contains the RemarkTypeId for either Lost or Void
       //btn.IsChecked state has just been negated by clicking so we must take the opposite, since we may abort this change via cancelling the reason popup
@@ -143,40 +148,40 @@ namespace iTRAACv2
       rp.Show();
     }
 
-    private void FormStatusReasonPopup_Result(ReasonPopupResultEventArgs args)
+    private void FormStatusReasonPopupResult(ReasonPopupResultEventArgs args)
     {
       int iRemarkTypeId = Convert.ToInt16(args.SelectedValue); 
-      ucToggleButton btn = ((Math.Abs(iRemarkTypeId) == 25) ? btnLost : btnVoid); //could be negative for "UN-xxx" action
+      UcToggleButton btn = ((Math.Abs(iRemarkTypeId) == 25) ? btnLost : btnVoid); //could be negative for "UN-xxx" action
 
       if (!args.OK) { btn.IsChecked = !btn.IsChecked; return; }
 
-      RemarkModel.SaveNew(taxform.GUID, iRemarkTypeId, args.Comments);
+      RemarkModel.SaveNew(Taxform.GUID, iRemarkTypeId, args.Comments);
 
       if (iRemarkTypeId == 25) //LOST, popup the Lost Forms Memo
       {
-        PDFFormFiller pdf = new PDFFormFiller("Lost-Forms-Memo.pdf", taxform.Fields["OrderNumber"].ToString());
-        pdf.SetField("CustomerNum", taxform.Fields["SponsorCCode"]);
-        pdf.SetField("CustomerName", taxform.Fields["SponsorName"]);
-        pdf.SetField("OrderNum1", taxform.Fields["OrderNumber"]);
+        var pdf = new PDFFormFiller("Lost-Forms-Memo.pdf", Taxform.Fields["OrderNumber"].ToString());
+        pdf.SetField("CustomerNum", Taxform.Fields["SponsorCCode"]);
+        pdf.SetField("CustomerName", Taxform.Fields["SponsorName"]);
+        pdf.SetField("OrderNum1", Taxform.Fields["OrderNumber"]);
         pdf.SetField("Date", DateTime.Today.ToShortDateString());
         pdf.SetField("VATAgentName", UserModel.Current.Name);
         pdf.Display();
       }
     }
 
-    private void btnGiveCustomer_Click(object sender, RoutedEventArgs e)
+    private void BtnGiveCustomerClick(object sender, RoutedEventArgs e)
     {
-      taxform.GiveBackToCustomer();
+      Taxform.GiveBackToCustomer();
     }
 
-    private void btnViolation_IsCheckedChanged(object sender, RoutedEventArgs e)
+    private void BtnViolationIsCheckedChanged(object sender, RoutedEventArgs e)
     {
       //the boolean binding of btnViolation.IsChecked is not a simple symmetrical arrangement for Un/Checked states... 
       //. Toggle btnViolation.IsChecked is *OneWay* bound to taxform.IsViolation so it'll check itself accordingly upon screen initializaion
       //. when the user drives unchecked to checked, we need to launch the violation popup, gather the remarks and submit those to the taxform model
       //taxform will then insert the records in the database which will eventually come back and drive taxform.IsViolation to true
-      if (btnViolation.IsChecked && !taxform.IsViolation) ViolationReasonPopup.Show();
-      else if (!btnViolation.IsChecked && taxform.IsViolation)
+      if (btnViolation.IsChecked && !Taxform.IsViolation) ViolationReasonPopup.Show();
+      else if (!btnViolation.IsChecked && Taxform.IsViolation)
       {
         btnViolation.IsChecked = true;
         MessageBox.Show("To remove this Violation:\n\nPlease examine all Violation related remarks to the right,\n and remove the remarks which no longer apply.", 
@@ -184,41 +189,41 @@ namespace iTRAACv2
       }
     }
 
-    private void ViolationReasonPopup_Result(ReasonPopupResultEventArgs args)
+    private void ViolationReasonPopupResult(ReasonPopupResultEventArgs args)
     {
-      if (args.OK) taxform.SetViolation(Convert.ToInt16(args.SelectedValue), args.Comments);
+      if (args.OK) Taxform.SetViolation(Convert.ToInt16(args.SelectedValue), args.Comments);
       else btnViolation.IsChecked = false;
     }
 
-    private void btnRemoveRemark_Click(object sender, RoutedEventArgs e)
+    private void BtnRemoveRemarkClick(object sender, RoutedEventArgs e)
     {
-      ReasonPopup rp = (ReasonPopup)((System.Windows.Controls.Button)sender).Tag;
+      var rp = (ReasonPopup)((Button)sender).Tag;
       rp.State = gridRemarks.CurrentItem as DataRowView;
       rp.Show();
     }
 
-    private void RemoveRemarkReasonPopup_Result(ReasonPopupResultEventArgs args)
+    private void RemoveRemarkReasonPopupResult(ReasonPopupResultEventArgs args)
     {
-      if (args.OK) taxform.RemoveRemark(args.State as DataRowView, args.Comments);
+      if (args.OK) Taxform.RemoveRemark(args.State as DataRowView, args.Comments);
     }
 
-    private void gridRemarks_BeginningEdit(object sender, System.Windows.Controls.DataGridBeginningEditEventArgs e)
+    private void GridRemarksBeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
       string msg;
       e.Cancel = RemarkModel.DenyEdit(e.Row.Item as DataRowView, e.Column.SortMemberPath, out msg);
       e.Row.ToolTip = msg;
     }
 
-    private void Print_PO_Checked(object sender, RoutedEventArgs e)
+    private void PrintPoChecked(object sender, RoutedEventArgs e)
     {
     }
 
-    private void Print_Abw_Checked(object sender, RoutedEventArgs e)
+    private void PrintAbwChecked(object sender, RoutedEventArgs e)
     {
 
     }
 
-    private void btnOpenPrint_Click(object sender, RoutedEventArgs e)
+    private void BtnOpenPrintClick(object sender, RoutedEventArgs e)
     {
       //TODO: this implementation is too heavy on logic in the view layer
       //TODO: the pure approach would be moving this to a model method with a bunch of view layer callbacks for all the prompts
@@ -235,13 +240,10 @@ namespace iTRAACv2
         "Administrative Purposes?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
 
       if (adminusage == MessageBoxResult.Cancel) return;
-      else if (adminusage == MessageBoxResult.No)
-      {
-        MessageBox.Show("");
-      }
+      if (adminusage == MessageBoxResult.No) MessageBox.Show(""); //TODO:
 
       //if expired, then admin only reprints
-      if (taxform.IsExpired)
+      if (Taxform.IsExpired)
       {
         //make the "expired" message visible... including how this should not be used for giving the customer a "free reprint"
         //disable the $2 reprint radio button
@@ -251,58 +253,63 @@ namespace iTRAACv2
         popPrint.IsOpen = true;
         return;
       }
-      else
-      {
-        //otherwise, not expired, so "$2 customer reprint" radio is enabled as well as "administrative reprint" 
-        //then when PO or Abw is checked, if "$2 customer reprint" is selected, then 
+      //otherwise, not expired, so "$2 customer reprint" radio is enabled as well as "administrative reprint" 
+      //then when PO or Abw is checked, if "$2 customer reprint" is selected, then 
 
-        MessageBoxResult expired_reprint = MessageBox.Show("Form is Expired:\rYes = Void & Create new replacement?\rNo = Administrative reprint",
-          "Expired Form - Customer wants Replacement?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-        if (expired_reprint == MessageBoxResult.Cancel) return;
-        else if (expired_reprint == MessageBoxResult.Yes)
-        {
-          if (MessageBox.Show("Has the customer returned full package - All 3 copies of both PO and Abw?", "Existing paperwork accounted for?",
-            MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
+      var expiredReprint = MessageBox.Show("Form is Expired:\rYes = Void & Create new replacement?\rNo = Administrative reprint",
+                                                         "Expired Form - Customer wants Replacement?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+      switch (expiredReprint)
+      {
+        case MessageBoxResult.Cancel:
+          return;
+        case MessageBoxResult.Yes:
           {
-            MessageBox.Show("Can't proceed with voiding this form until it's been fully returned.", "Abort", MessageBoxButton.OK, MessageBoxImage.Stop);
+            if (MessageBox.Show("Has the customer returned full package - All 3 copies of both PO and Abw?", "Existing paperwork accounted for?",
+                                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
+            {
+              MessageBox.Show("Can't proceed with voiding this form until it's been fully returned.", "Abort", MessageBoxButton.OK, MessageBoxImage.Stop);
+              return;
+            }
+
+            string sponsorGUID;
+            string newTaxFormGUID;
+            decimal serviceFee;
+            Taxform.VoidAndNew(out sponsorGUID, out newTaxFormGUID, out serviceFee);
+
+            // if Sponsor is loaded, add this to the current shop list
+            var sponsor = ModelBase.Lookup<SponsorModel>(sponsorGUID, false);
+            if (sponsor != null)
+            {
+// ReSharper disable UnusedVariable - TODO
+              var reprint = new TransactionList.TransactionItem(sponsor.Transactions, "Reprint/Replacement", serviceFee);
+// ReSharper restore UnusedVariable
+            }
             return;
           }
+      }
 
-          string SponsorGUID;
-          string NewTaxFormGUID;
-          decimal ServiceFee;
-          taxform.VoidAndNew(out SponsorGUID, out NewTaxFormGUID, out ServiceFee);
+      //        MessageBox.Show("Expired form can't be (re)Printed,\ronly Voided and brand new Form sold.", "Expired Form", MessageBoxButton.OK, MessageBoxImage.Stop);
 
-          // if Sponsor is loaded, add this to the current shop list
-          SponsorModel sponsor = SponsorModel.Lookup<SponsorModel>(SponsorGUID, false);
-          if (sponsor != null)
-          {
-            TransactionList.TransactionItem reprint = new TransactionList.TransactionItem(sponsor.Transactions, "Reprint/Replacement", ServiceFee);
-          }
-          return;
-        }
-
-        //        MessageBox.Show("Expired form can't be (re)Printed,\ronly Voided and brand new Form sold.", "Expired Form", MessageBoxButton.OK, MessageBoxImage.Stop);
-
-        /*else
+      /*else
         {
           ((CheckBox)sender).IsChecked = false;
           popPrint.IsOpen = false;
         }*/
 
-      }
-
       popPrint.IsOpen = true;
     }
 
-    private void btnConfirmPrint_Click(object sender, RoutedEventArgs e)
+    private void BtnConfirmPrintClick(object sender, RoutedEventArgs e)
     {
-      taxform.Print(
+      Debug.Assert(chkPrintPO.IsChecked != null, "chkPrintPO.IsChecked != null");
+      Debug.Assert(chkPrintAbw.IsChecked != null, "chkPrintAbw.IsChecked != null");
+
+      Taxform.Print(
         (chkPrintPO.IsChecked.Value ? TaxFormModel.PackageComponent.OrderForm : 0) |
         (chkPrintAbw.IsChecked.Value ? TaxFormModel.PackageComponent.Abw : 0));
     }
 
-    private void btnCancelPrint_Click(object sender, RoutedEventArgs e)
+    private void BtnCancelPrintClick(object sender, RoutedEventArgs e)
     {
       popPrint.IsOpen = false;
     }
@@ -313,7 +320,9 @@ namespace iTRAACv2
   //the moment this logic is needed to be reused anywhere else, it's a good candidate for a ViewModel class that bundles both the User and TaxForm model inputs required to form the result
   public class LockToolTipConverter : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public LockToolTipConverter() {} //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public LockToolTipConverter() {} //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
@@ -334,7 +343,9 @@ namespace iTRAACv2
 
   public class LostLocationCodeToBool : WPFValueConverters.MarkupExtensionConverter, IValueConverter
   {
-    public LostLocationCodeToBool() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public LostLocationCodeToBool() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
@@ -349,12 +360,15 @@ namespace iTRAACv2
 
   public class IsGiveBackToCustomerEnabled : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public IsGiveBackToCustomerEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public IsGiveBackToCustomerEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
       if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return (false);
-      TaxFormModel form = values[0] as TaxFormModel;
+      var form = values[0] as TaxFormModel;
+      Debug.Assert(form != null, "values[0] != null");
       return (
         form.Fields.Field<string>("LocationCode") != "CUST"
         || UserModel.Current.Access.IsAdmin);
@@ -368,12 +382,15 @@ namespace iTRAACv2
 
   public class IsReturnFormEnabled : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
   {
-    public IsReturnFormEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public IsReturnFormEnabled() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
     {
       if (WPFHelpers.DesignMode || values[0] == DependencyProperty.UnsetValue) return (false);
-      TaxFormModel form = values[0] as TaxFormModel;
+      var form = values[0] as TaxFormModel;
+      Debug.Assert(form != null, "form != null");
       return (
         "LOST,CUST".Contains(form.Fields.Field<string>("LocationCode"))
         || UserModel.Current.Access.IsAdmin);

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
+// ReSharper disable CheckNamespace
 class MinStringLengthAttribute : StringLengthAttribute
+// ReSharper restore CheckNamespace
 {
-  public MinStringLengthAttribute(int MinLength) : base(int.MaxValue)
+  public MinStringLengthAttribute(int minLength) : base(int.MaxValue)
   {
-    MinimumLength = MinLength;
-    ErrorMessage = String.Format("Must be {0} characters.", MinLength);
+    MinimumLength = minLength;
+    ErrorMessage = String.Format("Must be {0} characters.", minLength);
   }
   public override bool IsValid(object value)
   {

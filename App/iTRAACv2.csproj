@@ -43,7 +43,7 @@
     <InstallUrl>\\mwr-tro-v2\v2ClickOnce\</InstallUrl>
     <WebPage>publish.htm</WebPage>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>42</ApplicationRevision>
+    <ApplicationRevision>43</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>true</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -163,6 +163,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Helpers\SelectAllTextOnFocusBehavior.cs" />
     <Compile Include="Helpers\UnboxT.cs" />
     <Compile Include="Model\ModelBase.cs" />
     <Compile Include="Model\RemarkModel.cs" />
@@ -273,7 +274,6 @@
     <Compile Include="Helpers\DependencyObjectExtensions.cs" />
     <Compile Include="Helpers\GridLengthAnimation.cs" />
     <Compile Include="Helpers\SecurityHelpers.cs" />
-    <Compile Include="Helpers\SelectAllTextOnFocusBehavior .cs" />
     <Compile Include="Helpers\StringEvaluator.cs" />
     <Compile Include="Helpers\RawPrinterHelper.cs" />
     <Compile Include="Helpers\AssemblyInfoHelper.cs" />

@@ -1,7 +1,9 @@
 ﻿//from here: http://simplemvvmtoolkit.codeplex.com
 using System;
 
+// ReSharper disable CheckNamespace
 namespace SimpleMvvmToolkit
+// ReSharper restore CheckNamespace
 {
   /*
    * There are three levels of notifications:

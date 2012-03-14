@@ -1,16 +1,18 @@
 ﻿using System.Reflection;
 using System.ComponentModel;
 
+// ReSharper disable CheckNamespace
 public static class ReflectionHelpers
+// ReSharper restore CheckNamespace
 {
-  public static string CurrentAppName { get { return (System.Reflection.Assembly.GetEntryAssembly().GetName().Name); } }
+  public static string CurrentAppName { get { return (Assembly.GetEntryAssembly().GetName().Name); } }
 
 
   /// <summary>
   /// 
   /// </summary>
   /// <param name="obj"></param>
-  /// <param name="propertyName"></param>
+  /// <param name="property"> </param>
   /// <param name="value"></param>
   /// <returns>True = propery exists on obj</returns>
   static public bool PropertySetter(object obj, string property, object value)

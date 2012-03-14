@@ -1,12 +1,10 @@
 ﻿using System.Windows.Media;
-using System.Windows.Controls;
-using System.Windows.Data;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
-  public class ucToggleButton_Lock : ucToggleButton
+  public class UcToggleButtonLock : UcToggleButton
   {
-    public ucToggleButton_Lock()
+    public UcToggleButtonLock()
     {
       InitializeComponent();
 

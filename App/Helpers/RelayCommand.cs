@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Windows.Input;
 
+// ReSharper disable CheckNamespace
 public class RelayCommand : ICommand
+// ReSharper restore CheckNamespace
 {
   #region Fields
 
@@ -31,7 +33,7 @@ public class RelayCommand : ICommand
 
   public bool CanExecute(object parameter)
   {
-    return _canExecute == null ? true : _canExecute(parameter);
+    return _canExecute == null || _canExecute(parameter);
   }
 
   public event EventHandler CanExecuteChanged

@@ -3,76 +3,69 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
-using System.Text.RegularExpressions;
 using System.Windows.Documents;
+using iTRAACv2.Model;
 
-namespace iTRAACv2
+namespace iTRAACv2.View
 {
 
-  public partial class MainWindow : Window
+  public partial class MainWindow
   {
     public MainWindow()
     {
       InitializeComponent();
 
-      iTRAACHelpers.WPFDataGrid_Standard_Behavior(gridUserMessages);
+      iTRAACHelpers.WpfDataGridStandardBehavior(gridUserMessages);
 
       //little extra code to have the popup follow its PlacementTarget when Window is moved/resized
-      Window w = Window.GetWindow(popUserMessage.PlacementTarget);
-      if (null != w) w.LocationChanged += delegate(object sender, EventArgs args)
+      var w = GetWindow(popUserMessage.PlacementTarget);
+      if (null != w) w.LocationChanged += delegate
       {
         popUserMessage.VerticalOffset += 1; popUserMessage.VerticalOffset -=1; 
       };
 
-      Loaded += new RoutedEventHandler(MainWindow_Loaded);
-
-    }
-
-    void MainWindow_Loaded(object sender, RoutedEventArgs e)
-    {
-      //(tabsMain.Items[0] as TabItem).Focus();
     }
 
     #region Tab Stuff
     //this is bound in the MainWindow.xaml - <Window.CommandBindings>
-    private void OpenSponsor_Executed(object sender, ExecutedRoutedEventArgs e)
+    private void OpenSponsorExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-      tabSponsor.Open(tabsMain, e.Parameter.ToString());
+      TabSponsor.Open(tabsMain, e.Parameter.ToString());
     }
 
-    private void OpenTaxForm_Executed(object sender, ExecutedRoutedEventArgs e)
+    private void OpenTaxFormExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-      tabTaxForm.Open(tabsMain, e.Parameter.ToString());
+      TabTaxForm.Open(tabsMain, e.Parameter.ToString());
     }
 
-    private void CloseTab_Executed(object sender, ExecutedRoutedEventArgs e)
+    private void CloseTabExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-      CloseTab2(tabsMain.SelectedContent as tabBase);
+      CloseTab2(tabsMain.SelectedContent as TabBase);
     }
 
 
     private void CloseTab(object sender, object args)
     {
-      CloseTab2(((sender as FrameworkElement).Tag as TabItem).Content as tabBase);
+      CloseTab2(((TabItem) ((FrameworkElement) sender).Tag).Content as TabBase);
     }
 
-    private void CloseTab2(tabBase thetab)
+    private void CloseTab2(TabBase thetab)
     {
       if (thetab == null) return;
 
       thetab.Close();
-      if (thetab is tabTaxForm && btnReturns.IsChecked)
+      if (thetab is TabTaxForm && btnReturns.IsChecked)
         ReturnForms.txtSequenceNumber.Focus();
     }
 
-    private void TabItemHeader_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    private void TabItemHeaderPreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
-      if (e.ChangedButton == System.Windows.Input.MouseButton.Middle) CloseTab(sender, null);
+      if (e.ChangedButton == MouseButton.Middle) CloseTab(sender, null);
     }
     #endregion
 
     #region Admin Override Stuff
-    private void lblLogin_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void LblLoginMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
       if (UserModel.Current.Access.IsAdmin)
       {
@@ -85,7 +78,7 @@ namespace iTRAACv2
       }
     }
 
-    private void txtAdminPassword_KeyDown(object sender, KeyEventArgs e)
+    private void TxtAdminPasswordKeyDown(object sender, KeyEventArgs e)
     {
       if (e.Key == Key.Escape)
       {
@@ -94,69 +87,67 @@ namespace iTRAACv2
         return;
       }
 
-      if (e.Key == Key.Enter)
+      if (e.Key != Key.Enter) return;
+      if (UserModel.Current.Access.AdminOverride(txtAdminPassword.Password, 5))
       {
-        if (UserModel.Current.Access.AdminOverride(txtAdminPassword.Password, 5))
-        {
-          txtAdminPassword.Password = "";
-          popAdminOverride.IsOpen = false;
-        }
-        else
-        {
-          MessageBox.Show("Invalid Password", "Admin Override");
-          txtAdminPassword.Focus();
-        }
+        txtAdminPassword.Password = "";
+        popAdminOverride.IsOpen = false;
+      }
+      else
+      {
+        MessageBox.Show("Invalid Password", "Admin Override");
+        txtAdminPassword.Focus();
       }
     }
 
-    private void lblAdmin_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void LblAdminMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
       UserModel.Current.Access.AdminOverrideCancel();
     }
     #endregion
 
     #region UserMessages Stuff
-    public void ShowUserMessage(string Text)
+    public void ShowUserMessage(string text)
     {
       lblUserMessage.Text = "";
 
-      if (string.IsNullOrWhiteSpace(Text)) return; //this way clients can have generic logic fire w/o checking to see whether they're actually sending anything in each particular case
+      if (string.IsNullOrWhiteSpace(text)) return; //this way clients can have generic logic fire w/o checking to see whether they're actually sending anything in each particular case
       //e.g. TransactionType dropdown on TaxForm UI, only a few types actually have a warning message associated with them
 
-      UserMessagesModel.Add(Text);
+      UserMessagesModel.Add(text);
 
-      if (UserMessage_FadeawayStoryboard == null)
+      if (_userMessageFadeawayStoryboard == null)
       {
-        UserMessage_FadeawayStoryboard = (FindResource("Fadeaway_Animation") as Storyboard).Clone(); //so we can reuse the fadeaway template in multiple places
-        Storyboard.SetTarget(UserMessage_FadeawayStoryboard, popUserMessage);
+        _userMessageFadeawayStoryboard = ((Storyboard) FindResource("Fadeaway_Animation")).Clone(); //so we can reuse the fadeaway template in multiple places
+        Storyboard.SetTarget(_userMessageFadeawayStoryboard, popUserMessage);
       }
 
       //textual carriage returns must be turned into <LineBreak /> objects in XAML land
-      string[] lines = Text.Split('\n'); 
+      var lines = text.Split('\n'); 
       for (int i = 0; i < lines.Length; i++)
       {
         if (i>0) lblUserMessage.Inlines.Add(new LineBreak());
         lblUserMessage.Inlines.Add(lines[i]);
       }
 
-      UserMessage_FadeawayStoryboard.Begin();
+      _userMessageFadeawayStoryboard.Begin();
     }
-    private Storyboard UserMessage_FadeawayStoryboard;
+    private Storyboard _userMessageFadeawayStoryboard;
 
-    private void UserMessage_MouseEnter(object sender, MouseEventArgs e)
+    private void UserMessageMouseEnter(object sender, MouseEventArgs e)
     {
       //on MouseEnter, bring opacity back up to 100% and pause fadeaway
-      UserMessage_CurrentFadePosition = UserMessage_FadeawayStoryboard.GetCurrentTime();
-      UserMessage_FadeawayStoryboard.Seek(new TimeSpan(0, 0, 0));
-      UserMessage_FadeawayStoryboard.Pause();
+      _userMessageCurrentFadePosition = _userMessageFadeawayStoryboard.GetCurrentTime();
+      _userMessageFadeawayStoryboard.Seek(new TimeSpan(0, 0, 0));
+      _userMessageFadeawayStoryboard.Pause();
     }
-    private TimeSpan UserMessage_CurrentFadePosition;
+    private TimeSpan _userMessageCurrentFadePosition;
 
-    private void UserMessage_MouseLeave(object sender, MouseEventArgs e)
+    private void UserMessageMouseLeave(object sender, MouseEventArgs e)
     {
       //on MouseLeave, return opacity to where it was before we interrupted and continue fadeaway
-      UserMessage_FadeawayStoryboard.Seek(UserMessage_CurrentFadePosition);
-      UserMessage_FadeawayStoryboard.Resume();
+      _userMessageFadeawayStoryboard.Seek(_userMessageCurrentFadePosition);
+      _userMessageFadeawayStoryboard.Resume();
     }
 
     //not digging this at all... manually manipulating the Grid.RowDefinition.Height... 
@@ -165,28 +156,23 @@ namespace iTRAACv2
     //apparently it's the <GridSplitter>'s fault: http://stackoverflow.com/questions/1601171/wpf-grid-auto-sized-column-not-collapsing-when-content-visibility-set-to-visibi
     //i don't want to use an Expander either because i want the user to specify how much they open this little "peek window" and the Splitter feels right for this
     //it's actually justified now that i've incorporated an Easing Animation to the whole affair
-    private void btnUserMessages_IsCheckedChanged(object sender, RoutedEventArgs e)
+    private void BtnUserMessagesIsCheckedChanged(object sender, RoutedEventArgs e)
     {
-      WPFHelpers.GridSplitterOpeningBounce(UserMessageRow, btnUserMessages.IsChecked, 50);
+      UserMessageRow.GridSplitterOpeningBounce(btnUserMessages.IsChecked, 50);
     }
     #endregion
 
-    private void btnFontSizeReset_Click(object sender, RoutedEventArgs e)
+    private void BtnFontSizeResetClick(object sender, RoutedEventArgs e)
     {
       sliderZoom.Value = 1.0;
     }
 
-    private void btnReturns_IsCheckedChanged(object sender, RoutedEventArgs e)
+    private void BtnReturnsIsCheckedChanged(object sender, RoutedEventArgs e)
     {
-      WPFHelpers.GridSplitterOpeningBounce(ReturnsColumn, btnReturns.IsChecked, 300,
-        //annoying but true... stuff has to be visible before .Focus() will work
-        //and the Returns popout dialog is not visible until the animation makes it so
-        //so we have to wait until the animation has .Completed to set focus by passing this delegate
-        (bool Opening) => { if (Opening) ReturnForms.txtSequenceNumber.Focus(); } 
-      );
+      ReturnsColumn.GridSplitterOpeningBounce(btnReturns.IsChecked, 300, opening => { if (opening) ReturnForms.txtSequenceNumber.Focus(); });
     }
 
-    private void popUserMessage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void PopUserMessageMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
       btnUserMessages.IsChecked = true;
     }

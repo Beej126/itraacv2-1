@@ -1,14 +1,17 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.IO;
 
+// ReSharper disable CheckNamespace
 public static class AssemblyHelper
+// ReSharper restore CheckNamespace
 {
-  static private NameValueCollection _Properties = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
-  static public NameValueCollection Properties { get { if (_Properties.Count == 0) Initialize(); return (_Properties); } }
+  static private readonly NameValueCollection PropertiesBacking = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
+  static public NameValueCollection Properties { get { if (PropertiesBacking.Count == 0) Initialize(); return (PropertiesBacking); } }
 
   static private void Initialize()
   {
@@ -16,7 +19,11 @@ public static class AssemblyHelper
     {
       PropertyDescriptorCollection props = TypeDescriptor.GetProperties(att);
       if (props.Count == 2) //the AssemblyInfo values of general interest all have one main propertyName[0] plus a TypeId propertyName[1]
-        _Properties.Add(att.GetType().Name.ToString().Replace("Attribute", "").Replace("Assembly", ""), props[0].GetValue(att).ToString());
+      {
+        var value = props[0].GetValue(att);
+        if (value != null)
+          PropertiesBacking.Add(att.GetType().Name.ToString(CultureInfo.InvariantCulture).Replace("Attribute", "").Replace("Assembly", ""), value.ToString());
+      }
     }
   }
 
@@ -32,13 +39,13 @@ public static class AssemblyHelper
   /// <summary>
   /// this should always be wrapped in a "using() {}" block because the generated stream belongs to the caller
   /// </summary>
-  /// <param name="ResourcePath"></param>
+  /// <param name="resourcePath"></param>
   /// <returns></returns>
-  static public Stream GetEmbeddedResource(string ResourcePath)
+  static public Stream GetEmbeddedResource(string resourcePath)
   {
     Assembly assembly = Assembly.GetExecutingAssembly();
-    string fullresname = assembly.GetManifestResourceNames().SingleOrDefault(s => s.Contains(ResourcePath));
-    Assert.Check(fullresname != null, String.Format("{0} not found embedded in this assembly", ResourcePath));
+    string fullresname = assembly.GetManifestResourceNames().SingleOrDefault(s => s.Contains(resourcePath));
+    Assert.Check(fullresname != null, String.Format("{0} not found embedded in this assembly", resourcePath));
 
     return (assembly.GetManifestResourceStream(fullresname));
   }

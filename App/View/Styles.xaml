@@ -1,14 +1,12 @@
 ﻿<ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  xmlns:TextEffects="clr-namespace:TextEffects" 
   xmlns:conv="clr-namespace:WPFValueConverters"
   xmlns:global="clr-namespace:;assembly="
-  xmlns:local="clr-namespace:iTRAACv2"
   xmlns:LAWPF="clr-namespace:LivingAgile.Common.WPF"
   xmlns:clr="clr-namespace:System;assembly=mscorlib"
-  xmlns:diagnostics="clr-namespace:System.Diagnostics;assembly=WindowsBase" 
   xmlns:mwt="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+  xmlns:View="clr-namespace:iTRAACv2.View"
 >
 
   <Style x:Key="PrettyDataGridCellStyle" TargetType="DataGridCell" >
@@ -31,7 +29,7 @@
               <!-- TODO:3:this is just insane overkill and it seems like there should be a more elegant way but i've just spent waay too much time finding an alternative that looks right -->
               <!-- if you use <ContentPresenter /> rather than binding a textual element to the actual data, then you get blasé black text w/o the hyperlink styling -->
               <TextBlock Padding="4 3">
-                <Hyperlink Command="{x:Static local:RoutedCommands.OpenTaxForm}" CommandParameter="{Binding Mode=OneWay, Path=TaxFormGUID}">
+                <Hyperlink Command="{x:Static View:RoutedCommands.OpenTaxForm}" CommandParameter="{Binding Mode=OneWay, Path=TaxFormGUID}">
                   <Run>
                     <Run.Style>
                       <Style TargetType="Run">
@@ -481,7 +479,7 @@
 
   </Style>
 
-  <Style TargetType="global:ucTextBoxWatermarked" BasedOn="{StaticResource ValidationErrorTemplate}"/>
+  <Style TargetType="View:UcTextBoxWatermarked" BasedOn="{StaticResource ValidationErrorTemplate}"/>
   <Style TargetType="TextBlock" BasedOn="{StaticResource ValidationErrorTemplate}"/>
   <Style TargetType="StackPanel" BasedOn="{StaticResource ValidationErrorTemplate}"/>
 
@@ -729,7 +727,7 @@
           <ControlTemplate.Triggers>
             <Trigger Property="IsExpanded" Value="True">
               <Setter TargetName="ContentRow" Property="Height"
-                        Value="{Binding ElementName=Content, Path=DesiredHeight}" />
+                        Value="{Binding ElementName=Content, Path=Height}" />
               <Setter TargetName="Border" Property="BorderBrush"
                         Value="{StaticResource Expander_OpenHeaderBorderBrush}"/>
             </Trigger>
@@ -774,7 +772,7 @@
     </VisualBrush.Visual>
   </VisualBrush-->
 
-  <Style TargetType="{x:Type ToggleButton}" x:Key="ToggleButton_NoRenderPressed" >
+  <Style TargetType="ToggleButton" x:Key="ToggleButton_NoRenderPressed" >
     <!-- nugget: copied the whole ToggleButton style via "StyleSnooper": http://arbel.net/2006/11/05/revamped-style-snooper/ -->
     <Style.BasedOn>
       <Style TargetType="{x:Type ButtonBase}">

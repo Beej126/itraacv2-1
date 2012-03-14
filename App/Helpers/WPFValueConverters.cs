@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Drawing;
+using System.Collections;
 using System.Globalization;
-using System.Reflection;
+using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
-using System.Collections;
 //using System.Windows.Media; //brushes
 
+// ReSharper disable CheckNamespace
 namespace WPFValueConverters
+// ReSharper restore CheckNamespace
 {
   //by making the ValueConverter a MarkupExtension we avoid the typical step of needing to create an instance of the converter in the XAML Resources block
 
@@ -18,8 +19,6 @@ namespace WPFValueConverters
     {
       return this;
     }
-
-    public MarkupExtensionConverter() { }
   }
 
   /// <summary>
@@ -28,7 +27,9 @@ namespace WPFValueConverters
   /// </summary>
   public class LeftRightConverter : MarkupExtensionConverter, IValueConverter
   {
-    public LeftRightConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public LeftRightConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -44,11 +45,13 @@ namespace WPFValueConverters
 
   public class BoolToItalicConverter : MarkupExtensionConverter, IValueConverter
   {
-    public BoolToItalicConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public BoolToItalicConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-      return ((bool)value ? System.Windows.FontStyles.Italic : System.Windows.FontStyles.Normal);
+      return ((bool)value ? FontStyles.Italic : FontStyles.Normal);
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -59,7 +62,9 @@ namespace WPFValueConverters
 
   public class InverseBooleanConverter : MarkupExtensionConverter, IValueConverter
   {
-    public InverseBooleanConverter() { } //to avoid an annoying XAML warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public InverseBooleanConverter() { } //to avoid an annoying XAML warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -78,17 +83,21 @@ namespace WPFValueConverters
   {
     enum Direction
     {
+// ReSharper disable UnusedMember.Local - Inverse is used in XAML
       Normal, Inverse
+// ReSharper restore UnusedMember.Local
     }
 
-    public BooleanToVisibilityConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public BooleanToVisibilityConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
       if (value == null || value == DBNull.Value) return (Visibility.Visible);
 
-      bool b = bool.Parse(value.ToString());
-      Direction d = (parameter == null) ? Direction.Normal : (Direction)Enum.Parse(typeof(Direction), (string)parameter);
+      var b = bool.Parse(value.ToString());
+      var d = (parameter == null) ? Direction.Normal : (Direction)Enum.Parse(typeof(Direction), (string)parameter);
 
       return (((d == Direction.Normal) ? b : !b) ? Visibility.Visible : Visibility.Collapsed);
     }
@@ -109,30 +118,32 @@ namespace WPFValueConverters
   /// </summary>
   public class IndirectPropertyConverter : MarkupExtensionConverter, IValueConverter
   {
-    public IndirectPropertyConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public IndirectPropertyConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
-    public object Convert(object value, System.Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
       if (value == null) return (null);
 
-      bool firstpass = true;
-      string[] PropertyPathPieces = new string[] { parameter.ToString() };
-      string[] indexer = null;
-      int i = 0;
-      while (i < PropertyPathPieces.Length)
+      var firstpass = true;
+      var propertyPathPieces = new[] { parameter.ToString() };
+      object[] indexer = null;
+      var i = 0;
+      while (i < propertyPathPieces.Length)
       {
-        string PropertyPathPiece = PropertyPathPieces[i];
-        PropertyInfo pi = value.GetType().GetProperty(PropertyPathPiece); //first look for a normal propertyName
+        var propertyPathPiece = propertyPathPieces[i];
+        var pi = value.GetType().GetProperty(propertyPathPiece); //first look for a normal propertyName
         if (pi == null)
         {
-          pi = value.GetType().GetProperty("Item", new System.Type[] { typeof(string) }); //otherwise, look for a string indexer
-          indexer = new string[] { PropertyPathPiece };
+          pi = value.GetType().GetProperty("Item", new[] { typeof(string) }); //otherwise, look for a string indexer
+          indexer = new object[] { propertyPathPiece };
         }
-        object obj = pi.GetValue(value, indexer);
+        var obj = pi.GetValue(value, indexer);
         indexer = null;
 
         if (firstpass) {
-          PropertyPathPieces = obj.ToString().Split('.');
+          propertyPathPieces = obj.ToString().Split('.');
           firstpass = false;
         }
         else
@@ -145,9 +156,9 @@ namespace WPFValueConverters
       return (value.ToString());
     }
 
-    public object ConvertBack(object value, System.Type targetType, object parameter, CultureInfo culture)
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-      throw new System.NotImplementedException();
+      throw new NotImplementedException();
     }
   }
 
@@ -156,11 +167,13 @@ namespace WPFValueConverters
   /// </summary>
   public class BoolToSolidBrushConverter : MarkupExtensionConverter, IValueConverter
   {
-    public BoolToSolidBrushConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public BoolToSolidBrushConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-      string[] colors = parameter.ToString().Split(',');
+      var colors = parameter.ToString().Split(',');
       return new System.Windows.Media.BrushConverter().ConvertFromString((bool)value ? colors[0].Trim() : colors[1].Trim());
     }
 
@@ -172,7 +185,9 @@ namespace WPFValueConverters
 
   public class IntToSolidBrushConverter : MarkupExtensionConverter, IValueConverter
   {
-    public IntToSolidBrushConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public IntToSolidBrushConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -187,11 +202,13 @@ namespace WPFValueConverters
 
   public class BoolToParmStringConverter : MarkupExtensionConverter, IValueConverter
   {
-    public BoolToParmStringConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public BoolToParmStringConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-      string[] strings = parameter.ToString().Split('|');
+      var strings = parameter.ToString().Split('|');
       return((bool)value ? strings[0] : strings[1]);
     }
 
@@ -203,7 +220,9 @@ namespace WPFValueConverters
 
   public class BoolExpressionToVisibility : MarkupExtensionConverter, IValueConverter
   {
-    public BoolExpressionToVisibility() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public BoolExpressionToVisibility() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -217,17 +236,19 @@ namespace WPFValueConverters
     }
   }
 
-  public delegate void VariableReplacementCallback(ref string Expression);
+  public delegate void VariableReplacementCallback(ref string expression);
 
   public class BoolExpressionToBool : MarkupExtensionConverter, IValueConverter //nugget: leverage the JScript.dll StringEvaluator to build dynamic ValueConverters
   {
-    static public VariableReplacementCallback VariableReplacement = null;
+    static public VariableReplacementCallback VariableReplacement;
 
-    public BoolExpressionToBool() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public BoolExpressionToBool() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-      string expression = parameter.ToString().Replace("?", (value??"").ToString());
+      var expression = parameter.ToString().Replace("?", (value??"").ToString());
       if (VariableReplacement != null) VariableReplacement(ref expression);
       return (StringEvaluator.EvalToBool(expression.ToLower())); //nugget:
     }
@@ -241,10 +262,12 @@ namespace WPFValueConverters
   
   public class StringsEqualToBool : MarkupExtensionConverter, IValueConverter
   {
-    public StringsEqualToBool() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public StringsEqualToBool() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
-    static private long lasttime = DateTime.Now.Ticks; 
-    static private string lastvalue = null;
+    static private long _lasttime = DateTime.Now.Ticks; 
+    static private string _lastvalue;
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -257,16 +280,18 @@ namespace WPFValueConverters
       //the basic issue is that this converter is bound to radio buttons (SettingsPage.xaml) and they fire in succession...
       //first the new selection fires and sets the bound property, then the old unselection fires and writes an unwanted blank into the property (bummer)
 
-      if (DateTime.Now.Ticks == lasttime) return (lastvalue); 
-      lasttime = DateTime.Now.Ticks;
-      lastvalue = (bool)value ? parameter.ToString() : "";
-      return (lastvalue);
+      if (DateTime.Now.Ticks == _lasttime) return (_lastvalue); 
+      _lasttime = DateTime.Now.Ticks;
+      _lastvalue = (bool)value ? parameter.ToString() : "";
+      return (_lastvalue);
     }
   }
 
-  public class StringsEqualToBoolMulti : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class StringsEqualToBoolMulti : MarkupExtensionConverter, IMultiValueConverter
   {
-    public StringsEqualToBoolMulti() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public StringsEqualToBoolMulti() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
@@ -281,10 +306,12 @@ namespace WPFValueConverters
 
   public class RadioButtonGroupIsCheckedConverter : MarkupExtensionConverter, IValueConverter
   {
-    public RadioButtonGroupIsCheckedConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public RadioButtonGroupIsCheckedConverter() { } //to avoid an XAML annoying warning: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
-    static private long lasttime = DateTime.Now.Ticks;
-    static private object lastvalue = null;
+    static private long _lasttime = DateTime.Now.Ticks;
+    static private object _lastvalue;
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -298,16 +325,18 @@ namespace WPFValueConverters
       //first the new selection fires and sets the bound property, then the old "un"selection fires and clobbers what we want
       //so this logic is an attempt at "keep the first one" in a static context where there's no state to really know the difference between first and second
 
-      if (DateTime.Now.Ticks == lasttime) return (lastvalue);
-      lasttime = DateTime.Now.Ticks;
-      lastvalue = (bool)value ? parameter : null;
-      return (lastvalue);
+      if (DateTime.Now.Ticks == _lasttime) return (_lastvalue);
+      _lasttime = DateTime.Now.Ticks;
+      _lastvalue = (bool)value ? parameter : null;
+      return (_lastvalue);
     }
   }
 
-  public class True: WPFValueConverters.MarkupExtensionConverter, IValueConverter
+  public class True: MarkupExtensionConverter, IValueConverter
   {
-    public True() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public True() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -322,14 +351,15 @@ namespace WPFValueConverters
 
 
 
-  public class AND : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class AND : MarkupExtensionConverter, IMultiValueConverter
   {
-    public AND() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public AND() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-      bool result = true;
-      foreach (object value in values) result = result && ((value == DependencyProperty.UnsetValue || value == null) ? false : (bool)value);
+      var result = values.Aggregate(true, (current, value) => current && (!(value == DependencyProperty.UnsetValue || value == null) && (bool) value));
 
       return (result);
     }
@@ -340,14 +370,15 @@ namespace WPFValueConverters
     }
   }
 
-  public class ANDVis : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class ANDVis : MarkupExtensionConverter, IMultiValueConverter
   {
-    public ANDVis() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public ANDVis() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-      bool result = true;
-      foreach (object value in values) result = result && ((value == DependencyProperty.UnsetValue || value == null) ? false : (bool)value);
+      var result = values.Aggregate(true, (current, value) => current && (!(value == DependencyProperty.UnsetValue || value == null) && (bool) value));
 
       return (result ? Visibility.Visible : Visibility.Collapsed);
     }
@@ -358,14 +389,15 @@ namespace WPFValueConverters
     }
   }
 
-  public class OR : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class OR : MarkupExtensionConverter, IMultiValueConverter
   {
-    public OR() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public OR() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-      bool result = false;
-      foreach (object value in values) result = result || ((value == DependencyProperty.UnsetValue || value == null) ? false : (bool)value);
+      var result = values.Aggregate(false, (current, value) => current || (!(value == DependencyProperty.UnsetValue || value == null) && (bool) value));
 
       return (result);
     }
@@ -377,14 +409,15 @@ namespace WPFValueConverters
   }
 
 
-  public class ORVis : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class ORVis : MarkupExtensionConverter, IMultiValueConverter
   {
-    public ORVis() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public ORVis() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-      bool result = false;
-      foreach (object value in values) result = result || ((value == DependencyProperty.UnsetValue || value == null) ? false : (bool)value);
+      var result = values.Aggregate(false, (current, value) => current || (!(value == DependencyProperty.UnsetValue || value == null) && (bool) value));
 
       return (result ? Visibility.Visible : Visibility.Collapsed);
     }
@@ -397,9 +430,11 @@ namespace WPFValueConverters
 
 
 
-  public class DebugConverter : WPFValueConverters.MarkupExtensionConverter, IValueConverter
+  public class DebugConverter : MarkupExtensionConverter, IValueConverter
   {
-    public DebugConverter() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public DebugConverter() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -415,23 +450,25 @@ namespace WPFValueConverters
     }
   }
 
-  public class IndirectMultiValue : WPFValueConverters.MarkupExtensionConverter, IMultiValueConverter
+  public class IndirectMultiValue : MarkupExtensionConverter, IMultiValueConverter
   {
-    public IndirectMultiValue() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public IndirectMultiValue() { } //to avoid an XAML annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-      object obj = values[0]; 
-      string propertyName = values[1].ToString(); 
-      string[] indexer = null;
+      var obj = values[0]; 
+      var propertyName = values[1].ToString(); 
+      object[] indexer = null;
 
-      PropertyInfo pi = obj.GetType().GetProperty(propertyName); //first look for a normal propertyName
+      var pi = obj.GetType().GetProperty(propertyName); //first look for a normal propertyName
 
       if (pi == null)
       {
-        pi = obj.GetType().GetProperty("Item", new System.Type[] { typeof(string) }); //otherwise, look for a string indexer
+        pi = obj.GetType().GetProperty("Item", new[] { typeof(string) }); //otherwise, look for a string indexer
         if (pi == null) return (null);
-        indexer = new string[] { propertyName };
+        indexer = new object[] { propertyName };
       }
 
       return (pi.GetValue(obj, indexer));
@@ -447,7 +484,9 @@ namespace WPFValueConverters
 
   public class NotEmptyToTrue : MarkupExtensionConverter, IValueConverter
   {
-    public NotEmptyToTrue() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public NotEmptyToTrue() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -463,7 +502,9 @@ namespace WPFValueConverters
 
   public class EmptyToTrue : MarkupExtensionConverter, IValueConverter
   {
-    public EmptyToTrue() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public EmptyToTrue() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -486,7 +527,9 @@ namespace WPFValueConverters
 
   public class EmptyToVisible : MarkupExtensionConverter, IValueConverter
   {
-    public EmptyToVisible() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public EmptyToVisible() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -502,7 +545,9 @@ namespace WPFValueConverters
 
   public class NotEmptyToVisible : MarkupExtensionConverter, IValueConverter
   {
-    public NotEmptyToVisible() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public NotEmptyToVisible() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -518,7 +563,9 @@ namespace WPFValueConverters
 
   public class EmptyToParmStringConverter : MarkupExtensionConverter, IValueConverter
   {
-    public EmptyToParmStringConverter() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public EmptyToParmStringConverter() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -535,7 +582,9 @@ namespace WPFValueConverters
 
   public class StringEvaluatorConverter : MarkupExtensionConverter, IValueConverter
   {
-    public StringEvaluatorConverter() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection bug.
+// ReSharper disable EmptyConstructor
+    public StringEvaluatorConverter() { } //to avoid an annoying warning from XAML designer: "No constructor for type 'xyz' has 0 parameters."  Somehow the inherited one doesn't do the trick!?!  I guess it's a reflection buggy.
+// ReSharper restore EmptyConstructor
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
