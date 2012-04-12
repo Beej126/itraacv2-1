@@ -1,10 +1,6 @@
 USE iTRAAC
 go
 
-
-CREATE PROC Admin_ReseedIdentities
-AS begin
-
 SET NOCOUNT ON
 
 DECLARE @NEWSEED INT, @TaxOfficeID INT, @TRO VARCHAR(50)
@@ -102,12 +98,3 @@ print char(13)+'  tblRemarks  '
 SELECT @NEWSEED = ISNULL(MAX(RemarksID), @TaxOfficeID)+1 FROM tblRemarks WHERE RemarksID < @TaxOfficeID+10000000
 IF @NEWSEED < @TaxOfficeID set @NEWSEED = @TaxOfficeID
 dbcc CHECKIDENT (tblRemarks, RESEED, @NEWSEED)
-
-
-END
-GO
-
-GRANT EXEC ON Admin_ReseedIdentities TO PUBLIC
-GO
-
-EXEC Admin_ReseedIdentities

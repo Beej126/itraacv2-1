@@ -14,9 +14,11 @@ namespace iTRAACv2.Model
     {
       get
       {
-        if (_current == null && !WPFHelpers.DesignMode)
+        if (_current == null )
         {
           _current = new UserModel();
+          if (WPFHelpers.DesignMode) return (_current);
+
 // ReSharper disable InconsistentNaming
           using (var User_Login = new Proc("User_Login"))
 // ReSharper restore InconsistentNaming

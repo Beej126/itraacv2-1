@@ -108,9 +108,9 @@ namespace iTRAACv2.View
 // ReSharper restore UnassignedField.Local
 // ReSharper restore FieldCanBeMadeReadOnly.Local
 // ReSharper restore ConvertToConstant.Local
-      public readonly string[] Values;
+      public readonly object[] Values;
 
-      public VendorSearchArgs(params string[] values)
+      public VendorSearchArgs(params object[] values)
       {
         Values = values;
       }
@@ -154,7 +154,7 @@ namespace iTRAACv2.View
 // ReSharper disable InconsistentNaming
       using (var Vendor_Search = new Proc("Vendor_Search"))
 // ReSharper restore InconsistentNaming
-        state.ResultTable = Vendor_Search.AssignValues(state.Values.ToArray<Object>()).ExecuteDataSet(state).Tables[0];
+        state.ResultTable = Vendor_Search.AssignValues(state.Values).ExecuteDataSet(state).Tables[0];
     }
 
     void VendorSearchOnCompleted(VendorSearchArgs state)

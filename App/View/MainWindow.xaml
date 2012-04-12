@@ -14,8 +14,6 @@
   Top="{Binding Mode=TwoWay, Source={StaticResource AppConfigSettings}, Path=Default.MainWinTop}"
   Height="{Binding Mode=TwoWay, Source={StaticResource AppConfigSettings}, Path=Default.MainWinHeight}"
   Width="{Binding Mode=TwoWay, Source={StaticResource AppConfigSettings}, Path=Default.MainWinWidth}"
-  
-  FocusManager.FocusedElement="{Binding ElementName=HomeTab}"
 >
 
   <!-- nugget: the xmlns:global is a major breakthrough! couldn't figure out how to represent the global aka anonymous namespace, the empty "assembly=" reference was the key (way obscure if you ask me!!) 
