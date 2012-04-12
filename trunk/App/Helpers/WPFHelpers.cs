@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -78,6 +79,23 @@ public static class WPFHelpers
     }
     var nextControl = _getNextTab.Invoke(_keyboredNavigation, new object[] { relativeElement ?? Keyboard.FocusedElement, container, false }); //pretty cool this works exactly how what we need, get the next tab sibling given me and my parent
     Keyboard.Focus(nextControl as IInputElement);
+  }
+
+  static private readonly Hashtable PreviousFocus = new Hashtable();
+  static public void FocusOnVisible(UIElement ctrl)
+  {
+    ctrl.IsVisibleChanged += (s, e) => { if (ctrl.IsVisible) Keyboard.Focus(ctrl); };
+    //{
+    //  if (ctrl.IsVisible)
+    //  {
+    //    PreviousFocus[ctrl] = Keyboard.FocusedElement;
+    //    Keyboard.Focus(ctrl);
+    //  }
+    //  else if (PreviousFocus[ctrl] != null && ((UIElement)PreviousFocus[ctrl]).IsVisible)
+    //  {
+    //    Keyboard.Focus((IInputElement)PreviousFocus[ctrl]);
+    //  }
+    //};
   }
 
   //public static void UIThreadSafe(Delegate method)

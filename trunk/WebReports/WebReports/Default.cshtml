@@ -1,0 +1,140 @@
+﻿@using System.Linq;
+@using System.Data;
+@using System.Text.RegularExpressions;
+@using System.Configuration;
+
+@{
+  Layout = "~/_SiteLayout.cshtml";
+  Page.Title = "German Value-Added Tax-Relief Reporting";
+
+  Proc.ConnectionString = ConfigurationManager.ConnectionStrings["iTRAAC_Reports"].ConnectionString;
+}
+
+<!-- note: switching to method="GET" would cause the *SECOND* request after a fresh reset to completely hang up in la-la land  -->
+<form id="inputsForm" action="@Href("~/WebMethods/ReportQuery.cshtml")" method="POST">
+  <!--input name="xml" type="hidden" value="1" /--> <!-- to debug the raw xml data before xsl-transform to html is applied -->
+  <div class="input">
+    Report:
+    @{
+      var rgx = new Regex("(?<!^)([A-Z][a-z]|(?<=([a-z]|-))([A-Z]|[0-9]))", RegexOptions.Compiled);
+
+      using (var GL_REPORT_List = new Proc("GL_REPORT_List"))
+      {
+        @Html.DropDownList("ReportName", "(select)",
+                                 GL_REPORT_List.Table0.Rows.Cast<DataRow>().Select(
+                                   r => new SelectListItem()
+                                          {
+                                            Text = rgx.Replace(r.Field<string>("specific_name").Replace("GL_REPORT_", ""), " $1"),
+                                            Value = r.Field<string>("parms")
+                                          }
+                                   )
+                 );
+      }
+    }
+  </div>
+  <div class="input" id="divInputOfficeCode">
+    Tax Office:
+    @using (var TaxOffice_s = new Proc("TaxOffice_s"))
+    {
+      @Html.DropDownList("OfficeCode",
+                               new SelectListItem[] { new SelectListItem() { Text = "(All)", Value = "" } }.Union(
+                                 TaxOffice_s.Table0.Rows.Cast<DataRow>().
+                                   Select(
+                                     r => new SelectListItem() { Text = r.Field<string>("TaxOfficeName"), Value = r.Field<string>("OfficeCode") }
+                                   ))
+               );
+    }
+  </div>
+  <div class="input" id="divInputCCode">
+    CCode: @Html.TextBox("CCode")</div>
+  <div class="input" id="divInputOrderNumber">
+    Order Number: @Html.TextBox("OrderNumber")</div>
+  <div class="input" id="divInputBeginDate">
+    Begin Date (m/d/yyyy): @Html.TextBox("BeginDate")&nbsp;&nbsp;
+    End Date: @Html.TextBox("EndDate")&nbsp;
+    Quick select: <select id="EasyDates">
+                    <option></option>
+                    <option>Last Month To Date</option>
+                    <option>Fiscal Year To Date</option>
+                    <option>Last Fiscal Year To Date</option>
+                    <option>Last Fiscal Year</option>
+                  </select>
+  </div>
+  <div class="input">
+    <input id="submit" type="submit" value="Submit" /></div>
+  <div class="input" id="reportOutput">
+  </div>
+</form>
+
+<script type="text/javascript">
+  function DateToString(date) {
+    return ((date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear());
+  }
+
+  function onChangeReport() {
+    $('#reportOutput').html("");
+    $('#EasyDates').selectedIndex = 0;
+
+    var procParms = $("#ReportName").val();
+    $("[id^=divInput]").each(function (index, element) {
+      if (procParms.indexOf(element.id.replace("divInput", "")) > -1) $(element).fadeIn();
+      else $(element).fadeOut();
+    });
+  }
+
+  //var dateformat = { dateFormat: "d-m-yy" };
+
+  $(document).ready(function () {
+    $("#BeginDate").datepicker();
+    $("#EndDate").datepicker();
+    $("#ReportName").on("change", onChangeReport);
+    onChangeReport();
+
+    $("#EasyDates").on("change", function () {
+      var today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0);
+
+      var lastmonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+      var fiscal = new Date(today.getFullYear(), 10 - 1, 1);
+      if (fiscal > today) fiscal.setYear(today.getFullYear() - 1);
+
+      var lastfiscal = new Date(fiscal);
+      lastfiscal.setYear(lastfiscal.getFullYear() - 1);
+
+      today.setDate(today.getDate() + 1); //to pull in all of todays hours on the date range search, just go to midnight on the next day
+
+      switch ($("#EasyDates").val()) {
+        case "Last Month To Date": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(today)); break;
+        case "Fiscal Year To Date": $("#BeginDate").val(DateToString(fiscal)); $("#EndDate").val(DateToString(today)); break;
+        case "Last Fiscal Year To Date": $("#BeginDate").val(DateToString(lastfiscal)); $("#EndDate").val(DateToString(today)); break;
+        case "Last Fiscal Year": $("#BeginDate").val(DateToString(lastfiscal)); $("#EndDate").val(DateToString(fiscal)); break;
+      }
+    });
+
+    $("#submit").throbber("click", { image: '@Href("~/js/throbber.gif")' });
+
+    $('#inputsForm').submit(function () {
+      $("#reportOutput").html(""); //blank out the previous result
+
+      $.ajax({
+        url: this.action,
+        type: this.method,
+        data: {
+          ReportName: "GL_REPORT_" + $("#ReportName option:selected").text().replace(/ /g, ""),
+          OfficeCode: $("#OfficeCode").val(),
+          CCode: $("#CCode").val(),
+          OrderNumber: $("#OrderNumber").val(),
+          BeginDate: $("#BeginDate").val(),
+          EndDate: $("#EndDate").val()
+        },
+        complete: function (result) {
+          $.throbberHide(); //according to docs, hide should be automatic with ajax: http://archive.plugins.jquery.com/project/throbber
+          $("#reportOutput").html(result.responseText);
+        }
+      });
+      return false;
+    });
+
+  });
+  
+</script>

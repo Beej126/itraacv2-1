@@ -3,6 +3,7 @@ using System.Data;
 using System.Windows;
 using System.Windows.Controls;
 using System.Linq;
+using System.Windows.Input;
 
 namespace iTRAACv2.View
 {
@@ -19,6 +20,8 @@ namespace iTRAACv2.View
       txtDoDId.PreviewTextInput += WPFHelpers.IntegerOnlyTextBoxPreviewTextInput;
 
       iTRAACHelpers.WpfDataGridStandardBehavior(gridCustomerSearch);
+
+      WPFHelpers.FocusOnVisible(txtCCode);
     }
 
     public delegate void OpenSponsorDelegate(string clientGUID);
@@ -27,7 +30,6 @@ namespace iTRAACv2.View
 
     protected override void UserControlLoaded(object sender, RoutedEventArgs e)
     {
-      txtCCode.Focus();
       _customerSearchTypeAhead.OnExecute += CustomerSearchOnExecute;
       _customerSearchTypeAhead.OnCompleted += CustomerSearchOnCompleted;
     }

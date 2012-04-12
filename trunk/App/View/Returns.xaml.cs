@@ -13,6 +13,7 @@ namespace iTRAACv2.View
       InitializeComponent();
 
       iTRAACHelpers.WpfDataGridStandardBehavior(gridReturns);
+      WPFHelpers.FocusOnVisible(txtSequenceNumber);
     }
 
     private void BtnSearchClick(object sender, RoutedEventArgs e)

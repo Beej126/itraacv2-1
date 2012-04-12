@@ -288,7 +288,7 @@
                   </GridViewColumnCollection>
                 </StackPanel.Resources>
 
-                <GridViewHeaderRowPresenter Columns="{StaticResource columns}" />
+                <GridViewHeaderRowPresenter Columns="{StaticResource columns}" Margin="0,5,0,0" />
                 <ItemsControl IsTabStop="False" Name="gridMembers" ItemsSource="{Binding Mode=OneWay, Path=HouseMembers}" >
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -835,7 +835,7 @@
                     <DatePicker VerticalAlignment="Bottom" SelectedDate="{Binding Mode=TwoWay, Path=Fields[SuspensionExpiry]}" />
                     <Button Content="1mo" Tag="OneMonth" Click="BtnSuspendDurationClick" />
                     <Button Content="1yr" Tag="OneYear" Click="BtnSuspendDurationClick" />
-                    <Button Content="*" Tag="Forever" Click="BtnSuspendDurationClick" ToolTip="Forever" />
+                    <Button Content="&#x221E;" Tag="Forever" Click="BtnSuspendDurationClick" ToolTip="Forever" />
                   </WrapPanel>
                   <TextBlock VerticalAlignment="Center">
                     <TextBlock.Text>

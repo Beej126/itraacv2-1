@@ -34,7 +34,7 @@ SELECT * INTO #TT FROM vw_NFx WHERE TaxFormID=@TaxFormID AND FormTypeID=@FormTyp
 SELECT * FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 1
 select top 5 * from itraac.dbo.tbltaxforms f join tblremarks r on r.rowid = f.taxformid where r.remtype IN (3,7,8,9, 17,16,13,12)
 ordernumber = 'NF1-HD-08-08382'
-TaxForm_print 'FD1C164A-24EF-4BC9-A209-E31ABF8A8382', 1
+TaxForm_print 'FD1C164A-24EF-4BC9-A209-E31ABF8A8382', 3
 TaxForm_print '00000000-0000-0000-0000-000000000000', 1 
 */
 
@@ -58,7 +58,6 @@ DECLARE
   @FormTypeID INT,
   @OrderNumber VARCHAR(50),
   @Description VARCHAR(500),
-  @TransactionTypeID INT,
   @AgencyLine1 VARCHAR(100),
   @AgencyLine2 VARCHAR(100),
   @AgencyLine3 VARCHAR(100),
@@ -108,7 +107,7 @@ select
   @AuthorizedDependentClientGUID = p.AuthorizedDependentClientGUID,
   @SponsorClientGUID = p.SponsorClientGUID,
   @SponsorName = p.OriginalSponsorName, --this will only be populated if the SponsorClient record has had it's name changed after this form was created (it will include the old CCode for reference)
-  @AuthorizedDependentName = p.OriginalDependentName
+  @AuthorizedDependentName = p.OriginalDependentName,
   @TaxOfficeID = p.TaxOfficeID
 FROM iTRAAC.dbo.tblTaxFormPackages p 
 WHERE p.RowGUID = @PackageGUID
@@ -139,7 +138,7 @@ BEGIN
   SELECT @VendorAddress = [Address] FROM Vendor_Address_v WHERE RowGUID = @VendorGUID
   
   SELECT
-    @TotalCost = SELECT CONVERT(VARCHAR, TotalCost),
+    @TotalCost = CONVERT(VARCHAR, TotalCost),
     @Currency = CASE CurrencyUsed WHEN 1 THEN 'U.S. DOLLARS' ELSE 'EURO' END 
   FROM iTRAAC.dbo.tblPPOData WHERE TaxFormGUID = @TaxFormGUID
   
@@ -148,6 +147,10 @@ BEGIN
   SELECT @TransactionTypeSpecialFields = master.dbo.CONCAT(Title +': ' + Remarks, CHAR(13))
   FROM iTRAAC.dbo.tblRemarks WHERE FKRowGUID = @TaxFormGUID AND remtype IN (3,7,8,9, 17,16,13,12)
 END    
+
+
+
+DECLARE @t TABLE(Data VARCHAR(500), FieldName VARCHAR(10), [Page] INT, [Row] INT, Col INT, MaxLength INT, MaxRows INT, UNIQUE CLUSTERED (Page, FieldName))
 
 
 -- Order Form data & fields positions...
@@ -163,8 +166,7 @@ ELSE BEGIN
   ELSE BEGIN
   
     -- load the list of fields 
-    DECLARE @t TABLE(Data VARCHAR(500), FieldName VARCHAR(10), Row int, Col INT, MaxLength INT, MaxRows INT, UNIQUE CLUSTERED (FieldName))
-    INSERT @t SELECT NULL, RTRIM(FieldName), FLOOR(StartRow), StartCol, MaxLength, MaxRows FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 1
+    INSERT @t SELECT NULL, RTRIM(FieldName), Page, FLOOR(StartRow), StartCol, MaxLength, MaxRows FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 1
 
     -- set all the values
     UPDATE @t SET DATA = @OrderNumber WHERE FieldName = 'F1'
@@ -195,7 +197,8 @@ ELSE BEGIN
     UPDATE @t SET DATA = (SELECT UPPER(VendorName) FROM iTRAAC.dbo.tblVendors WHERE RowGUID = @VendorGUID) WHERE FieldName = 'F16' -- F16 = Vendor info
     UPDATE @t SET DATA = '[ ] Returned      [ ] Filed' WHERE FieldName = 'F17'
 
-    SELECT * FROM @t ORDER BY CONVERT(INT, RIGHT(FieldName, LEN(FieldName)-1))
+    SELECT * FROM @t ORDER BY Page, CONVERT(INT, RIGHT(FieldName, LEN(FieldName)-1))
+    DELETE @t
 
     UPDATE iTRAAC.dbo.tblTaxForms SET InitPrt215 = GETDATE() WHERE RowGUID = @TaxFormGUID
   END
@@ -213,13 +216,12 @@ ELSE BEGIN
   ELSE BEGIN
   
     SELECT @DutyLocation = s.DutyLocation
-    FROM tblClients c
-    JOIN tblSponsors s ON s.RowGUID = c.SponsorGUID
+    FROM iTRAAC.dbo.tblClients c
+    JOIN iTRAAC.dbo.tblSponsors s ON s.RowGUID = c.SponsorGUID
     WHERE c.RowGUID = @SponsorClientGUID
   
     -- load the list of fields 
-    DECLARE @t TABLE(Data VARCHAR(500), FieldName VARCHAR(10), [Page] INT, [Row] INT, Col INT, MaxLength INT, MaxRows INT, UNIQUE CLUSTERED (FieldName))
-    INSERT @t SELECT NULL, RTRIM(FieldName), FLOOR(StartRow), StartCol, MaxLength, MaxRows FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 3
+    INSERT @t SELECT NULL, RTRIM(FieldName), Page, FLOOR(StartRow), StartCol, MaxLength, MaxRows FROM iTRAAC.dbo.tblFormFields WHERE FormTypeID = 3
 
     -- set all the values
     UPDATE @t SET DATA = 'XXXX' WHERE FieldName = 'F1'
@@ -241,7 +243,7 @@ ELSE BEGIN
 
     UPDATE @t SET DATA = @Sigblock WHERE FieldName = 'F24' 
 
-    IF (@FormTypeID = 2)
+    IF (@FormTypeID = 2) BEGIN
       UPDATE @t SET DATA = @Currency WHERE FieldName = 'F12'
       UPDATE @t SET DATA = @TransactionType WHERE FieldName = 'F13'
       UPDATE @t SET DATA = @TotalCost WHERE FieldName = 'F14'
@@ -257,13 +259,15 @@ ELSE BEGIN
     END
   END
 
+  SELECT * FROM @t ORDER BY Page, CONVERT(INT, RIGHT(FieldName, LEN(FieldName)-1))
+  DELETE @t
+
   UPDATE iTRAAC.dbo.tblTaxForms SET InitPrtAbw = GETDATE() WHERE RowGUID = @TaxFormGUID
 END
 
 -- lastly, return updated print date fields to the client so "printed" status changes visually
 SELECT RowGUID, InitPrt215, InitPrtAbw FROM iTRAAC.dbo.tblTaxForms WHERE RowGUID = @TaxFormGUID
   
-
 END
 GO
 

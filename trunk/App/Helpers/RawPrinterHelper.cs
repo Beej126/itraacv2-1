@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -105,7 +106,7 @@ public class RawPrinterHelper
     // Copy the managed byte array into the unmanaged array.
     Marshal.Copy(bytes, 0, pUnmanagedBytes, bytes.Length);
     // Send the unmanaged bytes to the printer.
-    bool bSuccess = SendBytesToPrinter(szPrinterName, pUnmanagedBytes, bytes.Length);
+    var bSuccess = SendBytesToPrinter(szPrinterName, pUnmanagedBytes, bytes.Length);
     // Free the unmanaged memory allocated earlier.
     Marshal.FreeCoTaskMem(pUnmanagedBytes);
     return bSuccess;
@@ -176,53 +177,67 @@ public class RawPrinterHelper
   #endregion
 }
 
-public class RawCharacterPage
+
+public class RawPrinterJob
 {
-  private readonly string _initcodes;
-  private byte[] _pagebytes;
+  public List<byte[]> Pages = new List<byte[]>();
+  public int PageWidth { get; private set; }
+  public int PageHeight { get; private set; }
 
+  private readonly string _initCodes;
 
-  public RawCharacterPage(string initCodes, int widthChars, int heightChars)
+  public RawPrinterJob(string initCodes, int widthChars, int heightChars)
   {
     PageWidth = widthChars;
     PageHeight = heightChars;
-    _initcodes = initCodes;
+    _initCodes = initCodes;
+    AddPage();
+  }
+
+  private void AddPage()
+  {
+    var numberOfBytes = _initCodes.Length
+                        + ((PageWidth + 1 /*LF*/)*PageHeight)
+                        + 1 /*FF*/;
 
     // using a simple "flat 2D array" approach ala: http://www.dotnetperls.com/flatten-array
     // logicalrow = row * pagewidth
-    _pagebytes = new byte[initCodes.Length + ((PageWidth + 1 /*LF*/)*PageHeight) + 1 /*FF*/];
+    Pages.Add(new byte[numberOfBytes]);
 
     //put the printer init codes at the beginning of the page buffer
-    Buffer.BlockCopy(CP437GetBytes(_initcodes), 0, _pagebytes, 0, initCodes.Length);
+    Buffer.BlockCopy(CP437GetBytes(_initCodes), 0, Pages[Pages.Count - 1], 0, _initCodes.Length);
 
     //put a form feed (FF) at the very end of the page buffer
-    _pagebytes[_pagebytes.Length - 1] = 0x0C;
+    Pages[Pages.Count - 1][Pages[Pages.Count - 1].Length - 1] = 0x0C;
 
     //initialize the page with all spaces ...
-    byte[] rowbytes = CP437GetBytes(new string(' ', PageWidth + 1 /*LF*/));
+    var rowbytes = CP437GetBytes(new string(' ', PageWidth + 1 /*LF*/));
     //plus a line feed at the end of every line
     rowbytes[PageWidth] = 0x0A; // linefeed (LF)
-    //apparently simple for-loop is the recommended best practice for this drudgery
+    //apparently our venerable friend the simple loop is the recommended best practice for this drudgery
     //http://stackoverflow.com/questions/1897555/what-is-the-equivalent-of-memset-in-c
     //http://stackoverflow.com/questions/6150097/initialize-a-byte-array-to-a-certain-value-other-than-the-default-null
     for (var row = 0; row < PageHeight; row++)
     {
-      PrintBytesAtPos(rowbytes, 0, row);
+      PrintBytesAtPos(rowbytes, Pages.Count - 1, 0, row);
     }
   }
 
-  public int PageWidth { get; private set; }
-  public int PageHeight { get; private set; }
-
   public bool SendToPrinter(string printerName)
   {
-    return (RawPrinterHelper.SendManagedBytesToPrinter(printerName, _pagebytes));
+    var success = true;
+    foreach(var page in Pages)
+    {
+      success = RawPrinterHelper.SendManagedBytesToPrinter(printerName, page);
+      if (!success) break;
+    }
+    return (success);
   }
 
   public void PrintTestRulers()
   {
-    string columnRuler1 = ""; //first row ruler = 0123456789 over and over
-    string columnRuler2 = ""; //second row ruler = the 10 marker, 20 marker, etc.
+    var columnRuler1 = ""; //first row ruler = 0123456789 over and over
+    var columnRuler2 = ""; //second row ruler = the 10 marker, 20 marker, etc.
     int i;
     for (i = 1; i*10 < PageWidth; i++)
     {
@@ -230,39 +245,29 @@ public class RawCharacterPage
       columnRuler2 += (((i == 1 ? 0 : -1) + i).ToString(CultureInfo.InvariantCulture) + "         ").Left(10);
     }
     columnRuler1 += "0123456789".Left(PageWidth - columnRuler1.Length);
-    columnRuler2 += ((i - 1).ToString(CultureInfo.InvariantCulture) + "         ").Left(PageWidth - columnRuler2.Length);
+    columnRuler2 +=
+      ((i - 1).ToString(CultureInfo.InvariantCulture) + "         ").Left(PageWidth - columnRuler2.Length);
 
-    PrintStringAtPos(columnRuler1, 0, 0);
-    PrintStringAtPos(columnRuler2, 0, 1);
-    for (int row = 2; row < PageHeight; row++)
+    PrintStringAtPos(columnRuler1, 0, 0, 0);
+    PrintStringAtPos(columnRuler2, 0, 0, 1);
+    for (var row = 2; row < PageHeight; row++)
     {
-      PrintStringAtPos(row.ToString(CultureInfo.InvariantCulture), 0, row);
+      PrintStringAtPos(row.ToString(CultureInfo.InvariantCulture), 0, 0, row);
     }
   }
 
-  public RawCharacterPage Clone()
+  public RawPrinterJob Clone()
   {
-    var pr = new RawCharacterPage(_initcodes, PageWidth, PageHeight) {_pagebytes = _pagebytes};
-    return (pr);
+    return (new RawPrinterJob(_initCodes, PageWidth, PageHeight) {Pages = Pages});
   }
 
-  public void PrintStringAtPos(string str, int col, int row, int maxlength = 100, int maxrows = 1)
+  public void PrintStringAtPos(string str, int pagenum, int col, int row, int maxlength = 100, int maxrows = 1)
   {
     if (String.IsNullOrWhiteSpace(str)) return;
 
     // replace Euro with "{" {backspace} "=" as the best approximation i've come up with...
     // unforunately the Euro currency came along after the printer's ROM... "{=" seemed to look the best out of various potential combinations, e.g. (=, C=, C:
     str = str.Replace("€", "{\x08=");
-
-    /* learned more about code pages and accomplished this more elegantly via Encoding.GetEncoding(437).GetBytes()
-    Replace("ä", "\x84").Replace("Ä", "\x8e").
-    Replace("ë", "\x89").Replace("Ë", "\x89"). //no cap version
-    Replace("ï", "\x8b").Replace("Ï", "\x8b"). //no cap
-    Replace("ö", "\x94").Replace("Ö", "\x99").
-    Replace("ü", "\x81").Replace("Ü", "\x9a").
-    Replace("ÿ", "\x98").Replace("Ÿ", "\x98"). //no cap
-    Replace("ß", "\xe1").
-    */
 
     //wordwrap logic...
     if (str.Length > maxlength && Math.Abs(maxrows) > 1)
@@ -276,14 +281,16 @@ public class RawCharacterPage
         //otherwise dive into word wrap logic...
         //regex from here: http://regexlib.com/%28A%28EUjmatMAbqeJAVntKDWeVsP5A_5Xg2Q0u9xwCAHWWstjGAsCMb9Bvt6wVbYw4T-qTSvJU4RyVpn50P4Nci6N1vvxBArnwgO_k8F_3qJa5EdPPrrHHjp02XUS30FiGt4NNIFU8ZEynWmDksDVFHsuXNjDJ4ZS2saCasmnMl03WWfEW6uh7-BNkiTj0JD4Jypu0%29%29/REDetails.aspx?regexp_id=470
         //grabs the 'maxlength' of chars it can, breaking on whitespace, period or dash
-        var wordWrapRegex = new Regex(@"^[\s\S]{1," + maxlength.ToString(CultureInfo.InvariantCulture) + @"}([\s\.\-]|$)",
-                                      RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+        var wordWrapRegex =
+          new Regex(@"^[\s\S]{1," + maxlength.ToString(CultureInfo.InvariantCulture) + @"}([\s\.\-]|$)",
+                    RegexOptions.Singleline | RegexOptions.ExplicitCapture);
         while (lines.Count < Math.Abs(maxrows))
         {
           Match result = wordWrapRegex.Match(str);
           if (!result.Success) break;
           lines.Add(result.Value.TrimEnd());
-          str = str.Left(-result.Value.Length); //negative Left "slices" x chars off the left and returns the remainder
+          str = str.Left(-result.Value.Length);
+          //negative Left "slices" x chars off the left and returns the remainder
         }
         //if we bailed out because we couldn't wordwrap anything in, just include the chopped text so at least it's visible
         if (lines.Count < Math.Abs(maxrows) && str.Length > 0) lines.Add(str.Left(maxlength));
@@ -295,12 +302,12 @@ public class RawCharacterPage
       //conversely, when printing the flat NF2 dollar value, you want it to go right on the specified row at the bottom of the space
       if (maxrows < 0) row = row - lines.Count + 1;
 
-      foreach (string line in lines)
-        PrintBytesAtPos(CP437GetBytes(line), col, row++);
+      foreach (var line in lines)
+        PrintBytesAtPos(CP437GetBytes(line), pagenum, col, row++);
     }
     else
       //otherwise just print the maxlength of single line
-      PrintBytesAtPos(CP437GetBytes(str.Left(maxlength)), col, row);
+      PrintBytesAtPos(CP437GetBytes(str.Left(maxlength)), pagenum, col, row);
   }
 
   /// <summary>
@@ -316,11 +323,14 @@ public class RawCharacterPage
     return (Encoding.GetEncoding(437).GetBytes(str)); //nugget: 
   }
 
-  private void PrintBytesAtPos(byte[] bytes, int col, int row)
+  private void PrintBytesAtPos(byte[] bytes, int pagenum, int col, int row)
   {
-    Assert.Check(row < PageHeight && row >= 0, "Printing attempted to an invalid ROW: " + row.ToString(CultureInfo.InvariantCulture));
-    Assert.Check(col < PageWidth && col >= 0, "Printing attempted to an invalid COL: " + col.ToString(CultureInfo.InvariantCulture));
+    Assert.Check(row < PageHeight && row >= 0,
+                 "Printing attempted to an invalid ROW: " + row.ToString(CultureInfo.InvariantCulture));
+    Assert.Check(col < PageWidth && col >= 0,
+                 "Printing attempted to an invalid COL: " + col.ToString(CultureInfo.InvariantCulture));
 
-    Buffer.BlockCopy(bytes, 0, _pagebytes, _initcodes.Length + (row*(PageWidth + 1 /*LF*/)) + col, bytes.Length);
+    if (pagenum == Pages.Count) AddPage();
+    Buffer.BlockCopy(bytes, 0, Pages[pagenum], _initCodes.Length + (row*(PageWidth + 1 /*LF*/)) + col, bytes.Length);
   }
 }

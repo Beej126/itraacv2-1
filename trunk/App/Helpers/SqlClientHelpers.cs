@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
+using System.Data.SqlTypes;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Reflection;
 using System.ComponentModel;
+using System.Reflection;
+using System.Xml;
+
 //make sure to keep this clean of any particular UI assembly dependencies so that it can be
 //reused across ASP.Net, Windows.Forms and WPF projects
 
@@ -153,12 +156,12 @@ public class Proc : IDisposable
     }
   }
 
-  public void AssignValues(IOrderedDictionary values)
+  public void AssignValues(NameValueCollection values)
   {
     foreach (string key in values.Keys)
     {
-      if (_cmd.Parameters.Contains("@"+key))
-        this["@"+key] = values[key];
+      if (_cmd.Parameters.Contains("@" + key))
+        this["@" + key] = values[key];
     }
   }
 
@@ -436,15 +439,21 @@ public class Proc : IDisposable
     }
     set
     {
-      if (!_cmd.Parameters.Contains(key)) return;
+      if (IsDevMode || !_cmd.Parameters.Contains(key)) return;
 
-      if (TrimAndNull && !(value is DataTable) && (value != null) && (value != DBNull.Value)) {
+      if (TrimAndNull && (value != null) && (value != DBNull.Value) && (value is string || value is SqlChars || value is SqlString))
+      {
         value = value.ToString().Trim();
         if ((string)value == "") value = null;
       }
       _cmd.Parameters[key].Value = (value == null || value == DBNull.Value) ? DBNull.Value : 
         (_cmd.Parameters[key].SqlDbType == SqlDbType.UniqueIdentifier) ? new Guid(value.ToString()) : value;
     }
+  }
+
+  public System.Xml.XmlReader ParmAsXmlReader(string parmName)
+  {
+    return ((System.Data.SqlTypes.SqlXml)Parameters[parmName].SqlValue).CreateReader();
   }
 
   public virtual void ClearParms()

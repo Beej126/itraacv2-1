@@ -1,0 +1,62 @@
+﻿@using System.Data;
+@using System.Data.SqlTypes
+@using System.Xml;
+@using System.Xml.Xsl;
+@using System.Xml.XPath;
+@using System.IO;
+@using System.Text.RegularExpressions;
+@using System.Text;
+
+@{
+  string data;
+  bool singlerow = false;
+  using (var reportProc = new Proc(Request["reportName"]))
+  {
+    reportProc.AssignValues(Request.Form);
+    try
+    {
+      reportProc.ExecuteDataSet();
+    }
+    catch(Exception ex)
+    {
+      if (ex.Message.Contains("timeout"))
+      {
+        Response.Write(
+          "Report query could not gather results in a timely fashion.<br/>" +
+          "Please try again and/or limit query via input criteria (e.g. specify shorter date range, select a specific office vs All).<br/>" +
+          "Also, this server tends to be busier syncing data with all offices at the top of every hour; consider waiting until 10 past to retry.<br/>"
+        );
+      }
+
+      Response.Write(String.Format("<br/>Contact Admin on About tab if issue persists.<br/><br/>(Technical error text: {0} Exception type: {1})", ex.Message, ex.GetType().ToString()));
+      return;
+    }
+    
+    singlerow = reportProc.DataSet.Tables.Count == 1 && reportProc.DataSet.Tables[0].Rows.Count == 1;
+    data = reportProc.DataSet.GetXml();
+  }
+  
+  if (Request["xml"] != null)
+  {
+    Response.ContentType = "text/xml";
+    Response.Write(data);
+  }
+    
+  else
+  {
+    var xslt = new XslCompiledTransform();
+    xslt.Load(Server.MapPath(singlerow ? "~/format.single-row.xslt" : "~/format.flat-table.xslt"));
+
+    var sb = new StringBuilder();
+
+    using (var srdr = new StringReader(data))
+    {
+      using (var sw = new StringWriter(sb))
+      {
+        xslt.Transform(XmlReader.Create(srdr), new XmlTextWriter(sw));
+      }
+    }
+    
+    Response.Write(Regex.Replace(sb.ToString(), "_(x[0-9]{2}[0-F]{2})_", "&#$1;")); //convert all the screwy chars to their html hex equiv );
+  }
+}

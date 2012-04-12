@@ -225,9 +225,6 @@ namespace iTRAACv2.View
 
     private void BtnOpenPrintClick(object sender, RoutedEventArgs e)
     {
-      //TODO: this implementation is too heavy on logic in the view layer
-      //TODO: the pure approach would be moving this to a model method with a bunch of view layer callbacks for all the prompts
-
       //if expired, 
 
       //if either PO or Abw are not printed yet...

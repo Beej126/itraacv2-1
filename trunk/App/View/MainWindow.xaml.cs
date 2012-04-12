@@ -8,7 +8,6 @@ using iTRAACv2.Model;
 
 namespace iTRAACv2.View
 {
-
   public partial class MainWindow
   {
     public MainWindow()
@@ -19,11 +18,12 @@ namespace iTRAACv2.View
 
       //little extra code to have the popup follow its PlacementTarget when Window is moved/resized
       var w = GetWindow(popUserMessage.PlacementTarget);
-      if (null != w) w.LocationChanged += delegate
+      if (null != w) w.LocationChanged += (s,e) =>
       {
         popUserMessage.VerticalOffset += 1; popUserMessage.VerticalOffset -=1; 
       };
 
+      Dispatcher.BeginInvoke((Action)(() => Keyboard.Focus(HomeTab)));
     }
 
     #region Tab Stuff
@@ -54,6 +54,7 @@ namespace iTRAACv2.View
       if (thetab == null) return;
 
       thetab.Close();
+
       if (thetab is TabTaxForm && btnReturns.IsChecked)
         ReturnForms.txtSequenceNumber.Focus();
     }
@@ -169,7 +170,7 @@ namespace iTRAACv2.View
 
     private void BtnReturnsIsCheckedChanged(object sender, RoutedEventArgs e)
     {
-      ReturnsColumn.GridSplitterOpeningBounce(btnReturns.IsChecked, 300, opening => { if (opening) ReturnForms.txtSequenceNumber.Focus(); });
+      ReturnsColumn.GridSplitterOpeningBounce(btnReturns.IsChecked, 300);
     }
 
     private void PopUserMessageMouseLeftButtonUp(object sender, MouseButtonEventArgs e)

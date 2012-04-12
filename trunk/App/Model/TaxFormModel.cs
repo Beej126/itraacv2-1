@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Data;
 using System.Globalization;
 using System.Linq;
@@ -579,12 +580,12 @@ namespace iTRAACv2.Model
 
         TaxForm_print.ExecuteDataSet();
 
-        var poPrinter = new RawCharacterPage(
+        var poPrinter = new RawPrinterJob(
           SettingsModel.Global["FormPrinterInitCodes"],
           Convert.ToInt16(SettingsModel.Global["FormPrinterWidth"]),
           Convert.ToInt16(SettingsModel.Global["FormPrinterHeight"]));
 
-        var abwPrinter = poPrinter.Clone();
+        var abwPrinter = poPrinter.Clone(); //saves the wasted effort of repopulating another blank page
 
         if (PrintFields(poPrinter, TaxForm_print.DataSet.Tables[0].Rows))
         {
@@ -603,13 +604,13 @@ namespace iTRAACv2.Model
       return (true);
     }
 
-    static private bool PrintFields(RawCharacterPage printer, DataRowCollection rows)
+    static private bool PrintFields(RawPrinterJob printer, DataRowCollection rows)
     {
       if (rows.Count == 0) return (false);
-
+      
       foreach (DataRow r in rows)
       {
-        printer.PrintStringAtPos(r["Data"].ToString(), (int)r["col"], (int)r["row"], (int)r["MaxLength"], (int)r["MaxRows"]);
+        printer.PrintStringAtPos(r["Data"].ToString(), (int)r["page"], (int)r["col"], (int)r["row"], (int)r["MaxLength"], (int)r["MaxRows"]);
       }
       return (true);
     }
