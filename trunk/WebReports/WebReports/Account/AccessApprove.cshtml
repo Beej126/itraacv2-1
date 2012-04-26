@@ -39,10 +39,22 @@ else
           <tr>
             <td>@row["CACInfo"]</td>
             <td>@row["Email"]</td>
+            <td>@row["Reason"]</td>
             <td><div id="account_@(row["RegistrationId"])"><input type="button" value="Approve" onclick=" approve(@row["RegistrationId"]);" /></div></td>
           </tr>
+        }
+        if (AccessApprove_List.Table0.Rows.Count == 0)
+        {
+          <tr><td>(No requests are currently pending)</td></tr>
         }
       }
     }
   </table>
 }
+<br/>
+<br/>
+<br/>
+Administrative Commands:<br/>
+<ul>
+  <li><a href='@Href("~/Account/ResetProcParms")'>Reset stored procedure parameter cache</a> (use after tweaking a report sproc's input parm names).</li>
+</ul>

@@ -9,18 +9,51 @@
     <script type="text/javascript" src="@Functions.HrefEx("ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js")"></script>
     <script type="text/javascript" src="@Functions.HrefEx("ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js")"></script>
     <link  href="@Functions.HrefEx("ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/themes/base/jquery.ui.all.css")" rel="stylesheet" type="text/css" media="all" />
+    <script type="text/javascript" src="@Functions.HrefEx("jqueryjs.googlecode.com/svn-history/r6125/trunk/plugins/cookie/jquery.cookie.min.js")"></script>
   
     <script type="text/javascript" src="@Href("~/js/systemantics.net-jquery.throbber.min.js")"></script>
 
     <style type="text/css">
       div.input {margin-bottom: 7px}
     </style>
+
+    <script type="text/javascript">
+      $(document).ready(function () {
+        if ($.cookie("DoDWarning") == null) {
+          $.cookie("DoDWarning", true, { path: '/' });
+
+          $("<div></div>").html('<h3>YOU ARE ACCESSING A U.S. GOVERNMENT (USG) INFORMATION SYSTEM (IS)<br />THAT IS PROVIDED FOR USG-AUTHORIZED USE ONLY.</h3><p>By using this IS (which includes any device attached to this IS), you consent to the following conditions:</p><div class="subcontent"><ul><li>The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.</li><li>At any time, the USG may inspect and seize data stored on this IS.</li><li>Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.</li><li>This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.</li><li>Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.</li></ul></div>')
+            .dialog({
+              title: "DoD Information Security Reminder",
+              modal: true,
+              width: 700,
+              buttons: { Ok: function () {
+                $(this).dialog("close");
+
+                $("<div></div>").html("Data Required by the Privacy Act of 1974<br/>Authority: Title 10 USC Section 3012 and the Supplementary Agreement to the NATO SOFA, Article 67, paragraph 3a(a)(i); AE Regulation 215-6/USAFE Instruction 34-102, on individual tax-relief procedures in Germany.<br/>Routine use(s):<br/>Purpose(s): To provide information needed to process documents for tax-relief purchases and to verify the requester is authorized tax-relief support.<br/>Mandatory or voluntary disclosure and effect on individuals not providing information:</br>For MWR/Service Fund custodians to use in obtaining tax-relief and to verify eligibility of applicants for tax-relief.<br/>Disclosure of information is mandatory. Tax-relief cannot be obtained without the requested information.")
+                .dialog({
+                  title: "Personally Identifiable Information (PII) Security Reminder",
+                  modal: true,
+                  width: 600,
+                  buttons: { Ok: function () { $(this).dialog("close"); } }
+                });
+                
+
+              } }
+          });
+
+        }
+      });
+    </script>
   </head>
 
   <body>
     <div id="page">
       <div id="header">
         <p class="site-title">@((Page.Title == null)? "German Value-Added Tax-Relief Reporting" : Page.Title)</p>
+        <div id="login" style="padding-top: 7px">
+          <a onclick="$('<div></div>').html('Close your browser to logout.').dialog({modal: true, title: 'Logout', buttons: { Ok: function () {$(this).dialog('close');}}})">Logout</a>
+        </div>
         <ul id="menu">
           <li><a href="@Href("~/")">Home</a></li>
           @if (Session["IsAdmin"] != null && ((bool?)Session["IsAdmin"]).Value)
