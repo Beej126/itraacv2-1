@@ -1,0 +1,6 @@
+_ReSharper.iTRAACv2\
+Assets\
+bin\
+*\DBObj\v1\
+*.suo
+*.btm

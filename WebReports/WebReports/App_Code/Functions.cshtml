@@ -1,0 +1,7 @@
+﻿@functions {
+    
+    public static string HrefEx(string url)
+    {
+      return (String.Format("http{0}://{1}", Request.IsSecureConnection?"s":"", url));
+    }
+}

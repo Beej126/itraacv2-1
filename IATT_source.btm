@@ -1,0 +1,6 @@
+erase "IATT\2 - Source Code.zip"
+
+7z a -p%archive_password% -tzip -r -xr@archive_exclusions.txt -xr@IATT_exclusions.txt "IATT\2 - Source Code.zip" App DB\DBObj
+
+pause
+exit
