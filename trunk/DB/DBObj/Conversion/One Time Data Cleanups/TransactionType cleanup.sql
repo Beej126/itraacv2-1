@@ -1,6 +1,9 @@
 /* second round of tweaks prompted by Erica's feedback (Baumholder)
 
-- changed "services" to be the new misc goods or service bucket ... with that said, he wants it to be somewhat annoying to select so it's less overused... something like a popup that asks are you sure, with some examples in the popup text
+
+- changed "services" to be the new misc goods or service bucket ... 
+    - with that said, Rafael wants it to be somewhat annoying to select so it's less overused... 
+      *** force form description field to be mandatory when 
 - broke home into household goods and repair
 - added new entries for the examples you came up with garden, baby, animal, clothing & TKS
 - provided a few clarifying examples at the bottom and is basically leaving the rest up to me i guess
@@ -8,54 +11,53 @@
 - i'll add one for hair... maybe "cosmetic" or something more encompasing like that
 - everything else on his list i guess i'd just throw under household
  
+New list:
+  Vehicle Repair/Maintenance
+  Vehicle Purchase
+  Furniture
+  Groceries
+  *** Household Items (misc) => *** form description field becomes mandatory
+  Electronics
+  Tools
+  Home Repair Purchase
 
+  Garden Maintenance/Supplies
 
+  Legal/Tax Advisor Fees
+  Travel/Hotels
+  Fuel Oil, Mineral Oil, Gas
 
-1        Vehicle Repair/Maintenance
-1        Vehicle Purchase
-1        Furniture
-1        Groceries
-       Household Items (misc) => description becomes mandator
-1        Electronics
-1        Tools
-       Home Repair Purchase
+  Telephones/Internet
 
-       Garden Maintenance/Supplies
+  Utilities (red flag)
+  Restaurants
+  Social Events (Wedding/Communion/Party)
+  Funeral Expenses
+  Group Purchases
+  Jewelry
+  Collectibles and Valuables
 
-1        Legal/Tax Advisor Fees
-1        Travel/Hotels
-1        Fuel Oil, Mineral Oil, Gas
+  Medical/Optical
 
-       Telephones/Internet
+  Recreational Supplies/activities
 
-1        Utilities (red flag)
-1        Restaurants
-1        Social Events (Wedding/Communion/Party)
-1        Funeral Expenses
-1        Group Purchases
-1        Jewelry
-1        Collectibles and Valuables
+  Rentals (not long-term)
+  Weapons
 
-       Medical/Optical
+  Pre-Purchased VAT Forms
+  Advertising (moved to 'Services')
+  (don't use) Insurance
+  Renovations & Replacements (moved to 'Home')
+  (don't use) Television Service
+  Travel (moved to 'Travel/Hotel')
+  (don't use) Trade-Ins
 
-       Recreational Supplies/activities
+  Baby Items
+  Clothing/Shoes
+  Hair
+  Animal Supplies/Care
 
-       Rentals (not long-term)
-1        Weapons
-
-0        Pre-Purchased VAT Forms
-0        Advertising (moved to 'Services')
-0        (don't use) Insurance
-0        Renovations & Replacements (moved to 'Home')
-0        (don't use) Television Service
-0        Travel (moved to 'Travel/Hotel')
-0        (don't use) Trade-Ins
-
-       Baby Items
-       Clothing/Shoes
-       Animal Supplies/Care
-
-1      Services
+  Services
 
 Where to put:
 - pots/pans  (Household Items)

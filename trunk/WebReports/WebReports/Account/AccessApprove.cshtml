@@ -1,0 +1,48 @@
+﻿@using System.Data;
+
+@{
+  // Set the layout page and page title
+  Layout = "~/_SiteLayout.cshtml";
+
+  var isAdmin = (bool?)Session["IsAdmin"];
+}
+
+@if (isAdmin == null || !isAdmin.Value)
+{
+  <div class="message error">You must be a designated Admin to access this page.</div>
+}
+else
+{
+
+  <script type="text/javascript">
+    function approve(id) {
+      $.ajax({
+        url: '@Href("~/WebMethods/AccessApprove.cshtml")',
+        type: "post",
+        data: { id: id },
+        complete: function(result) {
+          $("#account_" + id).html(result.responseText);
+        }
+      });
+
+    }
+  </script>
+
+  <h3>Pending Access Requests</h3>
+  <table border="1" style="border-collapse: collapse;" cellpadding="3">
+    @{
+      using (var AccessApprove_List = new Proc("AccessApprove_List"))
+      {
+        AccessApprove_List.ExecuteDataSet();
+        foreach (DataRow row in AccessApprove_List.Table0.Rows)
+        {
+          <tr>
+            <td>@row["CACInfo"]</td>
+            <td>@row["Email"]</td>
+            <td><div id="account_@(row["RegistrationId"])"><input type="button" value="Approve" onclick=" approve(@row["RegistrationId"]);" /></div></td>
+          </tr>
+        }
+      }
+    }
+  </table>
+}

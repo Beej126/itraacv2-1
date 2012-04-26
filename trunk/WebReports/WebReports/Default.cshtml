@@ -1,13 +1,19 @@
 ﻿@using System.Linq;
 @using System.Data;
 @using System.Text.RegularExpressions;
-@using System.Configuration;
 
 @{
   Layout = "~/_SiteLayout.cshtml";
-  Page.Title = "German Value-Added Tax-Relief Reporting";
 
-  Proc.ConnectionString = ConfigurationManager.ConnectionStrings["iTRAAC_Reports"].ConnectionString;
+  var isAllowed = (bool?) Session["IsAllowed"];
+  if (isAllowed == null)
+  {
+    Response.Redirect("~/Account/Register.cshtml");
+  }
+  else if (!isAllowed.Value)
+  {
+    Response.Redirect("~/Account/AccountLockedOut.cshtml");
+  }
 }
 
 <!-- note: switching to method="GET" would cause the *SECOND* request after a fresh reset to completely hang up in la-la land  -->
@@ -54,6 +60,7 @@
     End Date: @Html.TextBox("EndDate")&nbsp;
     Quick select: <select id="EasyDates">
                     <option></option>
+                    <option>Last Week</option>
                     <option>Last Month To Date</option>
                     <option>Fiscal Year To Date</option>
                     <option>Last Fiscal Year To Date</option>
@@ -82,8 +89,6 @@
     });
   }
 
-  //var dateformat = { dateFormat: "d-m-yy" };
-
   $(document).ready(function () {
     $("#BeginDate").datepicker();
     $("#EndDate").datepicker();
@@ -93,6 +98,11 @@
     $("#EasyDates").on("change", function () {
       var today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0);
 
+      var lastMonday = new Date(today);
+      lastMonday.setDate(today.getDate() - ((today.getDay() - 1) % 7) - 7);
+      var lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+
       var lastmonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
       var fiscal = new Date(today.getFullYear(), 10 - 1, 1);
@@ -101,9 +111,9 @@
       var lastfiscal = new Date(fiscal);
       lastfiscal.setYear(lastfiscal.getFullYear() - 1);
 
-      today.setDate(today.getDate() + 1); //to pull in all of todays hours on the date range search, just go to midnight on the next day
-
       switch ($("#EasyDates").val()) {
+        case "": $("#BeginDate").val(""); $("#EndDate").val(""); break;
+        case "Last Week": $("#BeginDate").val(DateToString(lastMonday)); $("#EndDate").val(DateToString(lastSunday)); break;
         case "Last Month To Date": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(today)); break;
         case "Fiscal Year To Date": $("#BeginDate").val(DateToString(fiscal)); $("#EndDate").val(DateToString(today)); break;
         case "Last Fiscal Year To Date": $("#BeginDate").val(DateToString(lastfiscal)); $("#EndDate").val(DateToString(today)); break;
@@ -116,6 +126,9 @@
     $('#inputsForm').submit(function () {
       $("#reportOutput").html(""); //blank out the previous result
 
+      var endDate = new Date($("#EndDate").val());
+      endDate.setHours(23, 59, 59); //to pull in the full day, set the enddate's time to 23:59
+
       $.ajax({
         url: this.action,
         type: this.method,
@@ -125,7 +138,7 @@
           CCode: $("#CCode").val(),
           OrderNumber: $("#OrderNumber").val(),
           BeginDate: $("#BeginDate").val(),
-          EndDate: $("#EndDate").val()
+          EndDate: endDate.toLocaleString()
         },
         complete: function (result) {
           $.throbberHide(); //according to docs, hide should be automatic with ajax: http://archive.plugins.jquery.com/project/throbber

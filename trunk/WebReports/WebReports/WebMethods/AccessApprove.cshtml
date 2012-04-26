@@ -1,0 +1,17 @@
+﻿@{
+  Response.ContentType = "text/plain";
+
+  try
+  {
+    using (var AccessApprove = new Proc("AccessApprove"))
+    {
+      AccessApprove["@RegistrationId"] = Request["id"];
+      AccessApprove.ExecuteNonQuery();
+      Response.Write("success");
+    }
+  }
+  catch (Exception ex)
+  {
+    Response.Write(ex.Message);
+  }
+}

@@ -57,6 +57,6 @@
       }
     }
     
-    Response.Write(Regex.Replace(sb.ToString(), "_(x[0-9]{2}[0-F]{2})_", "&#$1;")); //convert all the screwy chars to their html hex equiv );
+    Response.Write(Regex.Replace(sb.ToString(), "_(x[0-F]{4})_", "&#$1;")); //convert all the screwy chars to their html hex equiv );
   }
 }

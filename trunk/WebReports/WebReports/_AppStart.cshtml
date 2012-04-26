@@ -1,8 +1,14 @@
-﻿@{
-    // WebSecurity.InitializeDatabaseConnection("StarterSite", "UserProfile", "UserId", "Email", true);
+﻿@using System.Configuration;
+
+@{
     // WebMail.SmtpServer = "mailserver.example.com";
     // WebMail.EnableSsl = true;
     // WebMail.UserName = "username@example.com";
     // WebMail.Password = "your-password";
     // WebMail.From = "your-name-here@example.com";
+
+  if (Proc.ConnectionString == null)
+  {
+    Proc.ConnectionString = ConfigurationManager.ConnectionStrings["iTRAAC_Reports"].ConnectionString + ";Network Library=DBMSSOCN";
+  }
 }

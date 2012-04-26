@@ -1,6 +1,0 @@
-erase "2 - Source Code.zip"
-
-7z a -p%sqlcmdpassword% -tzip -r -x@archive_exclusions.txt "2 - Source Code.zip" App Web DB\DBObj
-
-pause
-exit

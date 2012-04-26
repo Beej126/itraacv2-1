@@ -1,8 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WebReports", "WebReports\", "{0220429D-3B94-463A-8002-FF3F369CE03B}"
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "localhost", "http://localhost:1759", "{426A5A10-6780-46DA-AA4B-0BDF88023259}"
 	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
 		Debug.AspNetCompiler.VirtualPath = "/WebReports"
 		Debug.AspNetCompiler.PhysicalPath = "WebReports\"
@@ -18,20 +19,17 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WebReports", "WebReports\",
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		VWDPort = "1759"
+		SlnRelativePath = "WebReports\"
 		DefaultWebSiteLanguage = "Visual C#"
 	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0220429D-3B94-463A-8002-FF3F369CE03B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0220429D-3B94-463A-8002-FF3F369CE03B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0220429D-3B94-463A-8002-FF3F369CE03B}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{0220429D-3B94-463A-8002-FF3F369CE03B}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{426A5A10-6780-46DA-AA4B-0BDF88023259}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{426A5A10-6780-46DA-AA4B-0BDF88023259}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
