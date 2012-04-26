@@ -5,6 +5,8 @@
 
   // Initialize general page variables
   var email = "";
+  var reason = "";
+  var other = "";
 
   // Validation
   var isValid = true;
@@ -25,7 +27,17 @@
     if (email.IsEmpty())
     {
       isValid = false;
-      accountCreationErrorMessage = "Please specify an email address.";
+      accountCreationErrorMessage += "<br/><br/>Please specify an email address.";
+    }
+
+    reason = Request.Form["reason"];
+    other = Request.Form["other"];
+    
+    // Validate the user's email address
+    if (reason.IsEmpty() || (reason == "Other" && other.IsEmpty()))
+    {
+      isValid = false;
+      accountCreationErrorMessage += "<br/><br/>Please specify Reason For Access.";
     }
 
     // If all information is valid, create a new account
@@ -35,6 +47,8 @@
       {
         accessRegister["@CACInfo"] = Request.ClientCertificate.Subject;
         accessRegister["@email"] = email;
+        accessRegister["@reason"] = reason;
+        accessRegister["@other"] = other;
         try
         {
           accessRegister.ExecuteNonQuery();
@@ -61,7 +75,7 @@
   @if (!accountCreationErrorMessage.IsEmpty())
   {
     <p class="message error">
-      @accountCreationErrorMessage
+      @Html.Raw(accountCreationErrorMessage)
     </p>
   }
 
@@ -72,6 +86,13 @@
       <li class="email">
         <label for="email" style="margin-bottom: 5px;">Email where you would like to be notified when your access is available:</label>
         <input type="text" id="email" name="email" title="Email address" value="@email" />
+      </li>
+      <li class="reason">
+        <label for="reason" style="margin-bottom: 5px;">Reason For Access:</label>
+        @Html.RadioButton("reason", "Customs") MP Customs<br/>
+        @Html.RadioButton("reason", "VATOversight") VAT Office Oversight<br/>
+        @Html.RadioButton("reason", "Other") Other: 
+        <input type="text" id="other" name="other" title="Other reason" value="@other" />
       </li>
     </ol>
     <p class="form-actions">

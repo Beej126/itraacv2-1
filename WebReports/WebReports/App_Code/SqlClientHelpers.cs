@@ -69,6 +69,11 @@ public class Proc : IDisposable
 
   public bool IsDevMode { get { return (Process.GetCurrentProcess().ProcessName == "devenv"); } }
 
+  public static void ResetParmCache()
+  {
+    Parmcache.Clear();
+  }
+
   /// <summary>
   /// 
   /// </summary>
@@ -97,7 +102,7 @@ public class Proc : IDisposable
     PopulateParameterCollection();
   }
   static private readonly Regex UDTParamTypeNameFix = new Regex(@"(.*?)\.(.*?)\.(.*)", RegexOptions.Compiled);
-  static private readonly Dictionary<string, SqlCommand> Parmcache = new Dictionary<string, SqlCommand>(StringComparer.OrdinalIgnoreCase); 
+  static private readonly Dictionary<string, SqlCommand> Parmcache   = new Dictionary<string, SqlCommand>(StringComparer.OrdinalIgnoreCase); 
 
   public SqlParameterCollection Parameters { get { return (_cmd.Parameters); } }
 

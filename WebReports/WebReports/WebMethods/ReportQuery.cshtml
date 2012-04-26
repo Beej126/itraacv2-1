@@ -28,7 +28,7 @@
         );
       }
 
-      Response.Write(String.Format("<br/>Contact Admin on About tab if issue persists.<br/><br/>(Technical error text: {0} Exception type: {1})", ex.Message, ex.GetType().ToString()));
+      Response.Write(String.Format("<br/>Error: {0}<br/><span style='font-size: x-small'>(Exception type: {1})</span><br/><br/>Contact Admin on About tab if issue persists.", ex.Message, ex.GetType().ToString()));
       return;
     }
     

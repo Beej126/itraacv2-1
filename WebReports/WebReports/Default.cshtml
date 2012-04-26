@@ -24,10 +24,10 @@
     @{
       var rgx = new Regex("(?<!^)([A-Z][a-z]|(?<=([a-z]|-))([A-Z]|[0-9]))", RegexOptions.Compiled);
 
-      using (var GL_REPORT_List = new Proc("GL_REPORT_List"))
+      using (var ReportList = new Proc("ReportList"))
       {
         @Html.DropDownList("ReportName", "(select)",
-                                 GL_REPORT_List.Table0.Rows.Cast<DataRow>().Select(
+                                      ReportList.Table0.Rows.Cast<DataRow>().Select(
                                    r => new SelectListItem()
                                           {
                                             Text = rgx.Replace(r.Field<string>("specific_name").Replace("GL_REPORT_", ""), " $1"),
@@ -53,6 +53,10 @@
   </div>
   <div class="input" id="divInputCCode">
     CCode: @Html.TextBox("CCode")</div>
+  <div class="input" id="divInputLastName">
+    Last Name: @Html.TextBox("LastName")</div>
+  <div class="input" id="divInputFirstName">
+    First Name: @Html.TextBox("FirstName")</div>
   <div class="input" id="divInputOrderNumber">
     Order Number: @Html.TextBox("OrderNumber")</div>
   <div class="input" id="divInputBeginDate">
@@ -61,6 +65,7 @@
     Quick select: <select id="EasyDates">
                     <option></option>
                     <option>Last Week</option>
+                    <option>Last Month</option>
                     <option>Last Month To Date</option>
                     <option>Fiscal Year To Date</option>
                     <option>Last Fiscal Year To Date</option>
@@ -104,6 +109,7 @@
       lastSunday.setDate(lastMonday.getDate() + 6);
 
       var lastmonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      var thismonth = new Date(today.getFullYear(), today.getMonth(), 0);
 
       var fiscal = new Date(today.getFullYear(), 10 - 1, 1);
       if (fiscal > today) fiscal.setYear(today.getFullYear() - 1);
@@ -114,6 +120,7 @@
       switch ($("#EasyDates").val()) {
         case "": $("#BeginDate").val(""); $("#EndDate").val(""); break;
         case "Last Week": $("#BeginDate").val(DateToString(lastMonday)); $("#EndDate").val(DateToString(lastSunday)); break;
+        case "Last Month": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(thismonth)); break;
         case "Last Month To Date": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(today)); break;
         case "Fiscal Year To Date": $("#BeginDate").val(DateToString(fiscal)); $("#EndDate").val(DateToString(today)); break;
         case "Last Fiscal Year To Date": $("#BeginDate").val(DateToString(lastfiscal)); $("#EndDate").val(DateToString(today)); break;
@@ -136,6 +143,8 @@
           ReportName: "GL_REPORT_" + $("#ReportName option:selected").text().replace(/ /g, ""),
           OfficeCode: $("#OfficeCode").val(),
           CCode: $("#CCode").val(),
+          LastName: $("#LastName").val(),
+          FirstName: $("#FirstName").val(),
           OrderNumber: $("#OrderNumber").val(),
           BeginDate: $("#BeginDate").val(),
           EndDate: endDate.toLocaleString()
