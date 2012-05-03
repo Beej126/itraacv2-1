@@ -2,7 +2,7 @@ USE iTRAAC_Reports
 go
 
 DECLARE curs CURSOR LOCAL FAST_FORWARD FOR
-SELECT name, xtype FROM sysobjects WHERE xtype = 'p' AND name LIKE 'GL_REPORT%'
+SELECT name, xtype FROM sysobjects WHERE xtype = 'p' AND name NOT LIKE 'dt_%'
 
 DECLARE
   @procname VARCHAR(50), @xtype VARCHAR(50),

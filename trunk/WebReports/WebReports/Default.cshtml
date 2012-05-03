@@ -65,15 +65,14 @@
     Quick select: <select id="EasyDates">
                     <option></option>
                     <option>Last Week</option>
+                    <option>This Month To Date</option>
                     <option>Last Month</option>
                     <option>Last Month To Date</option>
                     <option>Fiscal Year To Date</option>
-                    <option>Last Fiscal Year To Date</option>
                     <option>Last Fiscal Year</option>
                   </select>
   </div>
-  <div class="input">
-    <input id="submit" type="submit" value="Submit" /></div>
+  <div class="input"><input id="submit" type="submit" value="Submit" /></div>
   <div class="input" id="reportOutput">
   </div>
 </form>
@@ -109,7 +108,9 @@
       lastSunday.setDate(lastMonday.getDate() + 6);
 
       var lastmonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      var thismonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      var endlastmonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      
+      var thismonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
       var fiscal = new Date(today.getFullYear(), 10 - 1, 1);
       if (fiscal > today) fiscal.setYear(today.getFullYear() - 1);
@@ -120,10 +121,10 @@
       switch ($("#EasyDates").val()) {
         case "": $("#BeginDate").val(""); $("#EndDate").val(""); break;
         case "Last Week": $("#BeginDate").val(DateToString(lastMonday)); $("#EndDate").val(DateToString(lastSunday)); break;
-        case "Last Month": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(thismonth)); break;
+        case "This Month To Date": $("#BeginDate").val(DateToString(thismonth)); $("#EndDate").val(DateToString(today)); break;
+        case "Last Month": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(endlastmonth)); break;
         case "Last Month To Date": $("#BeginDate").val(DateToString(lastmonth)); $("#EndDate").val(DateToString(today)); break;
         case "Fiscal Year To Date": $("#BeginDate").val(DateToString(fiscal)); $("#EndDate").val(DateToString(today)); break;
-        case "Last Fiscal Year To Date": $("#BeginDate").val(DateToString(lastfiscal)); $("#EndDate").val(DateToString(today)); break;
         case "Last Fiscal Year": $("#BeginDate").val(DateToString(lastfiscal)); $("#EndDate").val(DateToString(fiscal)); break;
       }
     });

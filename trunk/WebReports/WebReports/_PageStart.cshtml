@@ -7,7 +7,7 @@
   //otherwise they can then be sniffed and access could then be impersonated.
   //many references for this: http://www.codinghorror.com/blog/2010/11/breaking-the-webs-cookie-jar.html
   //this web server environment seems to be particularly slow with SSL, hopefully we'll find ways to mitigate that.
-  if (!Request.IsSecureConnection)
+  if (!Request.IsSecureConnection && Request.Url.Host != "localhost")
   {
     if (Request["retryssl"] == null && Request.Url != null)
     {
@@ -16,6 +16,7 @@
     else
     {
       Response.Write("This page must be run in SSL/HTTPS mode.");
+      Response.End();
     }
     return;
   }
@@ -23,12 +24,20 @@
   //if we haven't pulled their access status yet...
   if (Session["IsAllowed"] == null)
   {
-    using (var accessCheck = new Proc("AccessCheck"))
+    if (Request.Url.Host == "localhost")
     {
-      accessCheck["@CACInfo"] = Request.ClientCertificate.Subject;
-      accessCheck.ExecuteNonQuery();
-      Session["IsAllowed"] = (accessCheck["@IsAllowed"] == DBNull.Value ? (bool?)null : (bool)accessCheck["@IsAllowed"]);
-      Session["IsAdmin"] = (accessCheck["@IsAdmin"] == DBNull.Value ? (bool?)null : (bool)accessCheck["@IsAdmin"]);
+      Session["IsAllowed"] = true;
+      Session["IsAdmin"] = true;
+    }
+    else
+    {
+      using (var accessCheck = new Proc("AccessCheck"))
+      {
+        accessCheck["@CACInfo"] = Request.ClientCertificate.Subject;
+        accessCheck.ExecuteNonQuery();
+        Session["IsAllowed"] = (accessCheck["@IsAllowed"] == DBNull.Value ? (bool?) null : (bool) accessCheck["@IsAllowed"]);
+        Session["IsAdmin"] = (accessCheck["@IsAdmin"] == DBNull.Value ? (bool?) null : (bool) accessCheck["@IsAdmin"]);
+      }
     }
   }
 }
