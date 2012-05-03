@@ -74,6 +74,8 @@ public class Proc : IDisposable
     Parmcache.Clear();
   }
 
+  public static int ExecuteTimeoutSeconds = 30;
+
   /// <summary>
   /// 
   /// </summary>
@@ -85,7 +87,6 @@ public class Proc : IDisposable
   // i'm thinking this is a nice "good enough" for now to simply pass it in from the outercontext
   public Proc(string procName, string userName)
   {
-
     _procName = procName;
     _userName = userName;
     //scratch that idea... see "NOOP" comment further down: if (_ProcName == "NOOP") return; //this supports doing nothing if we're chaining AssignValues(DataRowView).ExecuteNonQuery() and the DataRowView.Row.RowState == UnChanged
@@ -139,6 +140,7 @@ public class Proc : IDisposable
         
     var hasCachedParms = Parmcache.TryGetValue(parmcachekey, out _cmd);
     _cmd = hasCachedParms ? _cmd.Clone() : new SqlCommand(_procName) {CommandType = CommandType.StoredProcedure};
+    _cmd.CommandTimeout = ExecuteTimeoutSeconds;
     _cmd.Connection = new SqlConnection(logicalConnectionString);
     if (_cmd.Connection.State != ConnectionState.Open) _cmd.Connection.Open();
 

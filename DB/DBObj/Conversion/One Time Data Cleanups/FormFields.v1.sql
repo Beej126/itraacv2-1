@@ -23,6 +23,8 @@ ORDER BY FormTypeID, CONVERT(INT, SUBSTRING(FieldName, 2,5))
 
 select * from tblformfields
 
+
+
 type 1 = NF1
 type 2 = NF2
 type 3 = Abw
@@ -30,6 +32,8 @@ type 3 = Abw
 SELECT * FROM vw_ABW WHERE TaxFormID= 50528628-- 50466038
 select top 5 * from tbltaxforms where TaxFormID>50466038 and formtypeid = 2
 */
+
+dbcc CHECKIDENT (tblFormFields, RESEED, 0)
 
 USE iTRAAC
 go

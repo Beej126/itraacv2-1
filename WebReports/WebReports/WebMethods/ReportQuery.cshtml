@@ -56,7 +56,7 @@
         xslt.Transform(XmlReader.Create(srdr), new XmlTextWriter(sw));
       }
     }
-    
+   
     Response.Write(Regex.Replace(sb.ToString(), "_(x[0-F]{4})_", "&#$1;")); //convert all the screwy chars to their html hex equiv );
   }
 }
